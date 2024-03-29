@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#r "nuget: Generaptor.Library, 1.1.0"
+#r "nuget: Generaptor.Library, 1.2.0"
 
 open System
 
@@ -81,6 +81,5 @@ let workflows = [
         ]
     ]
 ]
-
 
 EntryPoint.Process fsi.CommandLineArgs workflows
