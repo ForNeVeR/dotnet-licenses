@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 [docs.readme]: README.md
 
-## [Unreleased]
+## [0.0.0]
 This is the first version of the tool. It does nothing but prints a message to the console, mostly prepared to bootstrap the automated publishing process.
 
-[Unreleased]: https://github.com/ForNeVeR/dotnet-licenses/
+[1.0.0-beta1]: https://github.com/ForNeVeR/dotnet-licenses/releases/tag/v0.0.0
+[Unreleased]: https://github.com/ForNeVeR/dotnet-licenses/compare/v0.0.0...HEAD
