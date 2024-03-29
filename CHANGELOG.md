@@ -15,5 +15,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 This is the first version of the tool. It does nothing but prints a message to the console, mostly prepared to bootstrap the automated publishing process.
 
-
 [Unreleased]: https://github.com/ForNeVeR/dotnet-licenses/
