@@ -40,6 +40,16 @@ Documentation
 - [Contributor Guide][docs.contributing]
 - [Maintainer Guide][docs.maintaining]
 
+Versioning Notes
+----------------
+This project's versioning follows the [Semantic Versioning 2.0.0][semver] specification.
+
+When considering compatible changes, we currently consider the project's public API is the command-line interface:
+- the way of running the project (e.g., the executable file name),
+- the input arguments,
+- the input data formats,
+- and the output data format.
+
 License
 -------
 This project's licensing follows the [REUSE specification v 3.0][reuse.spec]. The main license for the source is MIT, consult each file's headers and the REUSE specification for possible details.
@@ -53,3 +63,4 @@ The package of this program bundles FSharp.Core, see its license (MIT) [on the N
 [fsharp.core.nuget]: https://www.nuget.org/packages/FSharp.Core/
 [reuse.spec]: https://reuse.software/spec/
 [reuse]: https://reuse.software/
+[semver]: https://semver.org/spec/v2.0.0.html
