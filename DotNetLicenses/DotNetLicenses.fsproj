@@ -8,6 +8,11 @@
         <RepositoryUrl>https://github.com/ForNeVeR/dotnet-licenses.git</RepositoryUrl>
         <PackageTags>licenses;tool</PackageTags>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <!-- TODO: Automate this using reuse -->
+        <Copyright>
+© 2024 Friedrich von Never;
+© Microsoft Corporation. All rights reserved. <!-- This is from FSharp.Core -->
+        </Copyright>
 
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>
@@ -29,8 +34,12 @@
     </ItemGroup>
 
     <ItemGroup Label="Packaging">
-        <None Include="..\README.md" Pack="true" PackagePath="\" />
         <None Include="..\LICENSES\**" Pack="true" PackagePath="\LICENSES" />
+        <None Include="..\CHANGELOG.md" Pack="true" PackagePath="\" />
+        <None Include="..\README.md" Pack="true" PackagePath="\" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="ChangelogAutomation.MSBuild" Version="2.0.0" />
+    </ItemGroup>
 </Project>

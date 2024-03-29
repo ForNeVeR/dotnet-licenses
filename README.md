@@ -20,7 +20,7 @@ Install as a dotnet tool: either
 ```console
 $ dotnet tool install --global FVNever.DotNetLicenses
 ```
-for global installation, or
+for global installation or
 ```console
 $ dotnet new tool-manifest
 $ dotnet tool install FVNever.DotNetLicenses
@@ -36,7 +36,9 @@ $ dotnet licenses
 
 Documentation
 -------------
+- [Changelog][docs.changelog]
 - [Contributor Guide][docs.contributing]
+- [Maintainer Guide][docs.maintaining]
 
 License
 -------
@@ -45,7 +47,9 @@ This project's licensing follows the [REUSE specification v 3.0][reuse.spec]. Th
 <!-- TODO: We should use the tool itself to deliver this license, obviously. -->
 The package of this program bundles FSharp.Core, see its license (MIT) [on the NuGet page][fsharp.core.nuget].
 
+[docs.changelog]: CHANGELOG.md
 [docs.contributing]: CONTRIBUTING.md
+[docs.maintaining]: MAINTAINING.md
 [fsharp.core.nuget]: https://www.nuget.org/packages/FSharp.Core/
 [reuse.spec]: https://reuse.software/spec/
 [reuse]: https://reuse.software/
