@@ -7,7 +7,6 @@ SPDX-License-Identifier: MIT
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup Label="NuGet">
-        <Version>0.0.0</Version>
         <PackageId>FVNever.DotNetLicenses</PackageId>
         <Authors>ForNeVeR</Authors>
         <PackageProjectUrl>https://github.com/ForNeVeR/dotnet-licenses</PackageProjectUrl>
