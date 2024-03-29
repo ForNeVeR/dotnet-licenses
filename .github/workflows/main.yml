@@ -44,8 +44,12 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
+    - name: Install REUSE
+      shell: pwsh
+      run: pipx install reuse
     - name: Check REUSE compliance
-      uses: fsfe/reuse-action@v3
+      shell: pwsh
+      run: reuse lint
     - name: Check copyright years
       shell: pwsh
       run: scripts/Test-LicenseHeaders.ps1

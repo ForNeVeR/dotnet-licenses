@@ -38,8 +38,12 @@ let workflows = [
         job "licenses" [
             runsOn linuxImage
             checkout
-            step(name = "Check REUSE compliance", uses = "fsfe/reuse-action@v3")
-            step(name = "Check copyright years", shell = "pwsh", run = "scripts/Test-LicenseHeaders.ps1")
+
+            let pwsh(name, run) = step(name = name, shell = "pwsh", run = run)
+
+            pwsh("Install REUSE", "pipx install reuse")
+            pwsh("Check REUSE compliance", "reuse lint")
+            pwsh("Check copyright years", "scripts/Test-LicenseHeaders.ps1")
         ]
         job "encoding" [
             runsOn linuxImage
