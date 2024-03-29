@@ -1,4 +1,8 @@
-﻿#r "nuget: Generaptor.Library, 1.1.0"
+// SPDX-FileCopyrightText: 2024 Friedrich von Never <friedrich@fornever.me>
+//
+// SPDX-License-Identifier: MIT
+
+#r "nuget: Generaptor.Library, 1.1.0"
 
 open System
 

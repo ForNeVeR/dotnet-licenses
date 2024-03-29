@@ -1,4 +1,8 @@
-﻿param(
+# SPDX-FileCopyrightText: 2024 Friedrich von Never <friedrich@fornever.me>
+#
+# SPDX-License-Identifier: MIT
+
+param(
     [string] $RefName,
     [string] $RepositoryRoot = "$PSScriptRoot/.."
 )
