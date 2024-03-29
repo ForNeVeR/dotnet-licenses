@@ -37,6 +37,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{
 		.github\workflows\release.yml.license = .github\workflows\release.yml.license
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LICENSES", "LICENSES", "{CE9C58F3-67FC-47D8-8F86-15AE0DB07785}"
+	ProjectSection(SolutionItems) = preProject
+		LICENSES\CC0-1.0.txt = LICENSES\CC0-1.0.txt
+		LICENSES\MIT.txt = LICENSES\MIT.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
