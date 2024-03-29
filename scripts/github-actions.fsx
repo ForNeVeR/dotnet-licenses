@@ -54,12 +54,15 @@ let workflows = [
 
             let releaseNotes = "./release-notes.md"
             prepareChangelog(releaseNotes)
-            let artifacts projectName includeSNuPkg = [
-                $"./{projectName}/bin/{configuration}/{projectName}.{versionField}.nupkg"
-                if includeSNuPkg then $"./{projectName}/bin/{configuration}/{projectName}.{versionField}.snupkg"
+
+            let projectName = "DotNetLicenses"
+            let packageId = "FVNever.DotNetLicenses"
+            let artifacts includeSNuPkg = [
+                $"./{projectName}/bin/{configuration}/{packageId}.{versionField}.nupkg"
+                if includeSNuPkg then $"./{projectName}/bin/{configuration}/{packageId}.{versionField}.snupkg"
             ]
             let allArtifacts = [
-                yield! artifacts "DotNetLicenses" true
+                yield! artifacts true
             ]
             uploadArtifacts [
                 releaseNotes
@@ -67,12 +70,12 @@ let workflows = [
             ]
             yield! ifCalledOnTagPush [
                 createRelease(
-                    name = $"dotnet-licenses {versionField}",
+                    name = $"dotnet-licenses v{versionField}",
                     releaseNotesPath = releaseNotes,
                     files = allArtifacts
                 )
                 yield! pushToNuGetOrg "NUGET_TOKEN" (
-                    artifacts "DotNetLicenses" false
+                    artifacts false
                 )
             ]
         ]
