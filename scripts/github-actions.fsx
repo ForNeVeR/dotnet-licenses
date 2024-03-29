@@ -25,6 +25,7 @@ let workflows = [
         job "main" [
             checkout
             yield! dotNetBuildAndTest()
+            step(name = "Pack", shell = "pwsh", run = "dotnet pack")
         ] |> addMatrix images
     ]
 ]

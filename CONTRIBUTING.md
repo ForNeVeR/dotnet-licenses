@@ -7,10 +7,18 @@ To work with the project, you'll need [.NET SDK 8][dotnet-sdk] or later.
 
 Build
 -----
-Execute the following shell command:
+Use the following shell command:
 
 ```console
 $ dotnet build
+```
+
+Pack
+----
+To prepare a package, use the following shell command:
+
+```console
+$ dotnet pack
 ```
 
 GitHub Actions
