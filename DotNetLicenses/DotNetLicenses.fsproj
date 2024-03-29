@@ -7,12 +7,6 @@
         <PackageProjectUrl>https://github.com/ForNeVeR/dotnet-licenses</PackageProjectUrl>
         <RepositoryUrl>https://github.com/ForNeVeR/dotnet-licenses.git</RepositoryUrl>
         <PackageTags>licenses;tool</PackageTags>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <!-- TODO: Automate this using reuse -->
-        <Copyright>
-© 2024 Friedrich von Never;
-© Microsoft Corporation. All rights reserved. <!-- This is from FSharp.Core -->
-        </Copyright>
 
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <EmbedUntrackedSources>true</EmbedUntrackedSources>

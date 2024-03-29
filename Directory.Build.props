@@ -1,0 +1,11 @@
+﻿<Project>
+    <PropertyGroup Label="Packaging">
+        <Version>0.0.0</Version>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <!-- TODO: Automate this using reuse -->
+        <Copyright>
+© 2024 Friedrich von Never;
+© Microsoft Corporation. All rights reserved. <!-- This is from FSharp.Core -->
+        </Copyright>
+    </PropertyGroup>
+</Project>
