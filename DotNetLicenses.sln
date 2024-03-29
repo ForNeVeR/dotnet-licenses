@@ -43,6 +43,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "LICENSES", "LICENSES", "{CE
 		LICENSES\MIT.txt = LICENSES\MIT.txt
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".reuse", ".reuse", "{F530A23A-3F2D-4931-80BB-523E685AB02C}"
+	ProjectSection(SolutionItems) = preProject
+		.reuse\dep5 = .reuse\dep5
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
