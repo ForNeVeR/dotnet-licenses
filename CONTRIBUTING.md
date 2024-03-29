@@ -21,7 +21,7 @@ $ dotnet build
 
 Pack
 ----
-To prepare a package, use the following shell command:
+To prepare a NuGet package with the tool, use the following shell command:
 
 ```console
 $ dotnet pack
