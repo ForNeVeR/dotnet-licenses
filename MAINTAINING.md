@@ -24,7 +24,7 @@ To update the key:
 
 1. Sign in onto nuget.org.
 2. Go to the [API keys][nuget.api-keys] section.
-3. Update the existing or create a new key named `fvnever.licenses.github` with a permission to **Push only new package versions** and only allowed to publish the package **FVNever.Licenses**.
+3. Update the existing or create a new key named `fvnever.dotnet-licenses.github` with a permission to **Push only new package versions** and only allowed to publish the package **FVNever.DotNetLicenses**.
 4. Paste the generated key to the `NUGET_TOKEN` variable on the [action secrets][github.secrets] section of GitHub settings.
 
 [github.secrets]: https://github.com/ForNeVeR/dotnet-licenses/settings/secrets/actions
