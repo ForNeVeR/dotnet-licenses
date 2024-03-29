@@ -14,9 +14,14 @@ Different software licenses have different requirements, but most of them requir
 
 dotnet-licenses will help you to verify that every file in your package is covered by a license, and wil help the package consumers to determine exactly what file is covered by what.
 
+Documentation
+-------------
+- [Contributor Guide][docs.contributing]
+
 License
 -------
 This project's licensing follows the [REUSE specification v 3.0][reuse.spec]. The main license for the source is MIT, consult each file's headers and the REUSE specification for possible details.
 
-[reuse]: https://reuse.software/
+[docs.contributing]: CONTRIBUTING.md
 [reuse.spec]: https://reuse.software/spec/
+[reuse]: https://reuse.software/
