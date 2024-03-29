@@ -11,7 +11,7 @@ on:
   - cron: 0 0 * * 6
   workflow_dispatch: 
 jobs:
-  main:
+  test:
     strategy:
       matrix:
         image:
@@ -40,3 +40,9 @@ jobs:
     - name: Test
       run: dotnet test
       timeout-minutes: 10
+  licenses:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v4
+    - name: Check REUSE compliance
+      uses: fsfe/reuse-action@v3

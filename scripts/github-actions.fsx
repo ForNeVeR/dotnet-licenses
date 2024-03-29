@@ -31,10 +31,15 @@ let workflows = [
     workflow "main" [
         name "Main"
         yield! mainTriggers
-        job "main" [
+        job "test" [
             checkout
             yield! dotNetBuildAndTest()
         ] |> addMatrix images
+        job "licenses" [
+            runsOn linuxImage
+            checkout
+            step(name = "Check REUSE compliance", uses = "fsfe/reuse-action@v3")
+        ]
     ]
     workflow "release" [
         name "Release"
