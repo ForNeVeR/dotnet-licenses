@@ -40,6 +40,11 @@ let workflows = [
             checkout
             step(name = "Check REUSE compliance", uses = "fsfe/reuse-action@v3")
         ]
+        job "encoding" [
+            runsOn linuxImage
+            checkout
+            step(name = "Verify encoding", shell = "pwsh", run = "scripts/Test-Encoding.ps1")
+        ]
     ]
     workflow "release" [
         name "Release"
