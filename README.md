@@ -4,7 +4,7 @@ SPDX-FileCopyrightText: 2024 Friedrich von Never <friedrich@fornever.me>
 SPDX-License-Identifier: MIT
 -->
 
-dotnet-licenses
+dotnet-licenses [![Status Zero][status-zero]][andivionian-status-classifier] [![NuGet package][nuget.badge]][nuget.page]
 ===============
 dotnet-licenses is a set of tooling to maintain the software license information in published packages.
 
@@ -57,10 +57,14 @@ This project's licensing follows the [REUSE specification v 3.0][reuse.spec]. Th
 <!-- TODO[#6]: We should use the tool itself to deliver this license, obviously. -->
 The package of this program bundles FSharp.Core, see its license (MIT) [on the NuGet page][fsharp.core.nuget].
 
+[andivionian-status-classifier]: https://andivionian.fornever.me/v1/#status-zero-
 [docs.changelog]: CHANGELOG.md
 [docs.contributing]: CONTRIBUTING.md
 [docs.maintaining]: MAINTAINING.md
 [fsharp.core.nuget]: https://www.nuget.org/packages/FSharp.Core/
+[nuget.badge]: https://img.shields.io/nuget/v/FVNever.DotNetLicenses
+[nuget.page]: https://www.nuget.org/packages/FVNever.DotNetLicenses
 [reuse.spec]: https://reuse.software/spec/
 [reuse]: https://reuse.software/
 [semver]: https://semver.org/spec/v2.0.0.html
+[status-zero]: https://img.shields.io/badge/status-zero-lightgrey.svg
