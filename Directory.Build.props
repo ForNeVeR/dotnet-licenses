@@ -8,7 +8,7 @@ SPDX-License-Identifier: MIT
     <PropertyGroup Label="Packaging">
         <Version>0.0.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
-        <!-- TODO: Automate this using reuse -->
+        <!-- TODO[#5]: Automate this using reuse -->
         <Copyright>
 © 2024 Friedrich von Never;
 © Microsoft Corporation. All rights reserved. <!-- This is from FSharp.Core -->

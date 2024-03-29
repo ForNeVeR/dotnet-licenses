@@ -54,7 +54,7 @@ License
 -------
 This project's licensing follows the [REUSE specification v 3.0][reuse.spec]. The main license for the source is MIT, consult each file's headers and the REUSE specification for possible details.
 
-<!-- TODO: We should use the tool itself to deliver this license, obviously. -->
+<!-- TODO[#6]: We should use the tool itself to deliver this license, obviously. -->
 The package of this program bundles FSharp.Core, see its license (MIT) [on the NuGet page][fsharp.core.nuget].
 
 [docs.changelog]: CHANGELOG.md
