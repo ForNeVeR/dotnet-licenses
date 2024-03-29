@@ -33,11 +33,12 @@ Write-Output "Text files in the repository: $($textFiles.Length)"
 $bom = @(0xEF, 0xBB, 0xBF)
 $bomErrors = @()
 $lineEndingErrors = @()
+[array] $excludeExtensions = @('.dotsettings')
 
 try {
     Push-Location $SourceRoot
     foreach ($file in $textFiles) {
-        if (@('.dotsettings', '.resx') -contains [IO.Path]::GetExtension($file).ToLowerInvariant()) {
+        if ($excludeExtensions -contains [IO.Path]::GetExtension($file).ToLowerInvariant()) {
             continue
         }
 
