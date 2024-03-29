@@ -46,6 +46,9 @@ jobs:
     - uses: actions/checkout@v4
     - name: Check REUSE compliance
       uses: fsfe/reuse-action@v3
+    - name: Check copyright years
+      shell: pwsh
+      run: scripts/Test-LicenseHeaders.ps1
   encoding:
     runs-on: ubuntu-22.04
     steps:

@@ -22,6 +22,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{EE85
 		scripts\github-actions.fsx = scripts\github-actions.fsx
 		scripts\Get-Version.ps1 = scripts\Get-Version.ps1
 		scripts\Test-Encoding.ps1 = scripts\Test-Encoding.ps1
+		scripts\Test-LicenseHeaders.ps1 = scripts\Test-LicenseHeaders.ps1
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{0FE1F889-3A72-4D9B-883F-E6A6A40753F8}"
