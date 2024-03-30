@@ -24,7 +24,7 @@ let private CopyDataFile(path: string) =
     tempPath
 
 let Deploy(name: string) (action: string -> Task): Task = task {
-    let path = CopyDataFile name
+    let path = CopyDataFile(Get name)
     try
         do! action path
     finally

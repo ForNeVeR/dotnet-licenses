@@ -16,7 +16,15 @@ type MetadataItem = {
 }
 
 let internal GetMetadata(nuSpec: NuSpec): MetadataItem =
-    failwithf "TODO"
+    let metadata = nuSpec.Metadata
+    let license = metadata.License
+    if license.Type <> "expression" then
+        failwithf $"Unsupported license type: {license.Type}"
+    {
+        Name = metadata.Id
+        SpdxExpression = metadata.License.Value
+        Copyright = metadata.Copyright
+    }
 
 let ReadFromProject(projectFilePath: string): Task<ReadOnlyCollection<MetadataItem>> = task {
     let! packageReferences = MSBuild.GetPackageReferences projectFilePath

@@ -25,17 +25,21 @@ let GetNuSpecFilePath(packageReference: PackageReference): string =
         $"{packageReference.PackageId}.nuspec"
     )
 
+[<CLIMutable>]
 type NuSpecLicense = {
     [<XmlAttribute("type")>] Type: string
     [<XmlText>] Value: string
 }
 
+[<CLIMutable>]
 type NuSpecMetadata = {
     [<XmlElement("id")>] Id: string
     [<XmlElement("license")>] License: NuSpecLicense
     [<XmlElement("copyright")>] Copyright: string
 }
 
+[<CLIMutable>]
+[<XmlRoot("package", Namespace = "http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd")>]
 type NuSpec = {
     [<XmlElement("metadata")>] Metadata: NuSpecMetadata
 }

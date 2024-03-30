@@ -13,4 +13,4 @@ type PackageReference = {
 }
 
 let GetPackageReferences(projectFilePath: string): Task<IList<PackageReference>> =
-    failwithf ""
+    failwithf "TODO"
