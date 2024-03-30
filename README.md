@@ -37,6 +37,7 @@ $ dotnet licenses
 Documentation
 -------------
 - [Changelog][docs.changelog]
+- [Core Concepts][docs.concepts]
 - [Contributor Guide][docs.contributing]
 - [Maintainer Guide][docs.maintaining]
 
@@ -59,6 +60,7 @@ The package of this program bundles FSharp.Core, see its license (MIT) [on the N
 
 [andivionian-status-classifier]: https://andivionian.fornever.me/v1/#status-zero-
 [docs.changelog]: CHANGELOG.md
+[docs.concepts]: docs/concepts.md
 [docs.contributing]: CONTRIBUTING.md
 [docs.maintaining]: MAINTAINING.md
 [fsharp.core.nuget]: https://www.nuget.org/packages/FSharp.Core/

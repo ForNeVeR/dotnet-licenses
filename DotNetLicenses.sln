@@ -49,6 +49,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".reuse", ".reuse", "{F530A2
 		.reuse\dep5 = .reuse\dep5
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{DDEA4E73-D91A-4377-A85B-39AED223E11C}"
+	ProjectSection(SolutionItems) = preProject
+		docs\concepts.md = docs\concepts.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
