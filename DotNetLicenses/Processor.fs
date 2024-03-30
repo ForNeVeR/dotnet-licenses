@@ -16,13 +16,13 @@ let Perform: Command -> unit =
         printfn """Supported arguments:
 - --version - Print the program version.
 - --help - Print this help message.
-- [path] - Process a .NET project residing directly in the specified path.
+- [projectFilePath] - Process a .NET project by its path.
   Default is current directory.
     """
-    | Command.PrintMetadata path ->
+    | Command.PrintProjectMetadata projectFilePath ->
         let t = task {
-            let! metadata = Metadata.ReadFrom path
+            let! metadata = Metadata.ReadFromProject projectFilePath
             for item in metadata do
-                printfn $"- {item.Name}: {item.SPDXExpression}\n  {item.Copyright}"
+                printfn $"- {item.Name}: {item.SpdxExpression}\n  {item.Copyright}"
         }
         t.Wait()

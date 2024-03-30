@@ -29,7 +29,10 @@ SPDX-License-Identifier: MIT
     </PropertyGroup>
 
     <ItemGroup>
+        <Compile Include="AssemblyInfo.fs" />
         <Compile Include="CommandLine.fs" />
+        <Compile Include="MSBuild.fs" />
+        <Compile Include="NuGet.fs" />
         <Compile Include="Metadata.fs" />
         <Compile Include="Processor.fs" />
         <Compile Include="Program.fs"/>

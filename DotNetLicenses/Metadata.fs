@@ -5,13 +5,26 @@
 module DotNetLicenses.Metadata
 
 open System.Collections.Generic
+open System.Collections.ObjectModel
 open System.Threading.Tasks
+open DotNetLicenses.NuGet
 
 type MetadataItem = {
     Name: string
-    SPDXExpression: string
+    SpdxExpression: string
     Copyright: string
 }
 
-let ReadFrom(path: string): Task<IReadOnlyList<MetadataItem>> =
-    failwithf "Not implemented yet."
+let internal GetMetadata(nuSpec: NuSpec): MetadataItem =
+    failwithf "TODO"
+
+let ReadFromProject(projectFilePath: string): Task<ReadOnlyCollection<MetadataItem>> = task {
+    let! packageReferences = MSBuild.GetPackageReferences projectFilePath
+    let result = ResizeArray(packageReferences.Count)
+    for reference in packageReferences do
+        let nuSpecPath = GetNuSpecFilePath reference
+        let! nuSpec = ReadNuSpec nuSpecPath
+        let metadata = GetMetadata nuSpec
+        result.Add metadata
+    return result.AsReadOnly()
+}

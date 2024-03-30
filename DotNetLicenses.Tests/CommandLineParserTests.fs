@@ -10,12 +10,12 @@ open Xunit
 
 [<Fact>]
 let ``If the command is not passed then read the current directory``(): unit =
-    Assert.Equal(struct(Command.PrintMetadata Environment.CurrentDirectory, ExitCode.Success), parse Array.empty)
+    Assert.Equal(struct(Command.PrintProjectMetadata Environment.CurrentDirectory, ExitCode.Success), parse Array.empty)
 
 [<Fact>]
 let ``Passed path is processed``(): unit =
     let path = "foo/bar"
-    Assert.Equal(struct(Command.PrintMetadata path, ExitCode.Success), parse [| path |])
+    Assert.Equal(struct(Command.PrintProjectMetadata path, ExitCode.Success), parse [| path |])
 
 [<Fact>]
 let ``Help command is supported``(): unit =

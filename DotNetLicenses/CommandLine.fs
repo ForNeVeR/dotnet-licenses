@@ -8,7 +8,7 @@ open System.IO
 
 [<RequireQualifiedAccess>]
 type Command =
-    | PrintMetadata of inputDirectory: string
+    | PrintProjectMetadata of projectFilePath: string
     | PrintHelp
     | PrintVersion
 
@@ -20,6 +20,6 @@ let parse(args: string[]): struct(Command * ExitCode) =
     match args with
     | [| "--help" |] -> Command.PrintHelp, ExitCode.Success
     | [| "--version" |] -> Command.PrintVersion, ExitCode.Success
-    | [| |] -> Command.PrintMetadata(Directory.GetCurrentDirectory()), ExitCode.Success
-    | [| path |] -> Command.PrintMetadata path, ExitCode.Success
+    | [| |] -> Command.PrintProjectMetadata(Directory.GetCurrentDirectory()), ExitCode.Success
+    | [| path |] -> Command.PrintProjectMetadata path, ExitCode.Success
     | _ -> Command.PrintVersion, ExitCode.InvalidArguments

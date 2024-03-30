@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+    <metadata>
+        <id>FVNever.DotNetLicenses</id>
+        <version>0.0.0</version>
+        <authors>ForNeVeR</authors>
+        <license type="expression">MIT</license>
+        <licenseUrl>https://licenses.nuget.org/MIT</licenseUrl>
+        <readme>README.md</readme>
+        <projectUrl>https://github.com/ForNeVeR/dotnet-licenses</projectUrl>
+        <description>Package Description</description>
+        <releaseNotes>This is the first version of the tool. It does nothing but prints a message to the console, mostly prepared to bootstrap the automated publishing process.</releaseNotes>
+        <copyright>© 2024 Friedrich von Never;
+© Microsoft Corporation. All rights reserved.</copyright>
+        <tags>licenses tool</tags>
+        <packageTypes>
+            <packageType name="DotnetTool" />
+        </packageTypes>
+        <repository type="git" url="https://github.com/ForNeVeR/dotnet-licenses.git" commit="0d20d3a5071bdbb15e4bf681729bb27521771b25" />
+    </metadata>
+</package>
