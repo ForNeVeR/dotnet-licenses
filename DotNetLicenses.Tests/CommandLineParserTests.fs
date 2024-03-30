@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-module CommandLineParserTests
+module DotNetLicenses.Tests.CommandLineParserTests
 
 open System
 open DotNetLicenses.CommandLine
