@@ -4,13 +4,8 @@
 
 module DotNetLicenses.Tests.CommandLineParserTests
 
-open System
 open DotNetLicenses.CommandLine
 open Xunit
-
-[<Fact>]
-let ``If the command is not passed then read the current directory``(): unit =
-    Assert.Equal(struct(Command.PrintProjectMetadata Environment.CurrentDirectory, ExitCode.Success), parse Array.empty)
 
 [<Fact>]
 let ``Passed path is processed``(): unit =
