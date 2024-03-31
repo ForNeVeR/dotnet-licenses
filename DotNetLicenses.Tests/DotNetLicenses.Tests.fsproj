@@ -16,7 +16,7 @@ SPDX-License-Identifier: MIT
     <ItemGroup>
         <Compile Include="CommandLineParserTests.fs" />
         <Compile Include="MetadataTests.fs" />
-        <Compile Include="MSBuildTests.fs" />
+        <Compile Include="MsBuildTests.fs" />
         <Compile Include="NuGetTests.fs" />
         <Content Include="Data\*" CopyToOutputDirectory="Always" />
     </ItemGroup>

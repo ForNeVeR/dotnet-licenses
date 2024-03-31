@@ -2,15 +2,48 @@
 //
 // SPDX-License-Identifier: MIT
 
-module DotNetLicenses.MSBuild
+module DotNetLicenses.MsBuild
 
-open System.Collections.Generic
+open System.Text.Json
 open System.Threading.Tasks
+open Medallion.Shell
 
-type PackageReference = {
-    PackageId: string
+[<CLIMutable>]
+type MsBuildOutput = {
+    Items: MsBuildItems
+}
+and [<CLIMutable>] MsBuildItems = {
+    PackageReference: MsBuildPackageReference[]
+}
+and [<CLIMutable>] MsBuildPackageReference = {
+    Identity: string
     Version: string
 }
 
-let GetPackageReferences(projectFilePath: string): Task<IList<PackageReference>> =
-    failwithf "TODO"
+type PackageReference =
+    {
+        PackageId: string
+        Version: string
+    }
+    static member OfMsBuild(reference: MsBuildPackageReference) =
+        {
+            PackageId = reference.Identity
+            Version = reference.Version
+        }
+
+let GetPackageReferences(projectFilePath: string): Task<PackageReference[]> = task {
+    let! result = Command.Run("dotnet", "build", "-getItem:PackageReference", projectFilePath).Task
+    let stdOut = result.StandardOutput
+    let stdErr = result.StandardError
+    if not result.Success then
+        let message =
+            seq {
+                $"Exit code: {result.ExitCode}"
+                if stdOut.Length > 0 then $"Standard output: {stdOut}"
+                if stdErr.Length > 0 then $"Standard error: {stdErr}"
+            } |> String.concat "\n"
+        failwith message
+
+    let output = JsonSerializer.Deserialize<MsBuildOutput> result.StandardOutput
+    return output.Items.PackageReference |> Seq.map PackageReference.OfMsBuild |> Seq.toArray
+}

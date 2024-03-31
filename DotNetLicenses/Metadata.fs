@@ -4,7 +4,6 @@
 
 module DotNetLicenses.Metadata
 
-open System.Collections.Generic
 open System.Collections.ObjectModel
 open System.Threading.Tasks
 open DotNetLicenses.NuGet
@@ -27,8 +26,8 @@ let internal GetMetadata(nuSpec: NuSpec): MetadataItem =
     }
 
 let ReadFromProject(projectFilePath: string): Task<ReadOnlyCollection<MetadataItem>> = task {
-    let! packageReferences = MSBuild.GetPackageReferences projectFilePath
-    let result = ResizeArray(packageReferences.Count)
+    let! packageReferences = MsBuild.GetPackageReferences projectFilePath
+    let result = ResizeArray(packageReferences.Length)
     for reference in packageReferences do
         let nuSpecPath = GetNuSpecFilePath reference
         let! nuSpec = ReadNuSpec nuSpecPath

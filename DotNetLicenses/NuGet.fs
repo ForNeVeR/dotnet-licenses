@@ -8,7 +8,7 @@ open System
 open System.IO
 open System.Threading.Tasks
 open System.Xml.Serialization
-open DotNetLicenses.MSBuild
+open DotNetLicenses.MsBuild
 
 let internal PackagesFolderPath =
     Environment.GetEnvironmentVariable "NUGET_PACKAGES"
