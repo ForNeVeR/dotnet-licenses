@@ -20,9 +20,9 @@ let internal PackagesFolderPath =
 let GetNuSpecFilePath(packageReference: PackageReference): string =
     Path.Combine(
         PackagesFolderPath,
-        packageReference.PackageId,
-        packageReference.Version,
-        $"{packageReference.PackageId}.nuspec"
+        packageReference.PackageId.ToLowerInvariant(),
+        packageReference.Version.ToLowerInvariant(),
+        $"{packageReference.PackageId.ToLowerInvariant()}.nuspec"
     )
 
 [<CLIMutable>]

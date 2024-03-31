@@ -13,10 +13,16 @@ open Xunit
 
 [<Fact>]
 let ``NuSpec file path should be determined correctly``(): unit =
-    let nuGetPackagesRootPath = NuGet.PackagesFolderPath
+    let nuGetPackagesRootPath = PackagesFolderPath
     let package = "FVNever.DotNetLicenses"
     let version = "1.0.0"
-    Assert.Equal(Path.Combine(nuGetPackagesRootPath, package, version), NuGet.GetNuSpecFilePath {
+    let expectedPath = Path.Combine(
+        nuGetPackagesRootPath,
+        package.ToLowerInvariant(),
+        version.ToLowerInvariant(),
+        package.ToLowerInvariant() + ".nuspec"
+    )
+    Assert.Equal(expectedPath, GetNuSpecFilePath {
         PackageId = package
         Version = version
     })
