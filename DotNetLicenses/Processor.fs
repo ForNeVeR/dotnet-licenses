@@ -17,7 +17,6 @@ let Perform: Command -> unit =
 - --version - Print the program version.
 - --help - Print this help message.
 - [projectFilePath] - Process a .NET project by its path.
-  Default is current directory.
     """
     | Command.PrintProjectMetadata projectFilePath ->
         let t = task {

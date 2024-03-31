@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-module DotNetLicenses.Tests.NuGetTEsts
+module DotNetLicenses.Tests.NuGetTests
 
 open System.IO
 open System.Threading.Tasks
