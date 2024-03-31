@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<package xmlns="http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd">
+<package xmlns='http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd'>
     <metadata>
         <id>FVNever.DotNetLicenses</id>
         <version>0.0.0</version>
@@ -10,8 +10,7 @@
         <projectUrl>https://github.com/ForNeVeR/dotnet-licenses</projectUrl>
         <description>Package Description</description>
         <releaseNotes>This is the first version of the tool. It does nothing but prints a message to the console, mostly prepared to bootstrap the automated publishing process.</releaseNotes>
-        <copyright>© 2024 Friedrich von Never;
-© Microsoft Corporation. All rights reserved.</copyright>
+        <copyright>© 2024 Friedrich von Never</copyright>
         <tags>licenses tool</tags>
         <packageTypes>
             <packageType name="DotnetTool" />

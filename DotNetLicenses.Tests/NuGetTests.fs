@@ -6,7 +6,6 @@ module DotNetLicenses.Tests.NuGetTEsts
 
 open System.IO
 open System.Threading.Tasks
-open DotNetLicenses
 open DotNetLicenses.NuGet
 open DotNetLicenses.TestFramework
 open Xunit
@@ -27,10 +26,11 @@ let ``NuSpec file path should be determined correctly``(): unit =
         Version = version
     })
 
-[<Fact>]
-let ``NuSpec file should be read correctly``(): Task = task {
-    let path = DataFiles.Get "Test.nuspec"
-    let! nuSpec = NuGet.ReadNuSpec path
+[<Theory>]
+[<InlineData("Test1.nuspec"); InlineData("Test2.nuspec")>]
+let ``NuSpec file should be read correctly``(fileName: string): Task = task {
+    let path = DataFiles.Get fileName
+    let! nuSpec = ReadNuSpec path
     Assert.Equal({
         Metadata = {
             Id = "FVNever.DotNetLicenses"
@@ -38,7 +38,7 @@ let ``NuSpec file should be read correctly``(): Task = task {
                 Type = "expression"
                 Value = "MIT"
             }
-            Copyright = "© 2024 Friedrich von Never;\n© Microsoft Corporation. All rights reserved."
+            Copyright = "© 2024 Friedrich von Never"
         }
     }, nuSpec)
 }

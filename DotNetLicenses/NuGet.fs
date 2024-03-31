@@ -7,6 +7,7 @@ module DotNetLicenses.NuGet
 open System
 open System.IO
 open System.Threading.Tasks
+open System.Xml
 open System.Xml.Serialization
 open DotNetLicenses.MsBuild
 
@@ -39,13 +40,22 @@ type NuSpecMetadata = {
 }
 
 [<CLIMutable>]
-[<XmlRoot("package", Namespace = "http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd")>]
+// NOTE: the actual .nuspec files often have some package, such as
+// - http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd
+// - http://schemas.microsoft.com/packaging/2012/06/nuspec.xsd
+// In this type, we won't set any package, and will hack it using a NoNamespaceXmlReader.
+[<XmlRoot("package")>]
 type NuSpec = {
     [<XmlElement("metadata")>] Metadata: NuSpecMetadata
 }
 
+type NoNamespaceXmlReader(input: Stream) =
+    inherit XmlTextReader(input)
+    override this.NamespaceURI = ""
+
 let private serializer = XmlSerializer typeof<NuSpec>
 let ReadNuSpec(filePath: string): Task<NuSpec> = Task.Run(fun() ->
     use stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read)
-    serializer.Deserialize(stream) :?> NuSpec
+    use reader = new NoNamespaceXmlReader(stream)
+    serializer.Deserialize(reader) :?> NuSpec
 )

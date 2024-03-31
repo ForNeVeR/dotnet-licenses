@@ -4,6 +4,7 @@
 
 module DotNetLicenses.Tests.MsBuildTests
 
+open System.IO
 open System.Threading.Tasks
 open DotNetLicenses.MsBuild
 open DotNetLicenses.TestFramework

@@ -12,12 +12,12 @@ open Xunit
 
 [<Fact>]
 let ``Get metadata from .nuspec works correctly``(): Task = task {
-    let path = DataFiles.Get "Test.nuspec"
+    let path = DataFiles.Get "Test1.nuspec"
     let! nuSpec = NuGet.ReadNuSpec path
     let metadata = GetMetadata nuSpec
     Assert.Equal({
         Name = "FVNever.DotNetLicenses"
         SpdxExpression = "MIT"
-        Copyright = "© 2024 Friedrich von Never;\n© Microsoft Corporation. All rights reserved."
+        Copyright = "© 2024 Friedrich von Never"
     }, metadata)
 }
