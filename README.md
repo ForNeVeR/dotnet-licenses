@@ -35,6 +35,17 @@ $ dotnet licenses <config-file-path>
 ```
 This command will print the packages used by the configured projects.
 
+Configuration
+-------------
+The configuration file format is TOML. The format:
+```toml
+inputs = [
+  "path/to/project1.csproj",
+  "path/to/project2.csproj"
+]
+```
+The `inputs` field is a list of paths to the projects to analyze. The paths are either absolute or relative to the directory containing the configuration file.
+
 Documentation
 -------------
 - [Changelog][docs.changelog]

@@ -4,11 +4,15 @@
 
 module DotNetLicenses.Processor
 
+open System.IO
 open System.Reflection
+open System.Threading.Tasks
 open DotNetLicenses.CommandLine
 
-[<NoCompilerInlining>]
-let Perform: Command -> unit =
+let private RunSynchronously(task: Task) =
+    task.Wait()
+
+let Process: Command -> unit =
     function
     | Command.PrintVersion ->
         printfn $"DotNetLicenses v{Assembly.GetExecutingAssembly().GetName().Version}"
@@ -16,12 +20,16 @@ let Perform: Command -> unit =
         printfn """Supported arguments:
 - --version - Print the program version.
 - --help - Print this help message.
-- <config-file-path> - Print the licenses used by the projects from the config file.
+- <config-file-path> - Print the licenses used by the projects designated by the config file.
     """
-    | Command.PrintMetadata projectFilePath ->
-        let t = task {
-            let! metadata = Metadata.ReadFromProject projectFilePath
-            for item in metadata do
-                printfn $"- {item.Name}: {item.SpdxExpression}\n  {item.Copyright}"
+    | Command.PrintMetadata configFilePath ->
+        task {
+            let baseFolderPath = Path.GetDirectoryName configFilePath
+            let! config = Configuration.ReadFromFile configFilePath
+            for relativeProjectPath in config.Inputs do
+                let projectPath = Path.Combine(baseFolderPath, relativeProjectPath)
+                let! metadata = Metadata.ReadFromProject projectPath
+                for item in metadata do
+                    printfn $"- {item.Name}: {item.SpdxExpression}\n  {item.Copyright}"
         }
-        t.Wait()
+        |> RunSynchronously
