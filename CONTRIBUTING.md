@@ -27,6 +27,22 @@ To prepare a NuGet package with the tool, use the following shell command:
 $ dotnet pack
 ```
 
+License Automation
+------------------
+If the CI asks you to update the file licenses, follow one of these:
+1. Update the headers manually (look at the existing files), something like this:
+   ```fsharp
+   // SPDX-FileCopyrightText: %year% %your name% <%your contact info, e.g. email%>
+   //
+   // SPDX-License-Identifier: MIT
+   ```
+2. Alternately, use [REUSE][reuse] tool:
+   ```console
+   $ reuse annotate --license MIT --copyright '%your name% <%your contact info, e.g. email%>'
+   ```
+
+(Feel free to write "DotNetLicenses Authors <https://github.com/ForNeVeR/dotnet-licenses/>" instead of your name in a multi-author file, or if you don't want your name to be mentioned in the project's source.)
+
 GitHub Actions
 --------------
 If you want to update the GitHub Actions used in the project, edit the file that generated them: `scripts/github-actions.fsx`.
