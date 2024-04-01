@@ -31,11 +31,9 @@ Usage
 -----
 To run the tool, use the following shell command:
 ```console
-$ dotnet licenses <project-file-path>
+$ dotnet licenses <config-file-path>
 ```
-where `<project-file-path>` is the path to the project file (`.csproj`, `.fsproj`, `.vbproj`, etc.) you want to process.
-
-This command will print the packages used by the project and their licenses.
+This command will print the packages used by the configured projects.
 
 Documentation
 -------------

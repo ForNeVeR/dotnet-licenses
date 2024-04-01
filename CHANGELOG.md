@@ -12,8 +12,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Added
-- Support the metadata printing command: if the program is called with a project path as the argument, then the NuGet package metadata will be printed.
 - Support the standard `--help` and `--version` options.
+- Add configuration file support, the file path being passed through the command line.
+- Support the metadata printing command.
 
 ## [0.0.0]
 This is the first version of the tool. It does nothing but prints a message to the console, mostly prepared to bootstrap the automated publishing process.

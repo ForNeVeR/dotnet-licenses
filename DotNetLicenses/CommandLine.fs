@@ -6,7 +6,7 @@ module DotNetLicenses.CommandLine
 
 [<RequireQualifiedAccess>]
 type Command =
-    | PrintProjectMetadata of projectFilePath: string
+    | PrintMetadata of configFilePath: string
     | PrintHelp
     | PrintVersion
 
@@ -18,5 +18,5 @@ let parse(args: string[]): struct(Command * ExitCode) =
     match args with
     | [| "--help" |] -> Command.PrintHelp, ExitCode.Success
     | [| "--version" |] -> Command.PrintVersion, ExitCode.Success
-    | [| path |] -> Command.PrintProjectMetadata path, ExitCode.Success
+    | [| path |] -> Command.PrintMetadata path, ExitCode.Success
     | _ -> Command.PrintVersion, ExitCode.InvalidArguments

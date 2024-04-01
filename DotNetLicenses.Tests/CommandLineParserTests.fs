@@ -9,8 +9,8 @@ open Xunit
 
 [<Fact>]
 let ``Passed path is processed``(): unit =
-    let path = "foo/bar"
-    Assert.Equal(struct(Command.PrintProjectMetadata path, ExitCode.Success), parse [| path |])
+    let path = "foo/bar.toml"
+    Assert.Equal(struct(Command.PrintMetadata path, ExitCode.Success), parse [| path |])
 
 [<Fact>]
 let ``Help command is supported``(): unit =

@@ -16,9 +16,9 @@ let Perform: Command -> unit =
         printfn """Supported arguments:
 - --version - Print the program version.
 - --help - Print this help message.
-- [projectFilePath] - Process a .NET project by its path.
+- <config-file-path> - Print the licenses used by the projects from the config file.
     """
-    | Command.PrintProjectMetadata projectFilePath ->
+    | Command.PrintMetadata projectFilePath ->
         let t = task {
             let! metadata = Metadata.ReadFromProject projectFilePath
             for item in metadata do
