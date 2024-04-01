@@ -28,7 +28,7 @@ let Process: Command -> unit =
             let! config = Configuration.ReadFromFile configFilePath
             for relativeProjectPath in config.Inputs do
                 let projectPath = Path.Combine(baseFolderPath, relativeProjectPath)
-                let! metadata = Metadata.ReadFromProject projectPath
+                let! metadata = Metadata.ReadFromProject(projectPath, Map.empty) // TODO: Read overrides from config
                 for item in metadata do
                     printfn $"- {item.Name}: {item.SpdxExpression}\n  {item.Copyright}"
         }
