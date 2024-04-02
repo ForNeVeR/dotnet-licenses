@@ -4,8 +4,8 @@
 
 module DotNetLicenses.Tests.MsBuildTests
 
-open System.IO
 open System.Threading.Tasks
+open DotNetLicenses
 open DotNetLicenses.MsBuild
 open DotNetLicenses.TestFramework
 open Xunit

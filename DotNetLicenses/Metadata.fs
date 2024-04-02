@@ -16,11 +16,6 @@ type MetadataItem = {
     Copyright: string
 }
 
-type MetadataOverride = {
-    SpdxExpression: string
-    Copyright: string
-}
-
 let internal GetMetadata(nuSpec: NuSpec): MetadataItem =
     let metadata = nuSpec.Metadata
     let license = metadata.License

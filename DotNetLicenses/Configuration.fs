@@ -4,6 +4,7 @@
 
 namespace DotNetLicenses
 
+open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
 open JetBrains.Annotations
@@ -26,6 +27,27 @@ type Configuration =
         use stream = new FileStream(path, FileMode.Open, FileAccess.Read)
         return! Configuration.Read(stream, Some path)
     }
+
+    member this.GetOverrides(): IReadOnlyDictionary<PackageReference, MetadataOverride> =
+        let packageReference o = {
+            PackageId = o.Id
+            Version = o.Version
+        }
+        let metadataOverride o = {
+            SpdxExpression = o.Spdx
+            Copyright = o.Copyright
+        }
+
+        let map = Dictionary()
+        Option.ofObj this.Overrides
+        |> Option.defaultValue Array.empty
+        |> Seq.map(fun o -> packageReference o, metadataOverride o)
+        |> Seq.iter(fun (k, v) ->
+            if not <| map.TryAdd(k, v) then
+                failwithf $"Duplicate key {k.PackageId} in the overrides collection."
+        )
+        map
+
 and [<CLIMutable>] Override =
     {
         Id: string

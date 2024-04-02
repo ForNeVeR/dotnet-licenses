@@ -15,20 +15,16 @@ type MsBuildOutput = {
 and [<CLIMutable>] MsBuildItems = {
     PackageReference: MsBuildPackageReference[]
 }
-and [<CLIMutable>] MsBuildPackageReference = {
-    Identity: string
-    Version: string
-}
-
-type PackageReference =
+and [<CLIMutable>] MsBuildPackageReference =
     {
-        PackageId: string
+        Identity: string
         Version: string
     }
-    static member OfMsBuild(reference: MsBuildPackageReference) =
+
+    member this.FromMsBuild() =
         {
-            PackageId = reference.Identity
-            Version = reference.Version
+            PackageId = this.Identity
+            Version = this.Version
         }
 
 let GetPackageReferences(projectFilePath: string): Task<PackageReference[]> = task {
@@ -45,5 +41,5 @@ let GetPackageReferences(projectFilePath: string): Task<PackageReference[]> = ta
         failwith message
 
     let output = JsonSerializer.Deserialize<MsBuildOutput> result.StandardOutput
-    return output.Items.PackageReference |> Seq.map PackageReference.OfMsBuild |> Seq.toArray
+    return output.Items.PackageReference |> Array.map _.FromMsBuild()
 }
