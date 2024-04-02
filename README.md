@@ -43,8 +43,14 @@ inputs = [
   "path/to/project1.csproj",
   "path/to/project2.csproj"
 ]
+overrides = [
+  { id = "package1", version = "1.0.0", spdx = "MIT" , copyright = "Copyright"},
+  { id = "package2", version = "2.0.0", spdx = "GPL-3.0", copyright = "Copyright" }
+]
 ```
-The `inputs` field is a list of paths to the projects to analyze. The paths are either absolute or relative to the directory containing the configuration file.
+The `inputs` record is a list of paths to the projects to analyze. The paths are either absolute or relative to the directory containing the configuration file.
+
+The `overrides` record (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
 
 Documentation
 -------------

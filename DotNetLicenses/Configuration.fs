@@ -6,12 +6,14 @@ namespace DotNetLicenses
 
 open System.IO
 open System.Threading.Tasks
+open JetBrains.Annotations
 open Tomlyn
 
 [<CLIMutable>]
 type Configuration =
     {
         Inputs: string[]
+        [<CanBeNull>] Overrides: Override[]
     }
 
     static member Read(stream: Stream, filePath: string option): Task<Configuration> = task {
@@ -23,4 +25,11 @@ type Configuration =
     static member ReadFromFile(path: string): Task<Configuration> = task {
         use stream = new FileStream(path, FileMode.Open, FileAccess.Read)
         return! Configuration.Read(stream, Some path)
+    }
+and [<CLIMutable>] Override =
+    {
+        Id: string
+        Version: string
+        Spdx: string
+        Copyright: string
     }
