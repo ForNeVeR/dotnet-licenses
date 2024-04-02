@@ -12,9 +12,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 ### Added
-- Support the standard `--help` and `--version` options.
+- Support the standard `--help` and `--version` command-line options.
 - Add configuration file support, the file path being passed through the command line.
-- Support the metadata printing command.
+
+  Configuration file options: `inputs` and `overrides`.
+- The ability to print the package metadata extracted according to the configuration.
 
 ## [0.0.0]
 This is the first version of the tool. It does nothing but prints a message to the console, mostly prepared to bootstrap the automated publishing process.
