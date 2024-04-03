@@ -7,6 +7,7 @@ module DotNetLicenses.Tests.MetadataTests
 open System.Threading.Tasks
 open DotNetLicenses
 open DotNetLicenses.Metadata
+open DotNetLicenses.NuGet
 open DotNetLicenses.TestFramework
 open Xunit
 
@@ -24,13 +25,27 @@ let ``Get metadata from .nuspec works correctly``(): Task = task {
 
 [<Fact>]
 let ``Overrides work as expected``(): Task = task {
-    // TODO: Override the NuGet reader to read a file from the test data
     let path = DataFiles.Get "TestComplex.csproj"
-    let! metadata = ReadFromProject(path, Map.ofArray [|
+
+    let nuGet = {
+        new INuGetReader with
+            member this.ReadNuSpec { PackageId = id } = Task.FromResult {
+                Metadata = {
+                    Id = id
+                    License = {
+                        Type = "expression"
+                        Value = $"License {id}"
+                    }
+                    Copyright = $"Copyright {id}"
+                }
+            }
+    }
+    let reader = MetadataReader nuGet
+    let! metadata = reader.ReadFromProject(path, Map.ofArray [|
         { PackageId = "FVNever.Package1"; Version = "0.0.0" }, { SpdxExpression = "EXPR1"; Copyright = "C1" }
-        { PackageId = "FVNever.Package1"; Version = "0.0.0" }, { SpdxExpression = "EXPR2"; Copyright = "C2" }
+        { PackageId = "FVNever.Package1"; Version = "1.0.0" }, { SpdxExpression = "EXPR2"; Copyright = "C2" }
     |])
-    Assert.Equal<MetadataItem>(Set.ofArray [|
+    Assert.Equivalent([|
         {
             Name = "FVNever.Package1"
             SpdxExpression = "EXPR1"
@@ -38,8 +53,8 @@ let ``Overrides work as expected``(): Task = task {
         }
         {
             Name = "FVNever.Package3"
-            SpdxExpression = "MIT"
-            Copyright = "Copyright 3"
+            SpdxExpression = "License FVNever.Package3"
+            Copyright = "Copyright FVNever.Package3"
         }
-    |], Set.ofSeq metadata)
+    |], metadata)
 }

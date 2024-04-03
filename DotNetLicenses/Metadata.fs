@@ -27,29 +27,29 @@ let internal GetMetadata(nuSpec: NuSpec): MetadataItem =
         Copyright = metadata.Copyright
     }
 
-let ReadFromProject(
-    projectFilePath: string,
-    overrides: IReadOnlyDictionary<PackageReference, MetadataOverride>
-): Task<ReadOnlyCollection<MetadataItem>> = task {
-    let! packageReferences = GetPackageReferences projectFilePath
-    let result = ResizeArray(packageReferences.Length)
-    for reference in packageReferences do
-        let! metadata =
-            match overrides.TryGetValue reference with
-            | true, metaOverride ->
-                Task.FromResult {
-                    Name = reference.PackageId
-                    SpdxExpression = metaOverride.SpdxExpression
-                    Copyright = metaOverride.Copyright
-                }
-            | false, _ ->
-                task {
-                    let nuSpecPath = GetNuSpecFilePath reference
-                    let! nuSpec = ReadNuSpec nuSpecPath
-                    return GetMetadata nuSpec
-                }
+type MetadataReader(nuGet: INuGetReader) =
+    member _.ReadFromProject(
+        projectFilePath: string,
+        overrides: IReadOnlyDictionary<PackageReference, MetadataOverride>
+    ): Task<ReadOnlyCollection<MetadataItem>> = task {
+        let! packageReferences = GetPackageReferences projectFilePath
+        let result = ResizeArray(packageReferences.Length)
+        for reference in packageReferences do
+            let! metadata =
+                match overrides.TryGetValue reference with
+                | true, metaOverride ->
+                    Task.FromResult {
+                        Name = reference.PackageId
+                        SpdxExpression = metaOverride.SpdxExpression
+                        Copyright = metaOverride.Copyright
+                    }
+                | false, _ ->
+                    task {
+                        let! nuSpec = nuGet.ReadNuSpec reference
+                        return GetMetadata nuSpec
+                    }
 
-        result.Add metadata
+            result.Add metadata
 
-    return result.AsReadOnly()
-}
+        return result.AsReadOnly()
+    }

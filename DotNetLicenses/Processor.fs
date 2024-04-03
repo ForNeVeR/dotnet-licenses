@@ -8,6 +8,8 @@ open System.IO
 open System.Reflection
 open System.Threading.Tasks
 open DotNetLicenses.CommandLine
+open DotNetLicenses.Metadata
+open DotNetLicenses.NuGet
 
 let private RunSynchronously(task: Task) =
     task.Wait()
@@ -24,11 +26,15 @@ let Process: Command -> unit =
     """
     | Command.PrintMetadata configFilePath ->
         task {
+            let nuGet = NuGetReader()
+            let reader = MetadataReader nuGet
+
             let baseFolderPath = Path.GetDirectoryName configFilePath
             let! config = Configuration.ReadFromFile configFilePath
+
             for relativeProjectPath in config.Inputs do
                 let projectPath = Path.Combine(baseFolderPath, relativeProjectPath)
-                let! metadata = Metadata.ReadFromProject(projectPath, config.GetOverrides())
+                let! metadata = reader.ReadFromProject(projectPath, config.GetOverrides())
                 for item in metadata do
                     printfn $"- {item.Name}: {item.SpdxExpression}\n  {item.Copyright}"
         }

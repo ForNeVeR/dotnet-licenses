@@ -9,7 +9,6 @@ open System.IO
 open System.Threading.Tasks
 open System.Xml
 open System.Xml.Serialization
-open DotNetLicenses.MsBuild
 
 let internal PackagesFolderPath =
     Environment.GetEnvironmentVariable "NUGET_PACKAGES"
@@ -18,7 +17,7 @@ let internal PackagesFolderPath =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages")
     )
 
-let GetNuSpecFilePath(packageReference: PackageReference): string =
+let internal GetNuSpecFilePath(packageReference: PackageReference): string =
     Path.Combine(
         PackagesFolderPath,
         packageReference.PackageId.ToLowerInvariant(),
@@ -54,8 +53,16 @@ type NoNamespaceXmlReader(input: Stream) =
     override this.NamespaceURI = ""
 
 let private serializer = XmlSerializer typeof<NuSpec>
-let ReadNuSpec(filePath: string): Task<NuSpec> = Task.Run(fun() ->
+let internal ReadNuSpec(filePath: string): Task<NuSpec> = Task.Run(fun() ->
     use stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read)
     use reader = new NoNamespaceXmlReader(stream)
     serializer.Deserialize(reader) :?> NuSpec
 )
+
+type INuGetReader =
+    abstract ReadNuSpec: PackageReference -> Task<NuSpec>
+
+type NuGetReader() =
+    interface INuGetReader with
+        member _.ReadNuSpec(reference: PackageReference): Task<NuSpec> =
+            GetNuSpecFilePath reference |> ReadNuSpec
