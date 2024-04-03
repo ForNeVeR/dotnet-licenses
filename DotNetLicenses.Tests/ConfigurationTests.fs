@@ -60,7 +60,7 @@ overrides = [
 }
 
 [<Fact>]
-let ``GetOverrides works on duplicate keys``(): Task = task {
+let ``GetOverrides works on duplicate package names (not versions)``(): Task = task {
     let content = """
 inputs = []
 overrides = [
