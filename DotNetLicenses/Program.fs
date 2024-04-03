@@ -7,7 +7,9 @@ open DotNetLicenses.CommandLine
 
 [<EntryPoint>]
 let main(args: string[]): int =
-    let struct(command, exitCode) = parse args
-    let command = if exitCode = ExitCode.Success then command else Command.PrintHelp
-    Processor.Process command
-    int exitCode
+    let struct(command, parseResult) = parse args
+    if parseResult = ExitCode.Success then
+        Processor.Process Command.PrintHelp |> ignore
+        int parseResult
+    else
+        Processor.Process command

@@ -11,8 +11,11 @@ type Command =
     | PrintVersion
 
 type ExitCode =
+    // Should go from the less severe to the most severe, since in some conditions the max code is returned (e.g. if a
+    // command produced several warnings).
     | Success = 0
-    | InvalidArguments = 1
+    | DuplicateOverride = 1
+    | InvalidArguments = 255
 
 let parse(args: string[]): struct(Command * ExitCode) =
     match args with

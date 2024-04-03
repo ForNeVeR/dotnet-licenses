@@ -8,6 +8,7 @@ open System.IO
 open System.Text
 open System.Threading.Tasks
 open DotNetLicenses
+open DotNetLicenses.CommandLine
 open Xunit
 
 [<Fact>]
@@ -70,16 +71,18 @@ overrides = [
 """
     use input = new MemoryStream(Encoding.UTF8.GetBytes content)
     let! configuration = Configuration.Read(input, Some "<test>")
-    let overrides = configuration.GetOverrides()
+    let wp = WarningProcessor()
+    let overrides = configuration.GetOverrides wp
     Assert.Equivalent(Map.ofArray [|
         { PackageId = "Package1"; Version = "1.0.0" }, { SpdxExpression = "MIT"; Copyright = "" }
         { PackageId = "Package2"; Version = "1.0.0" }, { SpdxExpression = "MIT"; Copyright = "Copyright1" }
     |], overrides)
+    Assert.Equivalent(WarningProcessor(), wp)
 }
 
 
 [<Fact>]
-let ``GetOverrides fails on duplicate keys``(): Task = task {
+let ``GetOverrides prints a warning on duplicate keys``(): Task = task {
     let content = """
 inputs = []
 overrides = [
@@ -89,6 +92,14 @@ overrides = [
 """
     use input = new MemoryStream(Encoding.UTF8.GetBytes content)
     let! configuration = Configuration.Read(input, Some "<test>")
-    let ex = Assert.Throws(fun() -> configuration.GetOverrides() |> ignore)
-    Assert.Contains("Duplicate key", ex.Message)
+    let wp = WarningProcessor()
+    let result = configuration.GetOverrides wp
+    Assert.Equal(ExitCode.DuplicateOverride, Assert.Single wp.Codes)
+    Assert.Equal<string>(
+        [| "Duplicate key in the overrides collection: id = \"Package1\", version = \"1.0.0\"." |],
+        wp.Messages
+    )
+    Assert.Equivalent(Map.ofArray [|
+        { PackageId = "Package1"; Version = "1.0.0" }, { SpdxExpression = "MIT"; Copyright = "Copyright1" }
+    |], result)
 }

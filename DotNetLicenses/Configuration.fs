@@ -7,6 +7,7 @@ namespace DotNetLicenses
 open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
+open DotNetLicenses.CommandLine
 open JetBrains.Annotations
 open Tomlyn
 
@@ -28,7 +29,9 @@ type Configuration =
         return! Configuration.Read(stream, Some path)
     }
 
-    member this.GetOverrides(): IReadOnlyDictionary<PackageReference, MetadataOverride> =
+    member this.GetOverrides(
+        warningProcessor: WarningProcessor
+    ): IReadOnlyDictionary<PackageReference, MetadataOverride> =
         let packageReference o = {
             PackageId = o.Id
             Version = o.Version
@@ -44,7 +47,11 @@ type Configuration =
         |> Seq.map(fun o -> packageReference o, metadataOverride o)
         |> Seq.iter(fun (k, v) ->
             if not <| map.TryAdd(k, v) then
-                failwithf $"Duplicate key {k.PackageId} in the overrides collection."
+                warningProcessor.ProduceWarning(
+                    ExitCode.DuplicateOverride,
+                    $"Duplicate key in the overrides collection: id = \"{k.PackageId}\", version = \"{k.Version}\"."
+                )
+                map[k] <- v
         )
         map
 
