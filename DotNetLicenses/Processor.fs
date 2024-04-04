@@ -40,7 +40,11 @@ let internal ProcessPrintMetadata(
     for message in wp.Messages do
         eprintfn $"Warning: {message}"
 
-    return int <| Seq.max wp.Codes
+    let exitCode =
+        if wp.Codes.Count = 0
+        then ExitCode.Success
+        else Seq.max wp.Codes
+    return int exitCode
 }
 
 let private RunSynchronously(task: Task<'a>) =
