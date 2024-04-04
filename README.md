@@ -6,7 +6,7 @@ SPDX-License-Identifier: MIT
 
 dotnet-licenses [![Status Zero][status-zero]][andivionian-status-classifier] [![NuGet package][nuget.badge]][nuget.page]
 ===============
-dotnet-licenses is a set of tooling to maintain the software license information in published packages.
+dotnet-licenses is a set of tooling to automate following the requirements and inventorying the lists of the open-source licenses used by the projects that chose to publish licensed artifacts alongside their own files.
 
 The general approach is inspired by [REUSE][reuse], but adopted for binary packages.
 
