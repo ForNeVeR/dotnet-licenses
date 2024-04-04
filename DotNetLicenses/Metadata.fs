@@ -32,7 +32,6 @@ type MetadataReadResult = {
     UsedOverrides: Set<PackageReference>
 }
 
-
 type MetadataReader(nuGet: INuGetReader) =
     member _.ReadFromProject(
         projectFilePath: string,
