@@ -11,6 +11,38 @@ open DotNetLicenses.CommandLine
 open DotNetLicenses.Metadata
 open DotNetLicenses.NuGet
 
+let internal ProcessPrintMetadata(
+    config: Configuration,
+    baseFolderPath: string,
+    nuGet: INuGetReader,
+    wp: WarningProcessor
+): Task<int> = task {
+    let reader = MetadataReader nuGet
+
+    let overrides = config.GetOverrides wp
+    let allOverrides = Set.ofSeq overrides.Keys
+    let mutable usedOverrides = Set.empty
+
+    for relativeProjectPath in config.Inputs do
+        let projectPath = Path.Combine(baseFolderPath, relativeProjectPath)
+        let! metadata = reader.ReadFromProject(projectPath, overrides)
+        for item in metadata.Items do
+            printfn $"- {item.Name}: {item.SpdxExpression}\n  {item.Copyright}"
+        usedOverrides <- Set.union usedOverrides metadata.UsedOverrides
+
+    let unusedOverrides = Set.difference allOverrides usedOverrides
+    if not <| Set.isEmpty unusedOverrides then
+        let stringOverrides =
+            Seq.map (fun o -> $"id = \"{o.PackageId}\", version = \"{o.Version}\"") unusedOverrides
+            |> String.concat ", "
+        wp.ProduceWarning(ExitCode.UnusedOverride, $"Unused overrides: {stringOverrides}.")
+
+    for message in wp.Messages do
+        eprintfn $"Warning: {message}"
+
+    return int <| Seq.max wp.Codes
+}
+
 let private RunSynchronously(task: Task<'a>) =
     task.GetAwaiter().GetResult()
 
@@ -28,33 +60,11 @@ let Process: Command -> int =
         0
     | Command.PrintMetadata configFilePath ->
         task {
-            let nuGet = NuGetReader()
-            let reader = MetadataReader nuGet
-
             let baseFolderPath = Path.GetDirectoryName configFilePath
             let! config = Configuration.ReadFromFile configFilePath
-            let wp = WarningProcessor()
-            let overrides = config.GetOverrides wp
-            let allOverrides = Set.ofSeq overrides.Keys
-            let mutable usedOverrides = Set.ofSeq overrides.Keys
+            let nuGet = NuGetReader()
 
-            for relativeProjectPath in config.Inputs do
-                let projectPath = Path.Combine(baseFolderPath, relativeProjectPath)
-                let! metadata = reader.ReadFromProject(projectPath, overrides)
-                for item in metadata.Items do
-                    printfn $"- {item.Name}: {item.SpdxExpression}\n  {item.Copyright}"
-                usedOverrides <- Set.union usedOverrides metadata.UsedOverrides
-
-            let unusedOverrides = Set.difference allOverrides usedOverrides
-            if not <| Set.isEmpty unusedOverrides then
-                let stringOverrides =
-                    Seq.map (fun o -> $"id = \"{o.PackageId}\", version = \"{o.Version}\"") unusedOverrides
-                    |> String.concat ", "
-                wp.ProduceWarning(ExitCode.UnusedOverride, $"Unused overrides: {stringOverrides}.")
-
-            for message in wp.Messages do
-                eprintfn $"Warning: {message}"
-
-            return int <| Seq.max wp.Codes
+            let! result = ProcessPrintMetadata(config, baseFolderPath, nuGet, WarningProcessor())
+            return result
         }
         |> RunSynchronously

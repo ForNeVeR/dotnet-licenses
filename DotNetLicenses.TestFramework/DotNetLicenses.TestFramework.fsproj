@@ -13,6 +13,11 @@ SPDX-License-Identifier: MIT
 
     <ItemGroup>
         <Compile Include="DataFiles.fs" />
+        <Compile Include="NuGetMock.fs" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DotNetLicenses\DotNetLicenses.fsproj" />
     </ItemGroup>
 
 </Project>

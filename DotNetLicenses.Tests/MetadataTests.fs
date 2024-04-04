@@ -14,7 +14,7 @@ open Xunit
 [<Fact>]
 let ``Get metadata from .nuspec works correctly``(): Task = task {
     let path = DataFiles.Get "Test1.nuspec"
-    let! nuSpec = NuGet.ReadNuSpec path
+    let! nuSpec = ReadNuSpec path
     let metadata = GetMetadata nuSpec
     Assert.Equal({
         Name = "FVNever.DotNetLicenses"
@@ -27,20 +27,7 @@ let ``Get metadata from .nuspec works correctly``(): Task = task {
 let ``Overrides work as expected``(): Task = task {
     let path = DataFiles.Get "TestComplex.csproj"
 
-    let nuGet = {
-        new INuGetReader with
-            member this.ReadNuSpec { PackageId = id } = Task.FromResult {
-                Metadata = {
-                    Id = id
-                    License = {
-                        Type = "expression"
-                        Value = $"License {id}"
-                    }
-                    Copyright = $"Copyright {id}"
-                }
-            }
-    }
-    let reader = MetadataReader nuGet
+    let reader = MetadataReader NuGetMock.MirroringReader
     let! metadata = reader.ReadFromProject(path, Map.ofArray [|
         { PackageId = "FVNever.Package1"; Version = "0.0.0" }, { SpdxExpression = "EXPR1"; Copyright = "C1" }
         { PackageId = "FVNever.Package1"; Version = "1.0.0" }, { SpdxExpression = "EXPR2"; Copyright = "C2" }
