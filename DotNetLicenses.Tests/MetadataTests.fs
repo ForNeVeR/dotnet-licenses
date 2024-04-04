@@ -56,5 +56,6 @@ let ``Overrides work as expected``(): Task = task {
             SpdxExpression = "License FVNever.Package3"
             Copyright = "Copyright FVNever.Package3"
         }
-    |], metadata)
+    |], metadata.Items)
+    Assert.Equivalent([| { PackageId = "FVNever.Package1"; Version = "0.0.0" } |], metadata.UsedOverrides)
 }

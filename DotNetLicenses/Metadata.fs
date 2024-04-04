@@ -27,17 +27,26 @@ let internal GetMetadata(nuSpec: NuSpec): MetadataItem =
         Copyright = metadata.Copyright
     }
 
+type MetadataReadResult = {
+    Items: ReadOnlyCollection<MetadataItem>
+    UsedOverrides: Set<PackageReference>
+}
+
+
 type MetadataReader(nuGet: INuGetReader) =
     member _.ReadFromProject(
         projectFilePath: string,
         overrides: IReadOnlyDictionary<PackageReference, MetadataOverride>
-    ): Task<ReadOnlyCollection<MetadataItem>> = task {
+    ): Task<MetadataReadResult> = task {
+        let mutable usedOverrides = Set.empty
+
         let! packageReferences = GetPackageReferences projectFilePath
         let result = ResizeArray(packageReferences.Length)
         for reference in packageReferences do
             let! metadata =
                 match overrides.TryGetValue reference with
                 | true, metaOverride ->
+                    usedOverrides <- usedOverrides |> Set.add reference
                     Task.FromResult {
                         Name = reference.PackageId
                         SpdxExpression = metaOverride.SpdxExpression
@@ -51,5 +60,8 @@ type MetadataReader(nuGet: INuGetReader) =
 
             result.Add metadata
 
-        return result.AsReadOnly()
+        return {
+            Items = result.AsReadOnly()
+            UsedOverrides = usedOverrides
+        }
     }

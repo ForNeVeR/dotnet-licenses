@@ -14,7 +14,8 @@ type ExitCode =
     // Should go from the less severe to the most severe, since in some conditions the max code is returned (e.g. if a
     // command produced several warnings).
     | Success = 0
-    | DuplicateOverride = 1
+    | UnusedOverride = 1
+    | DuplicateOverride = 2
     | InvalidArguments = 255
 
 let parse(args: string[]): struct(Command * ExitCode) =

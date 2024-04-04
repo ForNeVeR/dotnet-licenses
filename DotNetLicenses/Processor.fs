@@ -34,12 +34,23 @@ let Process: Command -> int =
             let baseFolderPath = Path.GetDirectoryName configFilePath
             let! config = Configuration.ReadFromFile configFilePath
             let wp = WarningProcessor()
+            let overrides = config.GetOverrides wp
+            let allOverrides = Set.ofSeq overrides.Keys
+            let mutable usedOverrides = Set.ofSeq overrides.Keys
 
             for relativeProjectPath in config.Inputs do
                 let projectPath = Path.Combine(baseFolderPath, relativeProjectPath)
-                let! metadata = reader.ReadFromProject(projectPath, config.GetOverrides wp)
-                for item in metadata do
+                let! metadata = reader.ReadFromProject(projectPath, overrides)
+                for item in metadata.Items do
                     printfn $"- {item.Name}: {item.SpdxExpression}\n  {item.Copyright}"
+                usedOverrides <- Set.union usedOverrides metadata.UsedOverrides
+
+            let unusedOverrides = Set.difference allOverrides usedOverrides
+            if not <| Set.isEmpty unusedOverrides then
+                let stringOverrides =
+                    Seq.map (fun o -> $"id = \"{o.PackageId}\", version = \"{o.Version}\"") unusedOverrides
+                    |> String.concat ", "
+                wp.ProduceWarning(ExitCode.UnusedOverride, $"Unused overrides: {stringOverrides}.")
 
             for message in wp.Messages do
                 eprintfn $"Warning: {message}"
