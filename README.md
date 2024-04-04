@@ -35,6 +35,8 @@ $ dotnet licenses <config-file-path>
 ```
 This command will print the packages used by the configured projects.
 
+The command's exit code is 0 if the tool ran successfully and 1 if there were any issues, including warnings.
+
 Configuration
 -------------
 The configuration file format is TOML. The format:
