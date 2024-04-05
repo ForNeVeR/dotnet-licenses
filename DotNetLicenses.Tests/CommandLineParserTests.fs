@@ -8,14 +8,26 @@ open DotNetLicenses.CommandLine
 open Xunit
 
 [<Fact>]
-let ``Passed path is processed``(): unit =
+let ``print command is the default``(): unit =
     let path = "foo/bar.toml"
-    Assert.Equal(struct(Command.PrintMetadata path, ExitCode.Success), parse [| path |])
+    Assert.Equal(struct(Command.PrintMetadata path, ExitCode.Success), Parse [| path |])
 
 [<Fact>]
-let ``Help command is supported``(): unit =
-    Assert.Equal(struct(Command.PrintHelp, ExitCode.Success), parse [| "--help" |])
+let ``print command is supported``(): unit =
+    let path = "foo/bar.toml"
+    let command = Parse [| "print"; path |]
+    Assert.Equal(struct(Command.PrintMetadata path, ExitCode.Success), command)
 
 [<Fact>]
-let ``Version command is supported``(): unit =
-    Assert.Equal(struct(Command.PrintVersion, ExitCode.Success), parse [| "--version" |])
+let ``generate-lock command is supported``(): unit =
+    let path = "foo/bar.toml"
+    let command = Parse [| "generate-lock"; path |]
+    Assert.Equal(struct(Command.GenerateLock path, ExitCode.Success), command)
+
+[<Fact>]
+let ``Help option is supported``(): unit =
+    Assert.Equal(struct(Command.PrintHelp, ExitCode.Success), Parse [| "--help" |])
+
+[<Fact>]
+let ``Version option is supported``(): unit =
+    Assert.Equal(struct(Command.PrintVersion, ExitCode.Success), Parse [| "--version" |])

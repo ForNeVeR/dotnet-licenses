@@ -12,7 +12,7 @@ The general approach is inspired by [REUSE][reuse], but adopted for binary packa
 
 Different software licenses have different requirements, but most of them require you to bring the copyright information together with any form of distribution.
 
-dotnet-licenses will help you to verify that every file in your package is covered by a license, and will help the package consumers to determine exactly what file is covered by what.
+dotnet-licenses will help you to verify that some license covers every file in your package, and will help the package consumers to determine exactly what file is covered by what.
 
 Installation
 ------------
@@ -31,11 +31,17 @@ Usage
 -----
 To run the tool, use the following shell command:
 ```console
-$ dotnet licenses <config-file-path>
+$ dotnet licenses [print] <config-file-path>
 ```
 This command will print the packages used by the configured projects.
 
-The command's exit code is 0 if the tool ran successfully and 1 if there were any issues, including warnings.
+```console
+$ dotnet licenses generate-lock <config-file-path>
+```
+
+The command's exit code is `0` if the tool ran successfully and non-zero if there were any issues, including warnings.
+
+Read about the configuration file expected to be found by the `<config-file-path>` in the section below.
 
 Configuration
 -------------
@@ -53,6 +59,10 @@ overrides = [
 The `inputs` record is a list of paths to the projects to analyze. The paths are either absolute or relative to the directory containing the configuration file.
 
 The `overrides` record (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
+
+Lock File
+---------
+TODO
 
 Documentation
 -------------
