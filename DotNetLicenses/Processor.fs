@@ -47,8 +47,22 @@ let internal ProcessPrintMetadata(
     return int exitCode
 }
 
+let internal ProcessGenerateLockFile(
+    config: Configuration,
+    baseFolderPath: string,
+    nuGet: INuGetReader,
+    wp: WarningProcessor
+) = Task.FromResult 0
+
 let private RunSynchronously(task: Task<'a>) =
     task.GetAwaiter().GetResult()
+
+let private ProcessConfig(configFilePath: string) =
+    task {
+        let baseFolderPath = Path.GetDirectoryName configFilePath
+        let! config = Configuration.ReadFromFile configFilePath
+        return baseFolderPath, config
+    }
 
 let Process: Command -> int =
     function
@@ -59,16 +73,21 @@ let Process: Command -> int =
         printfn """Supported arguments:
 - --version - Print the program version.
 - --help - Print this help message.
-- <config-file-path> - Print the licenses used by the projects designated by the config file.
+- [print] <config-file-path> - Print the licenses used by the projects designated by the configuration.
+- generate <config-file-path> - Generate a license lock file and place it accordingly to the configuration.
     """
         0
     | Command.PrintMetadata configFilePath ->
         task {
-            let baseFolderPath = Path.GetDirectoryName configFilePath
-            let! config = Configuration.ReadFromFile configFilePath
-            let nuGet = NuGetReader()
-
-            let! result = ProcessPrintMetadata(config, baseFolderPath, nuGet, WarningProcessor())
+            let! baseFolderPath, config = ProcessConfig configFilePath
+            let! result = ProcessPrintMetadata(config, baseFolderPath, NuGetReader(), WarningProcessor())
+            return result
+        }
+        |> RunSynchronously
+    | Command.GenerateLock configFilePath ->
+        task {
+            let! baseFolderPath, config = ProcessConfig configFilePath
+            let! result = ProcessGenerateLockFile(config, baseFolderPath, NuGetReader(), WarningProcessor())
             return result
         }
         |> RunSynchronously
