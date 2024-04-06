@@ -1,0 +1,23 @@
+[["*"]]
+source_id = "FSharp.Core"
+source_version = "8.0.200"
+spdx = "MIT"
+copyright = "© Microsoft Corporation. All rights reserved."
+[["*"]]
+source_id = "ChangelogAutomation.MSBuild"
+source_version = "2.0.0"
+spdx = "MIT"
+[["*"]]
+source_id = "JetBrains.Annotations"
+source_version = "2023.3.0"
+spdx = "MIT"
+[["*"]]
+source_id = "MedallionShell"
+source_version = "1.6.2"
+spdx = "MIT"
+copyright = "Copyright © 2017 Michael Adelson"
+[["*"]]
+source_id = "Tomlyn"
+source_version = "0.17.0"
+spdx = "BSD-2-Clause"
+copyright = "Alexandre Mutel"

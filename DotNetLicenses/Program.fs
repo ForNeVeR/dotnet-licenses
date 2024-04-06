@@ -8,7 +8,7 @@ open DotNetLicenses.CommandLine
 [<EntryPoint>]
 let main(args: string[]): int =
     let struct(command, parseResult) = Parse args
-    if parseResult = ExitCode.Success then
+    if parseResult <> ExitCode.Success then
         Processor.Process Command.PrintHelp |> ignore
         int parseResult
     else
