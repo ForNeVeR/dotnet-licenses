@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
   Configuration file options available in this version: `inputs`, `overrides`, and `lock_file`.
 - Warnings and non-zero exit codes on duplicate and unused overrides.
-- Supported commands: `print` (default) and `generate-lock-file`.
+- Supported commands: `print` (default) and `generate-lock`.
 
 ## [0.0.0]
 This is the first version of the tool. It does nothing but prints a message to the console, mostly prepared to bootstrap the automated publishing process.

@@ -103,7 +103,7 @@ let Process: Command -> int =
 - --version - Print the program version.
 - --help - Print this help message.
 - [print] <config-file-path> - Print the licenses used by the projects designated by the configuration.
-- generate <config-file-path> - Generate a license lock file and place it accordingly to the configuration.
+- generate-lock <config-file-path> - Generate a license lock file and place it accordingly to the configuration.
     """
         0
     | Command.PrintMetadata configFilePath ->
