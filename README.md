@@ -55,10 +55,13 @@ overrides = [
   { id = "package1", version = "1.0.0", spdx = "MIT" , copyright = "Copyright"},
   { id = "package2", version = "2.0.0", spdx = "GPL-3.0", copyright = "Copyright" }
 ]
+lock_file = "path/to/lock-file.toml"
 ```
-The `inputs` record is a list of paths to the projects to analyze. The paths are either absolute or relative to the directory containing the configuration file.
+The `inputs` parameter (required) is a list of paths to the projects to analyze. The paths are either absolute or relative to the directory containing the configuration file.
 
-The `overrides` record (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
+The `overrides` parameter (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
+
+The `lock_file` parameter (required) is the path to the license lock file that will be produced or verified by the corresponding commands. The paths is either absolute or relative to the directory containing the configuration file.
 
 Lock File
 ---------

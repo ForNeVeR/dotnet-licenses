@@ -11,9 +11,9 @@ open DotNetLicenses.CommandLine
 open DotNetLicenses.TestFramework
 open Xunit
 
-let private runProcessor config = task {
+let private runFunction func config = task {
     let wp = WarningProcessor()
-    let! exitCode = Processor.ProcessPrintMetadata(
+    let! exitCode = func(
         config,
         Path.GetDirectoryName(Seq.exactlyOne config.Inputs),
         NuGetMock.MirroringReader,
@@ -22,9 +22,11 @@ let private runProcessor config = task {
     return wp, exitCode
 }
 
+let private runPrinter = runFunction Processor.PrintMetadata
+let private runGenerator = runFunction Processor.GenerateLockFile
 
 [<Fact>]
-let ``Processor generates warnings if there are stale overrides``(): Task =
+let ``Printer generates warnings if there are stale overrides``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let config = {
             Inputs = [|project|]
@@ -34,8 +36,9 @@ let ``Processor generates warnings if there are stale overrides``(): Task =
                 Spdx = ""
                 Copyright = ""
             }|]
+            LockFile = "lock.toml"
         }
-        let! wp, exitCode = runProcessor config
+        let! wp, exitCode = runPrinter config
 
         Assert.Equal(ExitCode.UnusedOverride, enum exitCode)
         Assert.Equivalent([|ExitCode.UnusedOverride|], wp.Codes)
@@ -45,15 +48,44 @@ let ``Processor generates warnings if there are stale overrides``(): Task =
     })
 
 [<Fact>]
-let ``Processor generates no warnings on a valid config``(): Task =
+let ``Printer generates no warnings on a valid config``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let config = {
             Inputs = [|project|]
             Overrides = null
+            LockFile = "lock.toml"
         }
-        let! wp, exitCode = runProcessor config
+        let! wp, exitCode = runPrinter config
 
         Assert.Equal(ExitCode.Success, enum exitCode)
         Assert.Empty wp.Codes
         Assert.Empty wp.Messages
     })
+
+[<Fact>]
+let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj" (fun project -> task {
+    let expectedLock = """
+[default]
+"*" = [{ id = "FVNever.DotNetLicenses"; version = "1.0.0"; spdx = "MIT"; copyright = "" }]
+""" // TODO: Should not be a star; reconsider after implementing the file sets
+    let config = {
+        Inputs = [| project |]
+        Overrides = [|
+            {
+                Id = "FVNever.DotNetLicenses"
+                Version = "1.0.0"
+                Spdx = "MIT"
+                Copyright = ""
+            }
+        |]
+        LockFile = Path.GetTempFileName()
+    }
+
+    let! wp, exitCode = runGenerator config
+    Assert.Equal(ExitCode.Success, enum exitCode)
+    Assert.Empty wp.Codes
+    Assert.Empty wp.Messages
+
+    let! actualContent = File.ReadAllTextAsync config.LockFile
+    Assert.Equal(expectedLock, actualContent)
+})

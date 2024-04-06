@@ -16,6 +16,7 @@ type Configuration =
     {
         Inputs: string[]
         [<CanBeNull>] Overrides: Override[]
+        LockFile: string
     }
 
     static member Read(stream: Stream, filePath: string option): Task<Configuration> = task {

@@ -18,6 +18,7 @@ inputs = [
   "File.csproj",
   "File.fsproj",
 ]
+lock_file = "foo.toml"
 """
     use input = new MemoryStream(Encoding.UTF8.GetBytes content)
     let! configuration = Configuration.Read(input, Some "<test>")
@@ -27,6 +28,7 @@ inputs = [
             "File.fsproj"
         |]
         Overrides = null
+        LockFile = "foo.toml"
     }, configuration)
 }
 
@@ -38,6 +40,7 @@ overrides = [
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "" },
     { id = "Package1", version = "2.0.0", spdx = "MIT", copyright = "Copyright1" }
 ]
+lock_file = "foo.toml"
 """
     use input = new MemoryStream(Encoding.UTF8.GetBytes content)
     let! configuration = Configuration.Read(input, Some "<test>")
@@ -57,6 +60,7 @@ overrides = [
                 Copyright = "Copyright1"
             }
         |]
+        LockFile = "foo.toml"
     }, configuration)
 }
 

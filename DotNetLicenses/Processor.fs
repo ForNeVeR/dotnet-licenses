@@ -11,7 +11,7 @@ open DotNetLicenses.CommandLine
 open DotNetLicenses.Metadata
 open DotNetLicenses.NuGet
 
-let internal ProcessPrintMetadata(
+let internal PrintMetadata(
     config: Configuration,
     baseFolderPath: string,
     nuGet: INuGetReader,
@@ -47,7 +47,7 @@ let internal ProcessPrintMetadata(
     return int exitCode
 }
 
-let internal ProcessGenerateLockFile(
+let internal GenerateLockFile(
     config: Configuration,
     baseFolderPath: string,
     nuGet: INuGetReader,
@@ -80,14 +80,14 @@ let Process: Command -> int =
     | Command.PrintMetadata configFilePath ->
         task {
             let! baseFolderPath, config = ProcessConfig configFilePath
-            let! result = ProcessPrintMetadata(config, baseFolderPath, NuGetReader(), WarningProcessor())
+            let! result = PrintMetadata(config, baseFolderPath, NuGetReader(), WarningProcessor())
             return result
         }
         |> RunSynchronously
     | Command.GenerateLock configFilePath ->
         task {
             let! baseFolderPath, config = ProcessConfig configFilePath
-            let! result = ProcessGenerateLockFile(config, baseFolderPath, NuGetReader(), WarningProcessor())
+            let! result = GenerateLockFile(config, baseFolderPath, NuGetReader(), WarningProcessor())
             return result
         }
         |> RunSynchronously
