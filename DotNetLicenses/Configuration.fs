@@ -11,12 +11,14 @@ open DotNetLicenses.CommandLine
 open JetBrains.Annotations
 open Tomlyn
 
+
 [<CLIMutable>]
 type Configuration =
     {
         Inputs: string[]
         [<CanBeNull>] Overrides: Override[]
-        LockFile: string
+        [<CanBeNull>] LockFile: string
+        [<CanBeNull>] Package: PackageSpec[]
     }
 
     static member Read(stream: Stream, filePath: string option): Task<Configuration> = task {
@@ -56,10 +58,13 @@ type Configuration =
         )
         map
 
-and [<CLIMutable>] Override =
-    {
-        Id: string
-        Version: string
-        Spdx: string
-        Copyright: string
-    }
+and [<CLIMutable>] Override = {
+    Id: string
+    Version: string
+    Spdx: string
+    Copyright: string
+}
+and [<CLIMutable>] PackageSpec = {
+    Type: string
+    Path: string
+}

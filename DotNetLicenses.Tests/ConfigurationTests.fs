@@ -19,6 +19,10 @@ inputs = [
   "File.fsproj",
 ]
 lock_file = "foo.toml"
+package = [
+    { type = "file", path = "files" },
+    { type = "zip", path = "files2/*.zip" },
+]
 """
     use input = new MemoryStream(Encoding.UTF8.GetBytes content)
     let! configuration = Configuration.Read(input, Some "<test>")
@@ -29,6 +33,10 @@ lock_file = "foo.toml"
         |]
         Overrides = null
         LockFile = "foo.toml"
+        Package = [|
+            { Type = "file"; Path = "files" }
+            { Type = "zip"; Path = "files2/*.zip" }
+        |]
     }, configuration)
 }
 
@@ -40,7 +48,6 @@ overrides = [
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "" },
     { id = "Package1", version = "2.0.0", spdx = "MIT", copyright = "Copyright1" }
 ]
-lock_file = "foo.toml"
 """
     use input = new MemoryStream(Encoding.UTF8.GetBytes content)
     let! configuration = Configuration.Read(input, Some "<test>")
@@ -60,7 +67,8 @@ lock_file = "foo.toml"
                 Copyright = "Copyright1"
             }
         |]
-        LockFile = "foo.toml"
+        Package = null
+        LockFile = null
     }, configuration)
 }
 

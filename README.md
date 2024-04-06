@@ -47,21 +47,31 @@ Configuration
 -------------
 The configuration file format is TOML. The format:
 ```toml
-inputs = [
+inputs = [ # required
   "path/to/project1.csproj",
   "path/to/project2.csproj"
 ]
-overrides = [
+overrides = [ # optional
   { id = "package1", version = "1.0.0", spdx = "MIT" , copyright = "Copyright"},
   { id = "package2", version = "2.0.0", spdx = "GPL-3.0", copyright = "Copyright" }
 ]
-lock_file = "path/to/lock-file.toml"
+lock_file = "path/to/lock-file.toml" # required for generate-lock
+package = [ # required for generate-lock
+    { type = "file", path = "bin" },
+    { type = "zip", path = "bin/*.zip" }
+]
 ```
 The `inputs` parameter (required) is a list of paths to the projects to analyze. The paths are either absolute or relative to the directory containing the configuration file.
 
 The `overrides` parameter (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
 
-The `lock_file` parameter (required) is the path to the license lock file that will be produced or verified by the corresponding commands. The path is either absolute or relative to the directory containing the configuration file.
+The `lock_file` parameter (optional) is the path to the license lock file that will be produced or verified by the corresponding commands. The path is either absolute or relative to the directory containing the configuration file. This parameter is mandatory for the `generate-lock` command.
+
+The `package` parameter (optional) describes the list of the files you want to check for their license contents. It is a list of the entries having the following structure:
+- `type` (required) should be either `file` (to point to the root of the file hierarchy) or `zip`, to point to a zip archive that dotnet-licenses will analyze,
+- `path` (required) is a path on disk; for zip archives, we support glob patterns.
+
+The `package` parameter is mandatory for the `generate-lock` command.
 
 Lock File
 ---------
@@ -74,7 +84,7 @@ spdx = "MIT"
 copyright = "© Microsoft Corporation. All rights reserved."
 ```
 
-- `file_name` is the full name of the file relatively to the package root.
+- `file_name` is the path of the file relatively to the package root. May be a glob in some cases.
 - `source_id` is the NuGet package that is the origin of the file.
 - `source_version` is the version of the package.
 - `spdx` is the SPDX identifier of the license.

@@ -37,6 +37,7 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
                 Copyright = ""
             }|]
             LockFile = "lock.toml"
+            Package = null
         }
         let! wp = runPrinter config
 
@@ -53,6 +54,7 @@ let ``Printer generates no warnings on a valid config``(): Task =
             Inputs = [|project|]
             Overrides = null
             LockFile = "lock.toml"
+            Package = null
         }
         let! wp = runPrinter config
 
@@ -79,6 +81,7 @@ copyright = ""
             }
         |]
         LockFile = Path.GetTempFileName()
+        Package = null
     }
 
     let! wp = runGenerator config

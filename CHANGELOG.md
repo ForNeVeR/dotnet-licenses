@@ -15,9 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Support the standard `--help` and `--version` command-line options.
 - Add configuration file support, the file path being passed through the command line.
 
-  Configuration file options available in this version: `inputs`, `overrides`, and `lock_file`.
-- Warnings and non-zero exit codes on duplicate and unused overrides.
+  Configuration file options available in this version: `inputs`, `overrides`, `lock_file`, and `package`.
 - Supported commands: `print` (default) and `generate-lock`.
+- Warnings and non-zero exit codes on duplicate and unused overrides.
+- First version of the lock file format.
 
 ## [0.0.0]
 This is the first version of the tool. It does nothing but prints a message to the console, mostly prepared to bootstrap the automated publishing process.
