@@ -71,7 +71,7 @@ let internal GenerateLockFile(
     let! metadata = CollectMetadata config baseFolderPath nuGet wp
     let lockFilePath = Path.Combine(baseFolderPath, config.LockFile)
 
-    // TODO: Get the real package contents here instead of "*".
+    // TODO[#25]: Get the real package contents here instead of "*".
     let lockFileContent = Dictionary<_, IReadOnlyList<LockFileItem>>()
     lockFileContent.Add("*", metadata |> Seq.map(fun m -> {
         SourceId = m.Id

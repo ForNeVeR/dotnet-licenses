@@ -67,7 +67,7 @@ source_id = "FVNever.DotNetLicenses"
 source_version = "1.0.0"
 spdx = "MIT"
 copyright = ""
-""" // TODO: Should not be a star; reconsider after implementing the file sets
+""" // TODO[#25]: Should not be a star; reconsider after implementing the file sets
     let config = {
         Inputs = [| project |]
         Overrides = [|
