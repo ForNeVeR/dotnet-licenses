@@ -21,6 +21,13 @@ type Configuration =
         [<CanBeNull>] Package: PackageSpec[]
     }
 
+    static member Empty = {
+        Inputs = Array.empty
+        Overrides = null
+        LockFile = null
+        Package = null
+    }
+
     static member Read(stream: Stream, filePath: string option): Task<Configuration> = task {
         use reader = new StreamReader(stream)
         let! text = reader.ReadToEndAsync()

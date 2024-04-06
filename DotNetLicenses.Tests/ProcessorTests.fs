@@ -26,18 +26,28 @@ let private runPrinter = runFunction Processor.PrintMetadata
 let private runGenerator = runFunction Processor.GenerateLockFile
 
 [<Fact>]
+let ``Generator produces an error if no lock file is defined``(): Task = task {
+    Assert.Fail()
+}
+
+[<Fact>]
+let ``Generator produces an error if no package contents are defined``(): Task = task {
+    Assert.Fail()
+}
+
+[<Fact>]
 let ``Printer generates warnings if there are stale overrides``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let config = {
-            Inputs = [|project|]
-            Overrides = [|{
-                Id = "NonExistent"
-                Version = ""
-                Spdx = ""
-                Copyright = ""
-            }|]
-            LockFile = "lock.toml"
-            Package = null
+            Configuration.Empty with
+                Inputs = [|project|]
+                Overrides = [|{
+                    Id = "NonExistent"
+                    Version = ""
+                    Spdx = ""
+                    Copyright = ""
+                }|]
+                LockFile = "lock.toml"
         }
         let! wp = runPrinter config
 
@@ -51,10 +61,9 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
 let ``Printer generates no warnings on a valid config``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let config = {
-            Inputs = [|project|]
-            Overrides = null
-            LockFile = "lock.toml"
-            Package = null
+            Configuration.Empty with
+                Inputs = [|project|]
+                LockFile = "lock.toml"
         }
         let! wp = runPrinter config
 
@@ -71,17 +80,17 @@ spdx = "MIT"
 copyright = ""
 """ // TODO[#25]: Should not be a star; reconsider after implementing the file sets
     let config = {
-        Inputs = [| project |]
-        Overrides = [|
-            {
-                Id = "FVNever.DotNetLicenses"
-                Version = "1.0.0"
-                Spdx = "MIT"
-                Copyright = ""
-            }
-        |]
-        LockFile = Path.GetTempFileName()
-        Package = null
+        Configuration.Empty with
+            Inputs = [| project |]
+            Overrides = [|
+                {
+                    Id = "FVNever.DotNetLicenses"
+                    Version = "1.0.0"
+                    Spdx = "MIT"
+                    Copyright = ""
+                }
+            |]
+            LockFile = Path.GetTempFileName()
     }
 
     let! wp = runGenerator config
@@ -91,3 +100,51 @@ copyright = ""
     let! actualContent = File.ReadAllTextAsync config.LockFile
     Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
 })
+
+
+[<Fact>]
+let ``Processor generates a lock file for a file tree``(): Task = task {
+    use directory = DisposableDirectory.Create()
+    let packagedFile = Path.Combine(directory.Path, "my-file.txt")
+    do! File.WriteAllTextAsync(packagedFile, "Hello World!")
+    let expectedLock = """[["my-file.txt"]]
+id = "FVNever.DotNetLicenses"
+version = "1.0.0"
+spdx = "License FVNever.DotNetLicenses"
+copyright = "Copyright FVNever.DotNetLicenses"
+"""
+
+    do! DataFiles.Deploy "Test.csproj" (fun project -> task {
+        let lockFile = Path.GetTempFileName()
+        let config = {
+            Configuration.Empty with
+                Inputs = [| project |]
+                LockFile = lockFile
+                Package = [|
+                    { Type = "file"; Path = directory.Path }
+                |]
+        }
+
+        let! wp = runGenerator config
+        Assert.Empty wp.Codes
+        Assert.Empty wp.Messages
+
+        let! actualContent = File.ReadAllTextAsync config.LockFile
+        Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
+    })
+}
+
+[<Fact>]
+let ``Processor generates a lock file for a ZIP archive``(): Task = task {
+    Assert.Fail()
+}
+
+[<Fact>]
+let ``Processor processes ZIP files using a glob pattern``(): Task = task {
+    Assert.Fail()
+}
+
+[<Fact>]
+let ``Lock file generator produces a warning if it's unable to find a license for a file``(): Task = task {
+    Assert.Fail()
+}
