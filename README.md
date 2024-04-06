@@ -61,11 +61,28 @@ The `inputs` parameter (required) is a list of paths to the projects to analyze.
 
 The `overrides` parameter (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
 
-The `lock_file` parameter (required) is the path to the license lock file that will be produced or verified by the corresponding commands. The paths is either absolute or relative to the directory containing the configuration file.
+The `lock_file` parameter (required) is the path to the license lock file that will be produced or verified by the corresponding commands. The path is either absolute or relative to the directory containing the configuration file.
 
 Lock File
 ---------
-TODO
+License lock file looks like this:
+```toml
+[["file_name.txt"]]
+source_id = "FSharp.Core"
+source_version = "8.0.200"
+spdx = "MIT"
+copyright = "© Microsoft Corporation. All rights reserved."
+```
+
+- `file_name` is the full name of the file relatively to the package root.
+- `source_id` is the NuGet package that is the origin of the file.
+- `source_version` is the version of the package.
+- `spdx` is the SPDX identifier of the license.
+- `copyright` is the copyright statement of the license.
+
+One file may have several records in case it is covered by several licenses.
+
+You are meant to commit the lock file and update it if something in the package contents change.
 
 Documentation
 -------------
