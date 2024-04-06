@@ -17,6 +17,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		DotNetLicenses.sln.license = DotNetLicenses.sln.license
 		.dotnet-licenses.toml = .dotnet-licenses.toml
 		.dotnet-licenses.lock.toml = .dotnet-licenses.lock.toml
+		.dotnet-licenses.lock.toml.license = .dotnet-licenses.lock.toml.license
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{EE856C4C-E5E8-48AF-97EA-586848FD9F2A}"

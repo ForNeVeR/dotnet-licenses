@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- REUSE-IgnoreStart -->
 <package xmlns='http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd'>
     <metadata>
         <id>FVNever.DotNetLicenses</id>
@@ -18,3 +19,4 @@
         <repository type="git" url="https://github.com/ForNeVeR/dotnet-licenses.git" commit="0d20d3a5071bdbb15e4bf681729bb27521771b25" />
     </metadata>
 </package>
+<!-- REUSE-IgnoreEnd -->
