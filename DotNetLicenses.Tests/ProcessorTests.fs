@@ -11,15 +11,15 @@ open DotNetLicenses.CommandLine
 open DotNetLicenses.TestFramework
 open Xunit
 
-let private runFunction func config = task {
+let private runFunction (func: _ * _ * _ * _ -> Task) config = task {
     let wp = WarningProcessor()
-    let! exitCode = func(
+    do! func(
         config,
         Path.GetDirectoryName(Seq.exactlyOne config.Inputs),
         NuGetMock.MirroringReader,
         wp
     )
-    return wp, exitCode
+    return wp
 }
 
 let private runPrinter = runFunction Processor.PrintMetadata
@@ -38,9 +38,8 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
             }|]
             LockFile = "lock.toml"
         }
-        let! wp, exitCode = runPrinter config
+        let! wp = runPrinter config
 
-        Assert.Equal(ExitCode.UnusedOverride, enum exitCode)
         Assert.Equivalent([|ExitCode.UnusedOverride|], wp.Codes)
         Assert.Equivalent([|
             """Unused overrides: id = "NonExistent", version = ""."""
@@ -55,18 +54,19 @@ let ``Printer generates no warnings on a valid config``(): Task =
             Overrides = null
             LockFile = "lock.toml"
         }
-        let! wp, exitCode = runPrinter config
+        let! wp = runPrinter config
 
-        Assert.Equal(ExitCode.Success, enum exitCode)
         Assert.Empty wp.Codes
         Assert.Empty wp.Messages
     })
 
 [<Fact>]
 let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj" (fun project -> task {
-    let expectedLock = """
-[default]
-"*" = [{ id = "FVNever.DotNetLicenses"; version = "1.0.0"; spdx = "MIT"; copyright = "" }]
+    let expectedLock = """[["*"]]
+source_id = "FVNever.DotNetLicenses"
+source_version = "1.0.0"
+spdx = "MIT"
+copyright = ""
 """ // TODO: Should not be a star; reconsider after implementing the file sets
     let config = {
         Inputs = [| project |]
@@ -81,11 +81,10 @@ let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj"
         LockFile = Path.GetTempFileName()
     }
 
-    let! wp, exitCode = runGenerator config
-    Assert.Equal(ExitCode.Success, enum exitCode)
+    let! wp = runGenerator config
     Assert.Empty wp.Codes
     Assert.Empty wp.Messages
 
     let! actualContent = File.ReadAllTextAsync config.LockFile
-    Assert.Equal(expectedLock, actualContent)
+    Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
 })

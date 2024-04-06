@@ -34,6 +34,7 @@ type NuSpecLicense = {
 [<CLIMutable>]
 type NuSpecMetadata = {
     [<XmlElement("id")>] Id: string
+    [<XmlElement("version")>] Version: string
     [<XmlElement("license")>] License: NuSpecLicense
     [<XmlElement("copyright")>] Copyright: string
 }

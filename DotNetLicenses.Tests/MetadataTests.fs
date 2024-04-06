@@ -17,8 +17,9 @@ let ``Get metadata from .nuspec works correctly``(): Task = task {
     let! nuSpec = ReadNuSpec path
     let metadata = GetMetadata nuSpec
     Assert.Equal({
-        Name = "FVNever.DotNetLicenses"
-        SpdxExpression = "MIT"
+        Id = "FVNever.DotNetLicenses"
+        Version = "0.0.0"
+        Spdx = "MIT"
         Copyright = "© 2024 Friedrich von Never"
     }, metadata)
 }
@@ -34,13 +35,15 @@ let ``Overrides work as expected``(): Task = task {
     |])
     Assert.Equivalent([|
         {
-            Name = "FVNever.Package1"
-            SpdxExpression = "EXPR1"
+            Id = "FVNever.Package1"
+            Version = "0.0.0"
+            Spdx = "EXPR1"
             Copyright = "C1"
         }
         {
-            Name = "FVNever.Package3"
-            SpdxExpression = "License FVNever.Package3"
+            Id = "FVNever.Package3"
+            Version = "0.0.0"
+            Spdx = "License FVNever.Package3"
             Copyright = "Copyright FVNever.Package3"
         }
     |], metadata.Items)

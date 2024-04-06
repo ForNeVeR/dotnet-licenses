@@ -34,6 +34,7 @@ let ``NuSpec file should be read correctly``(fileName: string): Task = task {
     Assert.Equal({
         Metadata = {
             Id = "FVNever.DotNetLicenses"
+            Version = "0.0.0"
             License = {
                 Type = "expression"
                 Value = "MIT"

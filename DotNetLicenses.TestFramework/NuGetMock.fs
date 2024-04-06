@@ -9,9 +9,10 @@ open DotNetLicenses.NuGet
 
 let MirroringReader = {
     new INuGetReader with
-        member this.ReadNuSpec { PackageId = id } = Task.FromResult {
+        member this.ReadNuSpec { PackageId = id; Version = version } = Task.FromResult {
             Metadata = {
                 Id = id
+                Version = version
                 License = {
                     Type = "expression"
                     Value = $"License {id}"

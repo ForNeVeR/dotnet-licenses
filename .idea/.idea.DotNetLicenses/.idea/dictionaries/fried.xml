@@ -5,6 +5,7 @@
       <w>nupkg</w>
       <w>pwsh</w>
       <w>snupkg</w>
+      <w>tomlyn</w>
     </words>
   </dictionary>
 </component>
