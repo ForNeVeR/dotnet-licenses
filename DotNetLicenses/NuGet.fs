@@ -11,14 +11,14 @@ open System.Xml
 open System.Xml.Serialization
 open DotNetLicenses.Sources
 
-let internal PackagesFolderPath =
+let mutable internal PackagesFolderPath =
     Environment.GetEnvironmentVariable "NUGET_PACKAGES"
     |> Option.ofObj
     |> Option.defaultWith(fun() ->
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages")
     )
 
-let private UnpackedPackagePath(packageReference: PackageReference): string =
+let internal UnpackedPackagePath(packageReference: PackageReference): string =
     Path.Combine(
         PackagesFolderPath,
         packageReference.PackageId.ToLowerInvariant(),
@@ -38,7 +38,7 @@ let internal ContainsFile (fileHashCache: FileHashCache)
         "*",
         EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
     )
-    let fileName = Path.GetFileName entry.Path
+    let fileName = Path.GetFileName entry.FullPath
     let possibleFiles = files |> Seq.filter(fun f -> Path.GetFileName f = fileName)
     let! possibleFileCheckResults =
         possibleFiles

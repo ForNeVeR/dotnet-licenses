@@ -5,6 +5,7 @@
 module DotNetLicenses.TestFramework.NuGetMock
 
 open System.Threading.Tasks
+open DotNetLicenses
 open DotNetLicenses.NuGet
 
 let MirroringReader = {
@@ -21,4 +22,13 @@ let MirroringReader = {
             }
         }
         member _.FindFile cache packages file = Task.FromResult Array.empty
+}
+
+let WithNuGetPackageRoot (rootPath: string) (action: unit -> Task): Task = task {
+    let oldPath = PackagesFolderPath
+    try
+        PackagesFolderPath <- rootPath
+        do! action()
+    finally
+        PackagesFolderPath <- oldPath
 }

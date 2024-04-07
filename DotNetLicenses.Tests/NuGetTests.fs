@@ -6,7 +6,9 @@ module DotNetLicenses.Tests.NuGetTests
 
 open System.IO
 open System.Threading.Tasks
+open DotNetLicenses
 open DotNetLicenses.NuGet
+open DotNetLicenses.Sources
 open DotNetLicenses.TestFramework
 open Xunit
 
@@ -45,5 +47,34 @@ let ``NuSpec file should be read correctly``(fileName: string): Task = task {
 }
 
 [<Fact>]
-let ``Package file searcher works correctly``(): unit =
-    Assert.Fail()
+let ``Package file searcher works correctly``(): Task = task {
+    use mockedPackageRoot = DisposableDirectory.Create()
+    let package = {
+        PackageId = "FVNever.DotNetLicenses.StubPackage"
+        Version = "1.0.0"
+    }
+    let fileRelativePath = "content/file.txt"
+
+    use projectDir = DisposableDirectory.Create()
+    let fileContent = "Hello"B
+    let contentFullPath = Path.Combine(projectDir.Path, fileRelativePath)
+    let fileEntry = SourceEntry({ Type = "directory"; Path = projectDir.Path }, contentFullPath)
+
+    let deployFileTo(fullPath: string) =
+        Directory.CreateDirectory(fullPath |> Path.GetDirectoryName) |> ignore
+        File.WriteAllBytesAsync(fullPath, fileContent)
+
+    use cache = new FileHashCache()
+    do! NuGetMock.WithNuGetPackageRoot mockedPackageRoot.Path <| fun() -> task {
+        do! deployFileTo contentFullPath
+        do! deployFileTo(Path.Combine(UnpackedPackagePath package, "file.txt"))
+
+        let! contains = ContainsFile cache (package, fileEntry)
+        Assert.True(contains, "File should be considered as part of the package while it is unchanged.")
+
+        File.WriteAllBytes(Path.Combine(projectDir.Path, fileRelativePath), "Hello2"B)
+
+        let! contains = ContainsFile cache (package, fileEntry)
+        Assert.False(contains, "File should not be considered as part of the package after change.")
+    }
+}

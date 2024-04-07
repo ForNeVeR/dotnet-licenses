@@ -6,5 +6,6 @@ module DotNetLicenses.AssemblyInfo
 
 open System.Runtime.CompilerServices
 
+[<assembly: InternalsVisibleTo("DotNetLicenses.TestFramework")>]
 [<assembly: InternalsVisibleTo("DotNetLicenses.Tests")>]
 ()

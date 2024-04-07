@@ -84,7 +84,7 @@ let internal GenerateLockFile(
     let! sourceEntries = Sources.ReadEntries config.Package
 
     let lockFileContent = Dictionary<_, IReadOnlyList<LockFileItem>>()
-    let cache = FileHashCache()
+    use cache = new FileHashCache()
     for entry in sourceEntries do
         let! packageEntries = nuGet.FindFile cache packages entry
         match packageEntries.Length with
