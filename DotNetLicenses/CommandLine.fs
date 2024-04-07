@@ -17,6 +17,9 @@ type ExitCode =
     | Success = 0
     | UnusedOverride = 1
     | DuplicateOverride = 2
+    | LockFileDoesNotExist = 3
+    | LockFileIsNotDefined = 4
+    | PackageIsNotDefined = 5
     | InvalidArguments = 255
 
 let Parse(args: string[]): struct(Command * ExitCode) =

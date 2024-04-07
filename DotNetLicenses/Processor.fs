@@ -4,6 +4,7 @@
 
 module DotNetLicenses.Processor
 
+open System
 open System.Collections.Generic
 open System.IO
 open System.Reflection
@@ -68,8 +69,20 @@ let internal GenerateLockFile(
     nuGet: INuGetReader,
     wp: WarningProcessor
 ): Task = task {
-    let! metadata = CollectMetadata config baseFolderPath nuGet wp
+    if String.IsNullOrWhiteSpace config.LockFile
+    then wp.ProduceWarning(ExitCode.LockFileIsNotDefined, "lock_file is not specified in the configuration.")
+    else
+
+    if config.Package = null
+    then wp.ProduceWarning(ExitCode.PackageIsNotDefined, "package is not specified in the configuration.")
+    else
+
     let lockFilePath = Path.Combine(baseFolderPath, config.LockFile)
+    if not <| File.Exists lockFilePath
+    then wp.ProduceWarning(ExitCode.LockFileDoesNotExist, $"The lock file \"{lockFilePath}\" does not exist.")
+    else
+
+    let! metadata = CollectMetadata config baseFolderPath nuGet wp
 
     // TODO[#25]: Get the real package contents here instead of "*".
     let lockFileContent = Dictionary<_, IReadOnlyList<LockFileItem>>()

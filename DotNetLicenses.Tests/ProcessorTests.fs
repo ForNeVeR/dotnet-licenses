@@ -27,12 +27,44 @@ let private runGenerator = runFunction Processor.GenerateLockFile
 
 [<Fact>]
 let ``Generator produces an error if no lock file is defined``(): Task = task {
-    Assert.Fail()
+    let config = {
+        Configuration.Empty with
+            Inputs = [|"non-important.csproj"|]
+            LockFile = null
+    }
+    let! wp = runGenerator config
+    Assert.Equal([|ExitCode.LockFileIsNotDefined|], wp.Codes)
+    Assert.Equal([|"lock_file is not specified in the configuration."|], wp.Messages)
+}
+
+[<Fact>]
+let ``Generator produces an error if the lock file doesn't exist``(): Task = task {
+    let config = {
+        Configuration.Empty with
+            Inputs = [|"non-important.csproj"|]
+            Package = [||]
+            LockFile = "non-existent.lock.toml"
+    }
+    let! wp = runGenerator config
+    Assert.Equal([|ExitCode.LockFileDoesNotExist|], wp.Codes)
+    Assert.Contains("The lock file", Seq.exactlyOne wp.Messages)
+    Assert.Contains("does not exist.", Seq.exactlyOne wp.Messages)
 }
 
 [<Fact>]
 let ``Generator produces an error if no package contents are defined``(): Task = task {
-    Assert.Fail()
+    let lockFile = Path.GetTempFileName()
+    try
+        let config = {
+            Configuration.Empty with
+                Inputs = [|"non-important.csproj"|]
+                LockFile = lockFile
+        }
+        let! wp = runGenerator config
+        Assert.Equal([|ExitCode.PackageIsNotDefined|], wp.Codes)
+        Assert.Equal([|"package is not specified in the configuration."|], wp.Messages)
+    finally
+        File.Delete lockFile
 }
 
 [<Fact>]
