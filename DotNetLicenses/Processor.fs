@@ -79,17 +79,38 @@ let internal GenerateLockFile(
 
     let lockFilePath = Path.Combine(baseFolderPath, config.LockFile)
     let! metadata = CollectMetadata config baseFolderPath nuGet wp
+    let packages = metadata |> Seq.map _.Source |> Seq.toArray
+    let packageMetadata = metadata |> Seq.map (fun m -> m.Source, m) |> Map.ofSeq
+    let! sourceEntries = Sources.ReadEntries config.Package
 
-    // TODO[#25]: Get the real package contents here instead of "*".
     let lockFileContent = Dictionary<_, IReadOnlyList<LockFileItem>>()
-    lockFileContent.Add("*", metadata |> Seq.map(fun m -> {
-        SourceId = m.Id
-        SourceVersion = m.Version
-        Spdx = m.Spdx
-        Copyright = m.Copyright
-    }) |> Seq.toArray)
+    let cache = FileHashCache()
+    for entry in sourceEntries do
+        let! packageEntries = nuGet.FindFile cache packages entry
+        match packageEntries.Length with
+        | 0 -> wp.ProduceWarning(ExitCode.LicenseForFileNotFound, $"No license found for file \"{entry.SourceRelativePath}\".")
+        | 1 ->
+            let package = Seq.exactlyOne packageEntries
+            let metadata = packageMetadata[package]
+            lockFileContent.Add(entry.SourceRelativePath, [|{
+                SourceId = package.PackageId
+                SourceVersion = package.Version
+                Spdx = metadata.Spdx
+                Copyright = metadata.Copyright
+            }|])
+        | _ ->
+            failwithf $"Several package sources found for one file: \"{entry.SourceRelativePath}\"."
+            // TODO: If all the packages yield the same license, just let it be.
+            // TODO: Otherwise, report this situation as a warning, and collect all the licenses.
 
     do! SaveLockFile(lockFilePath, lockFileContent)
+
+    let nonLicensedFiles =
+        (sourceEntries
+        |> Seq.map _.SourceRelativePath
+        |> Set.ofSeq) - Set.ofSeq lockFileContent.Keys
+    for file in nonLicensedFiles do
+        wp.ProduceWarning(ExitCode.LicenseForFileNotFound, $"No license found for file \"{file}\".")
 }
 
 let private RunSynchronously(task: Task<'a>) =

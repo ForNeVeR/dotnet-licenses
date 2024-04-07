@@ -9,6 +9,7 @@ open System.IO
 open System.Threading.Tasks
 open System.Xml
 open System.Xml.Serialization
+open DotNetLicenses.Sources
 
 let internal PackagesFolderPath =
     Environment.GetEnvironmentVariable "NUGET_PACKAGES"
@@ -17,13 +18,39 @@ let internal PackagesFolderPath =
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages")
     )
 
-let internal GetNuSpecFilePath(packageReference: PackageReference): string =
+let private UnpackedPackagePath(packageReference: PackageReference): string =
     Path.Combine(
         PackagesFolderPath,
         packageReference.PackageId.ToLowerInvariant(),
-        packageReference.Version.ToLowerInvariant(),
+        packageReference.Version.ToLowerInvariant()
+    )
+
+let internal GetNuSpecFilePath(packageReference: PackageReference): string =
+    Path.Combine(
+        UnpackedPackagePath packageReference,
         $"{packageReference.PackageId.ToLowerInvariant()}.nuspec"
     )
+
+let internal ContainsFile (fileHashCache: FileHashCache)
+                          (package: PackageReference, entry: SourceEntry): Task<bool> = task {
+    let files = Directory.EnumerateFileSystemEntries(
+        UnpackedPackagePath package,
+        "*",
+        EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
+    )
+    let fileName = Path.GetFileName entry.Path
+    let possibleFiles = files |> Seq.filter(fun f -> Path.GetFileName f = fileName)
+    let! possibleFileCheckResults =
+        possibleFiles
+        |> Seq.map(fun f -> task {
+            let! needleHash = entry.CalculateHash()
+            let! packageFileHash = fileHashCache.CalculateFileHash f
+            return needleHash.Equals(packageFileHash, StringComparison.OrdinalIgnoreCase)
+        })
+        |> Task.WhenAll
+    return Seq.exists id possibleFileCheckResults
+}
+
 
 [<CLIMutable>]
 type NuSpecLicense = {
@@ -62,8 +89,21 @@ let internal ReadNuSpec(filePath: string): Task<NuSpec> = Task.Run(fun() ->
 
 type INuGetReader =
     abstract ReadNuSpec: PackageReference -> Task<NuSpec>
+    abstract FindFile: FileHashCache -> PackageReference seq -> SourceEntry -> Task<PackageReference[]>
 
 type NuGetReader() =
     interface INuGetReader with
         member _.ReadNuSpec(reference: PackageReference): Task<NuSpec> =
             GetNuSpecFilePath reference |> ReadNuSpec
+        member _.FindFile (cache: FileHashCache)
+                          (packages: PackageReference seq)
+                          (entry: SourceEntry): Task<PackageReference[]> = task {
+            let! checkResults =
+                packages
+                |> Seq.map(fun p -> task {
+                    let! checkResult = ContainsFile cache (p, entry)
+                    return checkResult, p
+                })
+                |> Task.WhenAll
+            return checkResults |> Seq.filter fst |> Seq.map snd |> Seq.toArray
+        }

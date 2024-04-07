@@ -94,24 +94,22 @@ let ``Printer generates no warnings on a valid config``(): Task =
 
 [<Fact>]
 let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj" (fun project -> task {
-    let expectedLock = """[["*"]]
+    use directory = DisposableDirectory.Create()
+    do! File.WriteAllTextAsync(Path.Combine(directory.Path, "test.txt"), "Hello!")
+
+    let expectedLock = """[["test.txt"]]
 source_id = "FVNever.DotNetLicenses"
 source_version = "1.0.0"
 spdx = "MIT"
 copyright = ""
-""" // TODO[#25]: Should not be a star; reconsider after implementing the file sets
+"""
     let config = {
         Configuration.Empty with
             Inputs = [| project |]
-            Overrides = [|
-                {
-                    Id = "FVNever.DotNetLicenses"
-                    Version = "1.0.0"
-                    Spdx = "MIT"
-                    Copyright = ""
-                }
-            |]
             LockFile = Path.GetTempFileName()
+            Package = [|
+                { Type = "directory"; Path = directory.Path }
+            |]
     }
 
     let! wp = runGenerator config
@@ -175,11 +173,11 @@ let ``Lock file generator produces a warning if it's unable to find a license fo
             Inputs = [||]
             LockFile = Path.Combine(directory.Path, "lock.toml")
             Package = [|
-                { Type = "file"; Path = directory.Path }
+                { Type = "directory"; Path = directory.Path }
             |]
     }
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, directory.Path)
     Assert.Equal([|ExitCode.LicenseForFileNotFound|], wp.Codes)
     let message = Assert.Single wp.Messages
-    Assert.Equal("Unable to find a license for the file \"my-file.txt\".", message)
+    Assert.Equal("No license found for file \"my-file.txt\".", message)
 }

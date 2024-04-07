@@ -9,7 +9,7 @@ open DotNetLicenses.NuGet
 
 let MirroringReader = {
     new INuGetReader with
-        member this.ReadNuSpec { PackageId = id; Version = version } = Task.FromResult {
+        member _.ReadNuSpec { PackageId = id; Version = version } = Task.FromResult {
             Metadata = {
                 Id = id
                 Version = version
@@ -20,4 +20,5 @@ let MirroringReader = {
                 Copyright = $"Copyright {id}"
             }
         }
+        member _.FindFile cache packages file = Task.FromResult Array.empty
 }

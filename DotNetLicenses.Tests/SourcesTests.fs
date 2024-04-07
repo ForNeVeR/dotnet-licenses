@@ -25,3 +25,14 @@ let ``Sources are enumerated for a file-system directory``(): Task = task {
         { Source = spec; Path = Path.Combine(directory.Path, "subdirectory", "file.txt") }
     |], entries)
 }
+
+[<Fact>]
+let ``SourceRelativePath is generated for a file set``(): unit =
+    let source = { Type = "file"; Path = Path.GetTempPath() }
+    let file = Path.Combine(source.Path, Path.Combine("foo", "file.txt"))
+    let entry = { Source = source; Path = file }
+    Assert.Equal("foo/file.txt", entry.SourceRelativePath)
+
+[<Fact>]
+let ``SourceEntry calculates its hash correctly``(): unit =
+    Assert.Fail()

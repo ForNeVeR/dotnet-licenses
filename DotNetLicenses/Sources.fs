@@ -8,12 +8,20 @@ open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
 
-type SourceEntry = {
-    Source: PackageSpec
-    Path: string
-}
+type SourceEntry =
+    {
+        Source: PackageSpec
+        Path: string
+    }
+    member this.SourceRelativePath =
+        match this.Source.Type with
+        | "directory" -> Path.GetRelativePath(this.Source.Path, this.Path).Replace(Path.DirectorySeparatorChar, '/')
+        | other -> failwithf $"Package spec type not supported: {other}."
 
-let private ExtractFileEntries(spec: PackageSpec) = task {
+    member _.CalculateHash(): Task<string> =
+        failwith "TODO"
+
+let private ExtractDirectoryEntries(spec: PackageSpec) = task {
     do! Task.Yield()
     let options = EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
     return
@@ -22,12 +30,10 @@ let private ExtractFileEntries(spec: PackageSpec) = task {
         |> Seq.toArray
 }
 
-let private ExtractEntries(spec: PackageSpec) = task {
-    return!
-        match spec.Type with
-        | "file" -> ExtractFileEntries spec
-        | other -> failwithf $"Package spec type not supported: {other}."
-}
+let private ExtractEntries(spec: PackageSpec) =
+    match spec.Type with
+    | "directory" -> ExtractDirectoryEntries spec
+    | other -> failwithf $"Package spec type not supported: {other}."
 
 let ReadEntries(spec: PackageSpec seq): Task<IReadOnlyList<SourceEntry>> = task {
     let result = ResizeArray()

@@ -15,8 +15,13 @@ open Xunit
 let ``Get metadata from .nuspec works correctly``(): Task = task {
     let path = DataFiles.Get "Test1.nuspec"
     let! nuSpec = ReadNuSpec path
-    let metadata = GetMetadata nuSpec
+    let reference = {
+        PackageId = "Package"
+        Version = "1.0.0"
+    }
+    let metadata = GetMetadata reference nuSpec
     Assert.Equal({
+        Source = reference
         Id = "FVNever.DotNetLicenses"
         Version = "0.0.0"
         Spdx = "MIT"

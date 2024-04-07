@@ -11,18 +11,20 @@ open DotNetLicenses.MsBuild
 open DotNetLicenses.NuGet
 
 type MetadataItem = {
+    Source: PackageReference
     Id: string
     Version: string
     Spdx: string
     Copyright: string
 }
 
-let internal GetMetadata(nuSpec: NuSpec): MetadataItem =
+let internal GetMetadata source (nuSpec: NuSpec): MetadataItem =
     let metadata = nuSpec.Metadata
     let license = metadata.License
     if license.Type <> "expression" then
         failwithf $"Unsupported license type: {license.Type}"
     {
+        Source = source
         Id = metadata.Id
         Version = metadata.Version
         Spdx = metadata.License.Value
@@ -49,6 +51,7 @@ type MetadataReader(nuGet: INuGetReader) =
                 | true, metaOverride ->
                     usedOverrides <- usedOverrides |> Set.add reference
                     Task.FromResult {
+                        Source = reference
                         Id = reference.PackageId
                         Version = reference.Version
                         Spdx = metaOverride.SpdxExpression
@@ -57,7 +60,7 @@ type MetadataReader(nuGet: INuGetReader) =
                 | false, _ ->
                     task {
                         let! nuSpec = nuGet.ReadNuSpec reference
-                        return GetMetadata nuSpec
+                        return GetMetadata reference nuSpec
                     }
 
             result.Add metadata

@@ -43,3 +43,7 @@ let ``NuSpec file should be read correctly``(fileName: string): Task = task {
         }
     }, nuSpec)
 }
+
+[<Fact>]
+let ``Package file searcher works correctly``(): unit =
+    Assert.Fail()
