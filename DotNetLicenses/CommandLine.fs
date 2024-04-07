@@ -15,11 +15,15 @@ type ExitCode =
     // Should go from the less severe to the most severe, since in some conditions the max code is returned (e.g., if a
     // command produced several warnings).
     | Success = 0
+    // Less important warnings:
     | UnusedOverride = 1
     | DuplicateOverride = 2
-    | LockFileDoesNotExist = 3
-    | LockFileIsNotDefined = 4
-    | PackageIsNotDefined = 5
+    // More important warnings:
+    | LicenseForFileNotFound = 3
+    // Configuration errors:
+    | LockFileIsNotDefined = 5
+    | PackageIsNotDefined = 6
+    // Unable to start:
     | InvalidArguments = 255
 
 let Parse(args: string[]): struct(Command * ExitCode) =

@@ -78,10 +78,6 @@ let internal GenerateLockFile(
     else
 
     let lockFilePath = Path.Combine(baseFolderPath, config.LockFile)
-    if not <| File.Exists lockFilePath
-    then wp.ProduceWarning(ExitCode.LockFileDoesNotExist, $"The lock file \"{lockFilePath}\" does not exist.")
-    else
-
     let! metadata = CollectMetadata config baseFolderPath nuGet wp
 
     // TODO[#25]: Get the real package contents here instead of "*".

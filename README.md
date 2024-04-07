@@ -111,6 +111,8 @@ When considering compatible changes, we currently consider the project's public 
 - the input data formats,
 - and the output data format.
 
+Note that the particular non-zero exit codes are not considered part of the public API.
+
 License
 -------
 This project's licensing follows the [REUSE specification v 3.0][reuse.spec]. The main license for the source is MIT, consult each file's headers and the REUSE specification for possible details.

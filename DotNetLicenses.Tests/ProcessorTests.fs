@@ -11,19 +11,22 @@ open DotNetLicenses.CommandLine
 open DotNetLicenses.TestFramework
 open Xunit
 
-let private runFunction (func: _ * _ * _ * _ -> Task) config = task {
-    let wp = WarningProcessor()
-    do! func(
-        config,
-        Path.GetDirectoryName(Seq.exactlyOne config.Inputs),
-        NuGetMock.MirroringReader,
-        wp
-    )
-    return wp
-}
+type private Runner =
+    static member RunFunction(func: _ * _ * _ * _ -> Task, config, ?baseDirectory: string) = task {
+        let baseDirectory =
+            baseDirectory |> Option.defaultWith(fun() -> Path.GetDirectoryName(Seq.exactlyOne config.Inputs))
+        let wp = WarningProcessor()
+        do! func(
+            config,
+            baseDirectory,
+            NuGetMock.MirroringReader,
+            wp
+        )
+        return wp
+    }
 
-let private runPrinter = runFunction Processor.PrintMetadata
-let private runGenerator = runFunction Processor.GenerateLockFile
+let private runPrinter t = Runner.RunFunction(Processor.PrintMetadata, t)
+let private runGenerator t = Runner.RunFunction(Processor.GenerateLockFile, t)
 
 [<Fact>]
 let ``Generator produces an error if no lock file is defined``(): Task = task {
@@ -35,20 +38,6 @@ let ``Generator produces an error if no lock file is defined``(): Task = task {
     let! wp = runGenerator config
     Assert.Equal([|ExitCode.LockFileIsNotDefined|], wp.Codes)
     Assert.Equal([|"lock_file is not specified in the configuration."|], wp.Messages)
-}
-
-[<Fact>]
-let ``Generator produces an error if the lock file doesn't exist``(): Task = task {
-    let config = {
-        Configuration.Empty with
-            Inputs = [|"non-important.csproj"|]
-            Package = [||]
-            LockFile = "non-existent.lock.toml"
-    }
-    let! wp = runGenerator config
-    Assert.Equal([|ExitCode.LockFileDoesNotExist|], wp.Codes)
-    Assert.Contains("The lock file", Seq.exactlyOne wp.Messages)
-    Assert.Contains("does not exist.", Seq.exactlyOne wp.Messages)
 }
 
 [<Fact>]
@@ -147,7 +136,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
 """
 
     do! DataFiles.Deploy "Test.csproj" (fun project -> task {
-        let lockFile = Path.GetTempFileName()
+        let lockFile = Path.Combine(directory.Path, "lock.toml")
         let config = {
             Configuration.Empty with
                 Inputs = [| project |]
@@ -178,5 +167,19 @@ let ``Processor processes ZIP files using a glob pattern``(): Task = task {
 
 [<Fact>]
 let ``Lock file generator produces a warning if it's unable to find a license for a file``(): Task = task {
-    Assert.Fail()
+    use directory = DisposableDirectory.Create()
+    let packagedFile = Path.Combine(directory.Path, "my-file.txt")
+    do! File.WriteAllTextAsync(packagedFile, "Hello World!")
+    let config = {
+        Configuration.Empty with
+            Inputs = [||]
+            LockFile = Path.Combine(directory.Path, "lock.toml")
+            Package = [|
+                { Type = "file"; Path = directory.Path }
+            |]
+    }
+    let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, directory.Path)
+    Assert.Equal([|ExitCode.LicenseForFileNotFound|], wp.Codes)
+    let message = Assert.Single wp.Messages
+    Assert.Equal("Unable to find a license for the file \"my-file.txt\".", message)
 }

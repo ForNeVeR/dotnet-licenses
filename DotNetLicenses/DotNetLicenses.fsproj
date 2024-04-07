@@ -38,6 +38,7 @@ SPDX-License-Identifier: MIT
         <Compile Include="NuGet.fs" />
         <Compile Include="Metadata.fs" />
         <Compile Include="LockFile.fs" />
+        <Compile Include="Sources.fs" />
         <Compile Include="Processor.fs" />
         <Compile Include="Program.fs"/>
     </ItemGroup>
