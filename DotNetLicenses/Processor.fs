@@ -104,13 +104,6 @@ let internal GenerateLockFile(
             // TODO: Otherwise, report this situation as a warning, and collect all the licenses.
 
     do! SaveLockFile(lockFilePath, lockFileContent)
-
-    let nonLicensedFiles =
-        (sourceEntries
-        |> Seq.map _.SourceRelativePath
-        |> Set.ofSeq) - Set.ofSeq lockFileContent.Keys
-    for file in nonLicensedFiles do
-        wp.ProduceWarning(ExitCode.LicenseForFileNotFound, $"No license found for file \"{file}\".")
 }
 
 let private RunSynchronously(task: Task<'a>) =

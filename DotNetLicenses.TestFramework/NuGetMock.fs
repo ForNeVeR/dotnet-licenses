@@ -21,7 +21,7 @@ let MirroringReader = {
                 Copyright = $"Copyright {id}"
             }
         }
-        member _.FindFile cache packages file = Task.FromResult Array.empty
+        member _.FindFile _ packages _ = packages |> Seq.toArray |> Task.FromResult
 }
 
 let WithNuGetPackageRoot (rootPath: string) (action: unit -> Task): Task = task {

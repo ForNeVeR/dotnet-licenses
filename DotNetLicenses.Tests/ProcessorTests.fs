@@ -100,8 +100,8 @@ let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj"
     let expectedLock = """[["test.txt"]]
 source_id = "FVNever.DotNetLicenses"
 source_version = "1.0.0"
-spdx = "MIT"
-copyright = ""
+spdx = "License FVNever.DotNetLicenses"
+copyright = "Copyright FVNever.DotNetLicenses"
 """
     let config = {
         Configuration.Empty with
@@ -127,8 +127,8 @@ let ``Processor generates a lock file for a file tree``(): Task = task {
     let packagedFile = Path.Combine(directory.Path, "my-file.txt")
     do! File.WriteAllTextAsync(packagedFile, "Hello World!")
     let expectedLock = """[["my-file.txt"]]
-id = "FVNever.DotNetLicenses"
-version = "1.0.0"
+source_id = "FVNever.DotNetLicenses"
+source_version = "1.0.0"
 spdx = "License FVNever.DotNetLicenses"
 copyright = "Copyright FVNever.DotNetLicenses"
 """
@@ -140,7 +140,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
                 Inputs = [| project |]
                 LockFile = lockFile
                 Package = [|
-                    { Type = "file"; Path = directory.Path }
+                    { Type = "directory"; Path = directory.Path }
                 |]
         }
 
