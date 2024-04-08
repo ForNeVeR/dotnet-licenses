@@ -32,13 +32,13 @@ let internal GetNuSpecFilePath(packageReference: PackageReference): string =
     )
 
 let internal ContainsFile (fileHashCache: FileHashCache)
-                          (package: PackageReference, entry: SourceEntry): Task<bool> = task {
+                          (package: PackageReference, entry: ISourceEntry): Task<bool> = task {
     let files = Directory.EnumerateFileSystemEntries(
         UnpackedPackagePath package,
         "*",
         EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
     )
-    let fileName = Path.GetFileName entry.FullPath
+    let fileName = Path.GetFileName entry.SourceRelativePath
     let possibleFiles = files |> Seq.filter(fun f -> Path.GetFileName f = fileName)
     let! possibleFileCheckResults =
         possibleFiles
@@ -89,7 +89,7 @@ let internal ReadNuSpec(filePath: string): Task<NuSpec> = Task.Run(fun() ->
 
 type INuGetReader =
     abstract ReadNuSpec: PackageReference -> Task<NuSpec>
-    abstract FindFile: FileHashCache -> PackageReference seq -> SourceEntry -> Task<PackageReference[]>
+    abstract FindFile: FileHashCache -> PackageReference seq -> ISourceEntry -> Task<PackageReference[]>
 
 type NuGetReader() =
     interface INuGetReader with
@@ -97,7 +97,7 @@ type NuGetReader() =
             GetNuSpecFilePath reference |> ReadNuSpec
         member _.FindFile (cache: FileHashCache)
                           (packages: PackageReference seq)
-                          (entry: SourceEntry): Task<PackageReference[]> = task {
+                          (entry: ISourceEntry): Task<PackageReference[]> = task {
             let! checkResults =
                 packages
                 |> Seq.map(fun p -> task {

@@ -155,12 +155,57 @@ copyright = "Copyright FVNever.DotNetLicenses"
 
 [<Fact>]
 let ``Processor generates a lock file for a ZIP archive``(): Task = task {
-    Assert.Fail()
+    use directory = DisposableDirectory.Create()
+    let archivePath = Path.Combine(directory.Path, "file.zip")
+    ZipFiles.SingleFileArchive(archivePath, "content/my-file.txt", "Hello World"B)
+    let expectedLock = """[["content/my-file.txt"]]
+source_id = "FVNever.DotNetLicenses"
+source_version = "1.0.0"
+spdx = "License FVNever.DotNetLicenses"
+copyright = "Copyright FVNever.DotNetLicenses"
+"""
+    do! DataFiles.Deploy "Test.csproj" (fun project -> task {
+        let lockFile = Path.Combine(directory.Path, "lock.toml")
+        let config = {
+            Configuration.Empty with
+                Inputs = [| project |]
+                LockFile = lockFile
+                Package = [|
+                    { Type = "zip"; Path = Path.GetFileName archivePath }
+                |]
+        }
+
+        let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, directory.Path)
+        Assert.Empty wp.Codes
+        Assert.Empty wp.Messages
+
+        let! actualContent = File.ReadAllTextAsync config.LockFile
+        Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
+    })
 }
 
 [<Fact>]
 let ``Processor processes ZIP files using a glob pattern``(): Task = task {
-    Assert.Fail()
+    use directory = DisposableDirectory.Create()
+    let archivePath = Path.Combine(directory.Path, "file.zip")
+    let archiveGlob = Path.Combine(directory.Path, "*.zip")
+    ZipFiles.SingleFileArchive(archivePath, "content/my-file.txt", "Hello World"B)
+
+    do! DataFiles.Deploy "Test.csproj" (fun project -> task {
+        let lockFile = Path.Combine(directory.Path, "lock.toml")
+        let config = {
+            Configuration.Empty with
+                Inputs = [| project |]
+                LockFile = lockFile
+                Package = [|
+                    { Type = "zip"; Path = archiveGlob }
+                |]
+        }
+
+        let! wp = runGenerator config
+        Assert.Empty wp.Codes
+        Assert.Empty wp.Messages
+    })
 }
 
 [<Fact>]

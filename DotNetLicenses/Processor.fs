@@ -81,7 +81,7 @@ let internal GenerateLockFile(
     let! metadata = CollectMetadata config baseFolderPath nuGet wp
     let packages = metadata |> Seq.map _.Source |> Seq.toArray
     let packageMetadata = metadata |> Seq.map (fun m -> m.Source, m) |> Map.ofSeq
-    let! sourceEntries = Sources.ReadEntries config.Package
+    let! sourceEntries = Sources.ReadEntries baseFolderPath config.Package
 
     let lockFileContent = Dictionary<_, IReadOnlyList<LockFileItem>>()
     use cache = new FileHashCache()

@@ -19,10 +19,10 @@ let ``Sources are enumerated for a file-system directory``(): Task = task {
     do! File.WriteAllTextAsync(Path.Combine(directory.Path, "subdirectory", "file.txt"), "content")
 
     let spec = { Type = "file"; Path  = directory.Path }
-    let! entries = ReadEntries [| spec |]
+    let! entries = ReadEntries directory.Path [| spec |]
     Assert.Equivalent([|
-        SourceEntry(spec, Path.Combine(directory.Path, "file.txt"))
-        SourceEntry(spec, Path.Combine(directory.Path, "subdirectory", "file.txt"))
+        FileSourceEntry(spec, Path.Combine(directory.Path, "file.txt"))
+        FileSourceEntry(spec, Path.Combine(directory.Path, "subdirectory", "file.txt"))
     |], entries)
 }
 
@@ -30,7 +30,7 @@ let ``Sources are enumerated for a file-system directory``(): Task = task {
 let ``SourceRelativePath is generated for a file set``(): unit =
     let source = { Type = "file"; Path = Path.GetTempPath() }
     let file = Path.Combine(source.Path, Path.Combine("foo", "file.txt"))
-    let entry = SourceEntry(source, file)
+    let entry = FileSourceEntry(source, file) :> ISourceEntry
     Assert.Equal("foo/file.txt", entry.SourceRelativePath)
 
 [<Fact>]
