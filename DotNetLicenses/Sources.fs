@@ -11,6 +11,7 @@ open System.IO.Compression
 open System.Security.Cryptography
 open System.Threading
 open System.Threading.Tasks
+open JetBrains.Lifetimes
 open Microsoft.Extensions.FileSystemGlobbing
 
 type ISourceEntry =
@@ -59,7 +60,7 @@ type internal FileSourceEntry(source: PackageSpec, fullPath: string) as this =
 
         member this.CalculateHash(): Task<string> = calculator.CalculateHash()
 
-type internal ZipSourceEntry(source: PackageSpec, archivePath: string, name: string) as this =
+type internal ZipSourceEntry(source: PackageSpec, archive: ZipArchive, archivePath: string, name: string) as this =
     let calculator = HashCalculator(this, archivePath)
 
     interface ISourceEntry with
@@ -68,8 +69,6 @@ type internal ZipSourceEntry(source: PackageSpec, archivePath: string, name: str
 
         member _.ReadContent(): Task<Stream> =
             task {
-                use stream = File.OpenRead archivePath
-                use archive = new ZipArchive(stream, ZipArchiveMode.Read)
                 let entry = archive.GetEntry name
                 if entry = null then
                     failwithf $"Entry not found: \"{name}\"."
@@ -88,17 +87,18 @@ let private ExtractDirectoryEntries(baseDirectory: string, spec: PackageSpec) = 
         |> Seq.toArray
 }
 
-let private ExtractZipFileEntries(spec: PackageSpec, archivePath: string) = task {
+let private ExtractZipFileEntries(lifetime: Lifetime, spec: PackageSpec, archivePath: string) = task {
     do! Task.Yield()
     use stream = File.OpenRead spec.Path
     use archive = new ZipArchive(stream, ZipArchiveMode.Read)
+    lifetime.AddDispose archive |> ignore
     return
         archive.Entries
-        |> Seq.map(fun e -> ZipSourceEntry(spec, archivePath, e.FullName) :> ISourceEntry)
+        |> Seq.map(fun e -> ZipSourceEntry(spec, archive, archivePath, e.FullName) :> ISourceEntry)
         |> Seq.toArray
 }
 
-let private ExtractZipGlobEntries(baseDirectory: string, spec: PackageSpec) = task {
+let private ExtractZipGlobEntries(lifetime: Lifetime, baseDirectory: string, spec: PackageSpec) = task {
     do! Task.Yield()
     let matcher = Matcher().AddInclude spec.Path
     let! entries =
@@ -106,25 +106,28 @@ let private ExtractZipGlobEntries(baseDirectory: string, spec: PackageSpec) = ta
         |> Seq.map (fun matchedArchivePath -> task {
             use stream = File.OpenRead matchedArchivePath
             use archive = new ZipArchive(stream, ZipArchiveMode.Read)
+            lifetime.AddDispose archive |> ignore
             return
                 archive.Entries
-                |> Seq.map(fun e -> ZipSourceEntry(spec, matchedArchivePath, e.FullName) :> ISourceEntry)
+                |> Seq.map(fun e -> ZipSourceEntry(spec, archive, matchedArchivePath, e.FullName) :> ISourceEntry)
                 |> Seq.toArray
         })
         |> Task.WhenAll
     return entries |> Seq.concat |> Seq.toArray
 }
 
-let private ExtractEntries(baseDirectory: string, spec: PackageSpec) =
+let private ExtractEntries(lifetime: Lifetime, baseDirectory: string, spec: PackageSpec) =
     match spec.Type with
     | "directory" -> ExtractDirectoryEntries(baseDirectory, spec)
-    | "zip" -> ExtractZipGlobEntries(baseDirectory, spec)
+    | "zip" -> ExtractZipGlobEntries(lifetime, baseDirectory, spec)
     | other -> failwithf $"Package spec type not supported: {other}."
 
-let ReadEntries (baseDirectory: string) (spec: PackageSpec seq): Task<IReadOnlyList<ISourceEntry>> = task {
+let ReadEntries (lifetime: Lifetime)
+                (baseDirectory: string)
+                (spec: PackageSpec seq): Task<IReadOnlyList<ISourceEntry>> = task {
     let result = ResizeArray()
     for package in spec do
-        let! entries = ExtractEntries(baseDirectory, package)
+        let! entries = ExtractEntries(lifetime, baseDirectory, package)
         result.AddRange entries
     return result
 }
