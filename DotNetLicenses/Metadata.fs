@@ -18,7 +18,7 @@ type MetadataItem = {
     Copyright: string
 }
 
-let internal GetMetadata source (nuSpec: NuSpec): MetadataItem =
+let internal GetMetadata (source: PackageReference) (nuSpec: NuSpec): MetadataItem =
     let metadata = nuSpec.Metadata
     let license = metadata.License
     if license.Type <> "expression" then

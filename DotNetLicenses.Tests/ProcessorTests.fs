@@ -120,7 +120,6 @@ copyright = "Copyright FVNever.DotNetLicenses"
     Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
 })
 
-
 [<Fact>]
 let ``Processor generates a lock file for a file tree``(): Task = task {
     use directory = DisposableDirectory.Create()

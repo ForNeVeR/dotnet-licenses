@@ -11,7 +11,6 @@ open DotNetLicenses.CommandLine
 open JetBrains.Annotations
 open Tomlyn
 
-
 [<CLIMutable>]
 type Configuration =
     {
