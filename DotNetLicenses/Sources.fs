@@ -89,7 +89,7 @@ let private ExtractDirectoryEntries(baseDirectory: string, spec: PackageSpec) = 
 
 let private ExtractZipFileEntries(lifetime: Lifetime, spec: PackageSpec, archivePath: string) = task {
     do! Task.Yield()
-    let stream = File.OpenRead spec.Path
+    let stream = File.OpenRead archivePath
     let archive = new ZipArchive(stream, ZipArchiveMode.Read)
     lifetime.AddDispose archive |> ignore
     return
@@ -120,7 +120,8 @@ let private ExtractZipGlobEntries(lifetime: Lifetime, baseDirectory: string, spe
             |> Task.WhenAll
         return entries |> Seq.concat |> Seq.toArray
     else
-        return! ExtractZipFileEntries(lifetime, spec, baseDirectory)
+        let archivePath = Path.Combine(baseDirectory, spec.Path)
+        return! ExtractZipFileEntries(lifetime, spec, archivePath)
 }
 
 let private ExtractEntries(lifetime: Lifetime, baseDirectory: string, spec: PackageSpec) =
