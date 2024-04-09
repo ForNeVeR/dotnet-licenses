@@ -103,8 +103,8 @@ let internal GenerateLockFile(
             }|])
         | _ ->
             failwithf $"Several package sources found for one file: \"{entry.SourceRelativePath}\"."
-            // TODO: If all the packages yield the same license, just let it be.
-            // TODO: Otherwise, report this situation as a warning, and collect all the licenses.
+            // TODO[#28]: If all the packages yield the same license, just let it be.
+            // TODO[#28]: Otherwise, report this situation as a warning, and collect all the licenses.
 
     do! SaveLockFile(lockFilePath, lockFileContent)
 }
