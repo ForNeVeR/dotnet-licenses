@@ -89,8 +89,8 @@ let private ExtractDirectoryEntries(baseDirectory: string, spec: PackageSpec) = 
 
 let private ExtractZipFileEntries(lifetime: Lifetime, spec: PackageSpec, archivePath: string) = task {
     do! Task.Yield()
-    use stream = File.OpenRead spec.Path
-    use archive = new ZipArchive(stream, ZipArchiveMode.Read)
+    let stream = File.OpenRead spec.Path
+    let archive = new ZipArchive(stream, ZipArchiveMode.Read)
     lifetime.AddDispose archive |> ignore
     return
         archive.Entries
@@ -98,22 +98,29 @@ let private ExtractZipFileEntries(lifetime: Lifetime, spec: PackageSpec, archive
         |> Seq.toArray
 }
 
+let private IncludesMetaCharacters(s: string) =
+    s.Contains '*' || s.Contains '?'
+
 let private ExtractZipGlobEntries(lifetime: Lifetime, baseDirectory: string, spec: PackageSpec) = task {
     do! Task.Yield()
-    let matcher = Matcher().AddInclude spec.Path
-    let! entries =
-        matcher.GetResultsInFullPath baseDirectory
-        |> Seq.map (fun matchedArchivePath -> task {
-            use stream = File.OpenRead matchedArchivePath
-            use archive = new ZipArchive(stream, ZipArchiveMode.Read)
-            lifetime.AddDispose archive |> ignore
-            return
-                archive.Entries
-                |> Seq.map(fun e -> ZipSourceEntry(spec, archive, matchedArchivePath, e.FullName) :> ISourceEntry)
-                |> Seq.toArray
-        })
-        |> Task.WhenAll
-    return entries |> Seq.concat |> Seq.toArray
+
+    if IncludesMetaCharacters spec.Path then
+        let matcher = Matcher().AddInclude spec.Path
+        let! entries =
+            matcher.GetResultsInFullPath baseDirectory
+            |> Seq.map (fun matchedArchivePath -> task {
+                let stream = File.OpenRead matchedArchivePath
+                let archive = new ZipArchive(stream, ZipArchiveMode.Read)
+                lifetime.AddDispose archive |> ignore
+                return
+                    archive.Entries
+                    |> Seq.map(fun e -> ZipSourceEntry(spec, archive, matchedArchivePath, e.FullName) :> ISourceEntry)
+                    |> Seq.toArray
+            })
+            |> Task.WhenAll
+        return entries |> Seq.concat |> Seq.toArray
+    else
+        return! ExtractZipFileEntries(lifetime, spec, baseDirectory)
 }
 
 let private ExtractEntries(lifetime: Lifetime, baseDirectory: string, spec: PackageSpec) =

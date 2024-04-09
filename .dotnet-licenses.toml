@@ -9,3 +9,6 @@ inputs = [
     "DotNetLicenses/DotNetLicenses.fsproj"
 ]
 lock_file = ".dotnet-licenses.lock.toml"
+package = [
+    { type = "zip", path = "DotNetLicenses/bin/Release/FVNever.DotNetLicenses.0.0.0.nupkg" }
+]
