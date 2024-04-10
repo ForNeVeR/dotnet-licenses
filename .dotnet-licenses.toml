@@ -9,6 +9,6 @@ metadata_sources = [
     "DotNetLicenses/DotNetLicenses.fsproj"
 ]
 lock_file = ".dotnet-licenses.lock.toml"
-package = [
+packaged_files = [
     { type = "zip", path = "DotNetLicenses/bin/Release/FVNever.DotNetLicenses.0.0.0.nupkg" }
 ]

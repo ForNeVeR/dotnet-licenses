@@ -17,14 +17,14 @@ type Configuration =
         MetadataSources: string[]
         [<CanBeNull>] Overrides: Override[]
         [<CanBeNull>] LockFile: string
-        [<CanBeNull>] Package: PackageSpec[]
+        [<CanBeNull>] PackagedFiles: PackageSpec[]
     }
 
     static member Empty = {
         MetadataSources = Array.empty
         Overrides = null
         LockFile = null
-        Package = null
+        PackagedFiles = null
     }
 
     static member Read(stream: Stream, filePath: string option): Task<Configuration> = task {

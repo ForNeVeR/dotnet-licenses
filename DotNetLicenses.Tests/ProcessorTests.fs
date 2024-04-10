@@ -50,8 +50,8 @@ let ``Generator produces an error if no package contents are defined``(): Task =
                 LockFile = lockFile
         }
         let! wp = runGenerator config
-        Assert.Equal([|ExitCode.PackageIsNotDefined|], wp.Codes)
-        Assert.Equal([|"package is not specified in the configuration."|], wp.Messages)
+        Assert.Equal([|ExitCode.PackagedFilesAreNotDefined|], wp.Codes)
+        Assert.Equal([|"packaged_files are not specified in the configuration."|], wp.Messages)
     finally
         File.Delete lockFile
 }
@@ -107,7 +107,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
         Configuration.Empty with
             MetadataSources = [| project |]
             LockFile = Path.GetTempFileName()
-            Package = [|
+            PackagedFiles = [|
                 { Type = "directory"; Path = directory.Path }
             |]
     }
@@ -138,7 +138,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
             Configuration.Empty with
                 MetadataSources = [| project |]
                 LockFile = lockFile
-                Package = [|
+                PackagedFiles = [|
                     { Type = "directory"; Path = directory.Path }
                 |]
         }
@@ -169,7 +169,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
             Configuration.Empty with
                 MetadataSources = [| project |]
                 LockFile = lockFile
-                Package = [|
+                PackagedFiles = [|
                     { Type = "zip"; Path = Path.GetFileName archivePath }
                 |]
         }
@@ -196,7 +196,7 @@ let ``Processor processes ZIP files using a glob pattern``(): Task = task {
             Configuration.Empty with
                 MetadataSources = [| project |]
                 LockFile = lockFile
-                Package = [|
+                PackagedFiles = [|
                     { Type = "zip"; Path = archiveGlob }
                 |]
         }
@@ -216,7 +216,7 @@ let ``Lock file generator produces a warning if it's unable to find a license fo
         Configuration.Empty with
             MetadataSources = [||]
             LockFile = Path.Combine(directory.Path, "lock.toml")
-            Package = [|
+            PackagedFiles = [|
                 { Type = "directory"; Path = directory.Path }
             |]
     }

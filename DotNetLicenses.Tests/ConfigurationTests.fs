@@ -19,7 +19,7 @@ metadata_sources = [
   "File.fsproj",
 ]
 lock_file = "foo.toml"
-package = [
+packaged_files = [
     { type = "file", path = "files" },
     { type = "zip", path = "files2/*.zip" },
 ]
@@ -33,7 +33,7 @@ package = [
         |]
         Overrides = null
         LockFile = "foo.toml"
-        Package = [|
+        PackagedFiles = [|
             { Type = "file"; Path = "files" }
             { Type = "zip"; Path = "files2/*.zip" }
         |]

@@ -56,7 +56,7 @@ overrides = [ # optional
   { id = "package2", version = "2.0.0", spdx = "GPL-3.0", copyright = "Copyright" }
 ]
 lock_file = "path/to/lock-file.toml" # required for generate-lock
-package = [ # required for generate-lock
+packaged_files = [ # required for generate-lock
     { type = "directory", path = "bin" },
     { type = "zip", path = "bin/*.zip" }
 ]
@@ -67,11 +67,11 @@ The `overrides` parameter (optional) should contain a set of license overrides f
 
 The `lock_file` parameter (optional) is the path to the license lock file that will be produced or verified by the corresponding commands. The path is either absolute or relative to the directory containing the configuration file. This parameter is mandatory for the `generate-lock` command.
 
-The `package` parameter (optional) describes the list of the files you want to check for their license contents. It is a list of the entries having the following structure:
+The `packaged_files` parameter (optional) describes the list of the files you want to check for their license contents. It is a list of the entries having the following structure:
 - `type` (required) should be either `directory` (to point to the root of the file hierarchy that will be processed recursively) or `zip`, to point to a zip archive that the tool will analyze,
 - `path` (required) is a path on disk; for zip archives, we support glob patterns.
 
-The `package` parameter is mandatory for the `generate-lock` command.
+The `packaged_files` parameter is mandatory for the `generate-lock` command.
 
 Lock File
 ---------

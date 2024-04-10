@@ -74,8 +74,11 @@ let internal GenerateLockFile(
     then wp.ProduceWarning(ExitCode.LockFileIsNotDefined, "lock_file is not specified in the configuration.")
     else
 
-    if config.Package = null
-    then wp.ProduceWarning(ExitCode.PackageIsNotDefined, "package is not specified in the configuration.")
+    if config.PackagedFiles = null
+    then wp.ProduceWarning(
+        ExitCode.PackagedFilesAreNotDefined,
+        "packaged_files are not specified in the configuration."
+    )
     else
 
     let lockFilePath = Path.Combine(baseFolderPath, config.LockFile)
@@ -84,7 +87,7 @@ let internal GenerateLockFile(
     let packageMetadata = metadata |> Seq.map (fun m -> m.Source, m) |> Map.ofSeq
     use ld = new LifetimeDefinition()
 
-    let! sourceEntries = Sources.ReadEntries ld.Lifetime baseFolderPath config.Package
+    let! sourceEntries = Sources.ReadEntries ld.Lifetime baseFolderPath config.PackagedFiles
 
     let lockFileContent = Dictionary<_, IReadOnlyList<LockFileItem>>()
     use cache = new FileHashCache()

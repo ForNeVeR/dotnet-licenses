@@ -22,7 +22,7 @@ type ExitCode =
     | LicenseForFileNotFound = 3
     // Configuration errors:
     | LockFileIsNotDefined = 5
-    | PackageIsNotDefined = 6
+    | PackagedFilesAreNotDefined = 6
     // Unable to start:
     | InvalidArguments = 255
 
