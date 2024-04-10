@@ -14,7 +14,7 @@ open Xunit
 [<Fact>]
 let ``Configuration should be read correctly``(): Task = task {
     let content = """
-inputs = [
+metadata_sources = [
   "File.csproj",
   "File.fsproj",
 ]
@@ -27,7 +27,7 @@ package = [
     use input = new MemoryStream(Encoding.UTF8.GetBytes content)
     let! configuration = Configuration.Read(input, Some "<test>")
     Assert.Equal({
-        Inputs = [|
+        MetadataSources = [|
             "File.csproj"
             "File.fsproj"
         |]
@@ -43,7 +43,7 @@ package = [
 [<Fact>]
 let ``Metadata overrides should be read correctly``(): Task = task {
     let content = """
-inputs = ["File.csproj"]
+metadata_sources = ["File.csproj"]
 overrides = [
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "" },
     { id = "Package1", version = "2.0.0", spdx = "MIT", copyright = "Copyright1" }
@@ -53,7 +53,7 @@ overrides = [
     let! configuration = Configuration.Read(input, Some "<test>")
     Assert.Equal({
         Configuration.Empty with
-            Inputs = [| "File.csproj" |]
+            MetadataSources = [| "File.csproj" |]
             Overrides = [|
                 {
                     Id = "Package1"
@@ -74,7 +74,7 @@ overrides = [
 [<Fact>]
 let ``GetOverrides works on duplicate package names (not versions)``(): Task = task {
     let content = """
-inputs = []
+metadata_sources = []
 overrides = [
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "" },
     { id = "Package2", version = "1.0.0", spdx = "MIT", copyright = "Copyright1" }
@@ -95,7 +95,7 @@ overrides = [
 [<Fact>]
 let ``GetOverrides prints a warning on duplicate keys``(): Task = task {
     let content = """
-inputs = []
+metadata_sources = []
 overrides = [
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "" },
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "Copyright1" }

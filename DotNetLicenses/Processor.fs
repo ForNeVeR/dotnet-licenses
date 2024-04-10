@@ -42,7 +42,7 @@ let private CollectMetadata (config: Configuration) baseFolderPath nuGet wp = ta
     let mutable usedOverrides = Set.empty
 
     let metadataList = ResizeArray()
-    for relativeProjectPath in config.Inputs do
+    for relativeProjectPath in config.MetadataSources do
         let projectPath = Path.Combine(baseFolderPath, relativeProjectPath)
         let! metadata = reader.ReadFromProject(projectPath, overrides)
         usedOverrides <- Set.union usedOverrides metadata.UsedOverrides

@@ -14,14 +14,14 @@ open Tomlyn
 [<CLIMutable>]
 type Configuration =
     {
-        Inputs: string[]
+        MetadataSources: string[]
         [<CanBeNull>] Overrides: Override[]
         [<CanBeNull>] LockFile: string
         [<CanBeNull>] Package: PackageSpec[]
     }
 
     static member Empty = {
-        Inputs = Array.empty
+        MetadataSources = Array.empty
         Overrides = null
         LockFile = null
         Package = null

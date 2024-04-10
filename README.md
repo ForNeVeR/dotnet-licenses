@@ -47,7 +47,7 @@ Configuration
 -------------
 The configuration file format is TOML. The format:
 ```toml
-inputs = [ # required
+metadata_sources = [ # required
   "path/to/project1.csproj",
   "path/to/project2.csproj"
 ]
@@ -61,7 +61,7 @@ package = [ # required for generate-lock
     { type = "zip", path = "bin/*.zip" }
 ]
 ```
-The `inputs` parameter (required) is a list of paths to the projects to analyze. The paths are either absolute or relative to the directory containing the configuration file.
+The `metadata_sources` parameter (required) is a list of paths to the projects to analyze. The paths are either absolute or relative to the directory containing the configuration file.
 
 The `overrides` parameter (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
 
