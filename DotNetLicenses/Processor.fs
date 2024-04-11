@@ -23,7 +23,7 @@ let private WarnUnusedOverrides allOverrides usedOverrides (wp: WarningProcessor
         let stringOverrides =
             Seq.map (fun o -> $"id = \"{o.PackageId}\", version = \"{o.Version}\"") unusedOverrides
             |> String.concat ", "
-        wp.ProduceWarning(ExitCode.UnusedOverride, $"Unused overrides: {stringOverrides}.")
+        wp.ProduceWarning(ExitCode.UnusedOverride, $"Unused metadata overrides: {stringOverrides}.")
 
 let private ProcessWarnings(wp: WarningProcessor) =
     for message in wp.Messages do
@@ -38,7 +38,7 @@ let private ProcessWarnings(wp: WarningProcessor) =
 let private CollectMetadata (config: Configuration) baseFolderPath nuGet wp = task {
     let reader = MetadataReader nuGet
 
-    let overrides = config.GetOverrides wp
+    let overrides = config.GetMetadataOverrides wp
     let mutable usedOverrides = Set.empty
 
     let metadataList = ResizeArray()

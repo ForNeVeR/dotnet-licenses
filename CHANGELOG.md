@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Support the standard `--help` and `--version` command-line options.
 - Add configuration file support, the file path being passed through the command line.
 
-  Configuration file options available in this version: `metadata_sources`, `overrides`, `lock_file`, and `packaged_files`.
+  Configuration file options available in this version: `metadata_sources`, `metadata_overrides`, `lock_file`, and `packaged_files`.
 - License lock file support for the packaged files.
 - Supported commands: `print` (default) and `generate-lock`.
 - Warnings and non-zero exit codes on duplicate and unused overrides.

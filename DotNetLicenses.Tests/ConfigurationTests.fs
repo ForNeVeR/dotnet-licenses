@@ -31,7 +31,7 @@ packaged_files = [
             "File.csproj"
             "File.fsproj"
         |]
-        Overrides = null
+        MetadataOverrides = null
         LockFile = "foo.toml"
         PackagedFiles = [|
             { Type = "file"; Path = "files" }
@@ -44,7 +44,7 @@ packaged_files = [
 let ``Metadata overrides should be read correctly``(): Task = task {
     let content = """
 metadata_sources = ["File.csproj"]
-overrides = [
+metadata_overrides = [
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "" },
     { id = "Package1", version = "2.0.0", spdx = "MIT", copyright = "Copyright1" }
 ]
@@ -54,7 +54,7 @@ overrides = [
     Assert.Equal({
         Configuration.Empty with
             MetadataSources = [| "File.csproj" |]
-            Overrides = [|
+            MetadataOverrides = [|
                 {
                     Id = "Package1"
                     Version = "1.0.0"
@@ -75,7 +75,7 @@ overrides = [
 let ``GetOverrides works on duplicate package names (not versions)``(): Task = task {
     let content = """
 metadata_sources = []
-overrides = [
+metadata_overrides = [
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "" },
     { id = "Package2", version = "1.0.0", spdx = "MIT", copyright = "Copyright1" }
 ]
@@ -83,7 +83,7 @@ overrides = [
     use input = new MemoryStream(Encoding.UTF8.GetBytes content)
     let! configuration = Configuration.Read(input, Some "<test>")
     let wp = WarningProcessor()
-    let overrides = configuration.GetOverrides wp
+    let overrides = configuration.GetMetadataOverrides wp
     Assert.Equivalent(Map.ofArray [|
         { PackageId = "Package1"; Version = "1.0.0" }, { SpdxExpression = "MIT"; Copyright = "" }
         { PackageId = "Package2"; Version = "1.0.0" }, { SpdxExpression = "MIT"; Copyright = "Copyright1" }
@@ -96,7 +96,7 @@ overrides = [
 let ``GetOverrides prints a warning on duplicate keys``(): Task = task {
     let content = """
 metadata_sources = []
-overrides = [
+metadata_overrides = [
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "" },
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "Copyright1" }
 ]
@@ -104,10 +104,10 @@ overrides = [
     use input = new MemoryStream(Encoding.UTF8.GetBytes content)
     let! configuration = Configuration.Read(input, Some "<test>")
     let wp = WarningProcessor()
-    let result = configuration.GetOverrides wp
+    let result = configuration.GetMetadataOverrides wp
     Assert.Equal(ExitCode.DuplicateOverride, Assert.Single wp.Codes)
     Assert.Equal<string>(
-        [| "Duplicate key in the overrides collection: id = \"Package1\", version = \"1.0.0\"." |],
+        [| "Duplicate key in the metadata_overrides collection: id = \"Package1\", version = \"1.0.0\"." |],
         wp.Messages
     )
     Assert.Equivalent(Map.ofArray [|

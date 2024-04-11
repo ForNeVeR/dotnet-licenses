@@ -62,7 +62,7 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
         let config = {
             Configuration.Empty with
                 MetadataSources = [|project|]
-                Overrides = [|{
+                MetadataOverrides = [|{
                     Id = "NonExistent"
                     Version = ""
                     Spdx = ""
@@ -74,7 +74,7 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
 
         Assert.Equivalent([|ExitCode.UnusedOverride|], wp.Codes)
         Assert.Equivalent([|
-            """Unused overrides: id = "NonExistent", version = ""."""
+            """Unused metadata overrides: id = "NonExistent", version = ""."""
         |], wp.Messages)
     })
 

@@ -15,14 +15,14 @@ open Tomlyn
 type Configuration =
     {
         MetadataSources: string[]
-        [<CanBeNull>] Overrides: Override[]
+        [<CanBeNull>] MetadataOverrides: Override[]
         [<CanBeNull>] LockFile: string
         [<CanBeNull>] PackagedFiles: PackageSpec[]
     }
 
     static member Empty = {
         MetadataSources = Array.empty
-        Overrides = null
+        MetadataOverrides = null
         LockFile = null
         PackagedFiles = null
     }
@@ -38,7 +38,7 @@ type Configuration =
         return! Configuration.Read(stream, Some path)
     }
 
-    member this.GetOverrides(
+    member this.GetMetadataOverrides(
         warningProcessor: WarningProcessor
     ): IReadOnlyDictionary<PackageReference, MetadataOverride> =
         let packageReference o = {
@@ -51,14 +51,14 @@ type Configuration =
         }
 
         let map = Dictionary()
-        Option.ofObj this.Overrides
+        Option.ofObj this.MetadataOverrides
         |> Option.defaultValue Array.empty
         |> Seq.map(fun o -> packageReference o, metadataOverride o)
         |> Seq.iter(fun (k, v) ->
             if not <| map.TryAdd(k, v) then
                 warningProcessor.ProduceWarning(
                     ExitCode.DuplicateOverride,
-                    $"Duplicate key in the overrides collection: id = \"{k.PackageId}\", version = \"{k.Version}\"."
+                    $"Duplicate key in the metadata_overrides collection: id = \"{k.PackageId}\", version = \"{k.Version}\"."
                 )
                 map[k] <- v
         )
