@@ -33,7 +33,7 @@ let ``Generator produces an error if no lock file is defined``(): Task = task {
     let config = {
         Configuration.Empty with
             MetadataSources = [|"non-important.csproj"|]
-            LockFile = null
+            LockFilePath = null
     }
     let! wp = runGenerator config
     Assert.Equal([|ExitCode.LockFileIsNotDefined|], wp.Codes)
@@ -47,7 +47,7 @@ let ``Generator produces an error if no package contents are defined``(): Task =
         let config = {
             Configuration.Empty with
                 MetadataSources = [|"non-important.csproj"|]
-                LockFile = lockFile
+                LockFilePath = lockFile
         }
         let! wp = runGenerator config
         Assert.Equal([|ExitCode.PackagedFilesAreNotDefined|], wp.Codes)
@@ -68,7 +68,7 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
                     Spdx = ""
                     Copyright = ""
                 }|]
-                LockFile = "lock.toml"
+                LockFilePath = "lock.toml"
         }
         let! wp = runPrinter config
 
@@ -84,7 +84,7 @@ let ``Printer generates no warnings on a valid config``(): Task =
         let config = {
             Configuration.Empty with
                 MetadataSources = [|project|]
-                LockFile = "lock.toml"
+                LockFilePath = "lock.toml"
         }
         let! wp = runPrinter config
 
@@ -106,7 +106,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
     let config = {
         Configuration.Empty with
             MetadataSources = [| project |]
-            LockFile = Path.GetTempFileName()
+            LockFilePath = Path.GetTempFileName()
             PackagedFiles = [|
                 { Type = "directory"; Path = directory.Path }
             |]
@@ -116,7 +116,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
     Assert.Empty wp.Codes
     Assert.Empty wp.Messages
 
-    let! actualContent = File.ReadAllTextAsync config.LockFile
+    let! actualContent = File.ReadAllTextAsync config.LockFilePath
     Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
 })
 
@@ -137,7 +137,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
         let config = {
             Configuration.Empty with
                 MetadataSources = [| project |]
-                LockFile = lockFile
+                LockFilePath = lockFile
                 PackagedFiles = [|
                     { Type = "directory"; Path = directory.Path }
                 |]
@@ -147,7 +147,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
         Assert.Empty wp.Codes
         Assert.Empty wp.Messages
 
-        let! actualContent = File.ReadAllTextAsync config.LockFile
+        let! actualContent = File.ReadAllTextAsync config.LockFilePath
         Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
     })
 }
@@ -168,7 +168,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
         let config = {
             Configuration.Empty with
                 MetadataSources = [| project |]
-                LockFile = lockFile
+                LockFilePath = lockFile
                 PackagedFiles = [|
                     { Type = "zip"; Path = Path.GetFileName archivePath }
                 |]
@@ -178,7 +178,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
         Assert.Empty wp.Codes
         Assert.Empty wp.Messages
 
-        let! actualContent = File.ReadAllTextAsync config.LockFile
+        let! actualContent = File.ReadAllTextAsync config.LockFilePath
         Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
     })
 }
@@ -195,7 +195,7 @@ let ``Processor processes ZIP files using a glob pattern``(): Task = task {
         let config = {
             Configuration.Empty with
                 MetadataSources = [| project |]
-                LockFile = lockFile
+                LockFilePath = lockFile
                 PackagedFiles = [|
                     { Type = "zip"; Path = archiveGlob }
                 |]
@@ -215,7 +215,7 @@ let ``Lock file generator produces a warning if it's unable to find a license fo
     let config = {
         Configuration.Empty with
             MetadataSources = [||]
-            LockFile = Path.Combine(directory.Path, "lock.toml")
+            LockFilePath = Path.Combine(directory.Path, "lock.toml")
             PackagedFiles = [|
                 { Type = "directory"; Path = directory.Path }
             |]

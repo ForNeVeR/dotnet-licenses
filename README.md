@@ -48,8 +48,8 @@ Configuration
 The configuration file format is TOML. The format:
 ```toml
 metadata_sources = [ # required
-  "path/to/project1.csproj",
-  "path/to/project2.csproj"
+  { type = "nuget", include = "path/to/project1.csproj" },
+  { type = "nuget", include = "path/to/project2.csproj" }
 ]
 metadata_overrides = [ # optional
   { id = "package1", version = "1.0.0", spdx = "MIT" , copyright = "Copyright"},

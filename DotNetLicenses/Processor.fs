@@ -70,7 +70,7 @@ let internal GenerateLockFile(
     nuGet: INuGetReader,
     wp: WarningProcessor
 ): Task = task {
-    if String.IsNullOrWhiteSpace config.LockFile
+    if String.IsNullOrWhiteSpace config.LockFilePath
     then wp.ProduceWarning(ExitCode.LockFileIsNotDefined, "lock_file is not specified in the configuration.")
     else
 
@@ -81,7 +81,7 @@ let internal GenerateLockFile(
     )
     else
 
-    let lockFilePath = Path.Combine(baseFolderPath, config.LockFile)
+    let lockFilePath = Path.Combine(baseFolderPath, config.LockFilePath)
     let! metadata = CollectMetadata config baseFolderPath nuGet wp
     let packages = metadata |> Seq.map _.Source |> Seq.toArray
     let packageMetadata = metadata |> Seq.map (fun m -> m.Source, m) |> Map.ofSeq

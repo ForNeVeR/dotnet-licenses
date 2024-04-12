@@ -15,8 +15,8 @@ open Xunit
 let ``Configuration should be read correctly``(): Task = task {
     let content = """
 metadata_sources = [
-  "File.csproj",
-  "File.fsproj",
+  { type = "nuget", include = "File.csproj" },
+  { type = "nuget", include = "File.fsproj" },
 ]
 lock_file = "foo.toml"
 packaged_files = [
@@ -28,11 +28,11 @@ packaged_files = [
     let! configuration = Configuration.Read(input, Some "<test>")
     Assert.Equal({
         MetadataSources = [|
-            "File.csproj"
-            "File.fsproj"
+            NuGetSource "File.csproj"
+            NuGetSource "File.fsproj"
         |]
         MetadataOverrides = null
-        LockFile = "foo.toml"
+        LockFilePath = "foo.toml"
         PackagedFiles = [|
             { Type = "file"; Path = "files" }
             { Type = "zip"; Path = "files2/*.zip" }
