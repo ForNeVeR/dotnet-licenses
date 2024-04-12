@@ -35,7 +35,7 @@ let private ProcessWarnings(wp: WarningProcessor) =
     int exitCode
 
 let private GetMetadata (projectMetadataReader: MetadataReader) baseFolderPath overrides (NuGetSource relativeProjectPath) =
-    let projectPath = Path.Combine(baseFolderPath, relativeProjectPath)
+    let projectPath = Path.Combine(baseFolderPath, relativeProjectPath.Include)
     projectMetadataReader.ReadFromProject(projectPath, overrides)
 
 let private CollectMetadata (config: Configuration) baseFolderPath nuGet wp = task {

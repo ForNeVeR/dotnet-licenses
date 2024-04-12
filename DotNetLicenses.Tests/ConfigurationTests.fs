@@ -28,8 +28,8 @@ packaged_files = [
     let! configuration = Configuration.Read(input, Some "<test>")
     Assert.Equal({
         MetadataSources = [|
-            NuGetSource "File.csproj"
-            NuGetSource "File.fsproj"
+            Configuration.NuGet "File.csproj"
+            Configuration.NuGet "File.fsproj"
         |]
         MetadataOverrides = None
         LockFilePath = Some "foo.toml"
@@ -37,6 +37,25 @@ packaged_files = [
             Directory "files"
             Zip "files2/*.zip"
         |]
+    }, configuration)
+}
+
+[<Fact>]
+let ``Optional metadata ids are read``(): Task = task {
+    let content = """
+metadata_sources = [
+  { id = "my_id", type = "nuget", include = "file1.csproj" },
+  { type = "nuget", include = "file2.csproj" },
+]
+"""
+    use input = new MemoryStream(Encoding.UTF8.GetBytes content)
+    let! configuration = Configuration.Read(input, Some "<test>")
+    Assert.Equal({
+        Configuration.Empty with
+            MetadataSources = [|
+                NuGetSource {| Id = Some "my_id"; Include = "file1.csproj" |}
+                Configuration.NuGet "file2.csproj"
+            |]
     }, configuration)
 }
 
@@ -53,7 +72,7 @@ metadata_overrides = [
     let! configuration = Configuration.Read(input, Some "<test>")
     Assert.Equal({
         Configuration.Empty with
-            MetadataSources = [| NuGetSource "File.csproj" |]
+            MetadataSources = [| Configuration.NuGet "File.csproj" |]
             MetadataOverrides = Some [|
                 {
                     Id = "Package1"

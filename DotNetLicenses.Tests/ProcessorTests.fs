@@ -15,8 +15,8 @@ type private Runner =
     static member RunFunction(func: _ * _ * _ * _ -> Task, config, ?baseDirectory: string) = task {
         let baseDirectory =
             baseDirectory |> Option.defaultWith(fun() ->
-                let (NuGetSource sourcePath) = Seq.exactlyOne config.MetadataSources
-                Path.GetDirectoryName(sourcePath)
+                let (NuGetSource source) = Seq.exactlyOne config.MetadataSources
+                Path.GetDirectoryName(source.Include)
             )
         let wp = WarningProcessor()
         do! func(
@@ -35,7 +35,7 @@ let private runGenerator t = Runner.RunFunction(Processor.GenerateLockFile, t)
 let ``Generator produces an error if no lock file is defined``(): Task = task {
     let config = {
         Configuration.Empty with
-            MetadataSources = [| NuGetSource "non-important.csproj" |]
+            MetadataSources = [| Configuration.NuGet "non-important.csproj" |]
     }
     let! wp = runGenerator config
     Assert.Equal([|ExitCode.LockFileIsNotDefined|], wp.Codes)
@@ -48,7 +48,7 @@ let ``Generator produces an error if no package contents are defined``(): Task =
     try
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource "non-important.csproj" |]
+                MetadataSources = [| Configuration.NuGet "non-important.csproj" |]
                 LockFilePath = Some lockFile
         }
         let! wp = runGenerator config
@@ -63,7 +63,7 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource project |]
+                MetadataSources = [| Configuration.NuGet project |]
                 MetadataOverrides = Some [|{
                     Id = "NonExistent"
                     Version = ""
@@ -85,7 +85,7 @@ let ``Printer generates no warnings on a valid config``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource project |]
+                MetadataSources = [| Configuration.NuGet project |]
                 LockFilePath = Some "lock.toml"
         }
         let! wp = runPrinter config
@@ -107,7 +107,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
 """
     let config = {
         Configuration.Empty with
-            MetadataSources = [| NuGetSource project |]
+            MetadataSources = [| Configuration.NuGet project |]
             LockFilePath = Some <| Path.GetTempFileName()
             PackagedFiles = Some [|
                 Directory directory.Path
@@ -138,7 +138,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
         let lockFile = Path.Combine(directory.Path, "lock.toml")
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource project |]
+                MetadataSources = [| Configuration.NuGet project |]
                 LockFilePath = Some lockFile
                 PackagedFiles = Some [|
                     Directory directory.Path
@@ -169,7 +169,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
         let lockFile = Path.Combine(directory.Path, "lock.toml")
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource project |]
+                MetadataSources = [| Configuration.NuGet project |]
                 LockFilePath = Some lockFile
                 PackagedFiles = Some [|
                     Zip <| Path.GetFileName archivePath
@@ -196,7 +196,7 @@ let ``Processor processes ZIP files using a glob pattern``(): Task = task {
         let lockFile = Path.Combine(directory.Path, "lock.toml")
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource project |]
+                MetadataSources = [| Configuration.NuGet project |]
                 LockFilePath = Some lockFile
                 PackagedFiles = Some [|
                     Zip archiveGlob

@@ -27,12 +27,21 @@ type Configuration =
     }
 
     static member Read(stream: Stream, filePath: string option): Task<Configuration> = task {
+        let getValue (table: TomlTable) key =
+            table[key] :?> 'a
+
+        let tryGetValue (table: TomlTable) key =
+            let value = ref Unchecked.defaultof<_>
+            if table.TryGetValue(key, value)
+            then Some(value.Value :?> 'a)
+            else None
+
         let readSources(array: TomlArray) =
             array
             |> Seq.cast<TomlTable>
             |> Seq.map(fun t ->
-                match t["type"] :?> string with
-                | "nuget" -> NuGetSource(t["include"] :?> string)
+                match getValue t "type" with
+                | "nuget" -> NuGetSource {| Id = tryGetValue t "id"; Include = getValue t "include" |}
                 | other -> failwithf $"Metadata source type not supported: {other}"
             )
             |> Seq.toArray
@@ -43,10 +52,10 @@ type Configuration =
                 |> Seq.cast<TomlTable>
                 |> Seq.map(fun t ->
                     {
-                        Id = t["id"] :?> string
-                        Version = t["version"] :?> string
-                        Spdx = t["spdx"] :?> string
-                        Copyright = t["copyright"] :?> string
+                        Id = getValue t "id"
+                        Version = getValue t "version"
+                        Spdx = getValue t "spdx"
+                        Copyright = getValue t "copyright"
                     }
                 )
                 |> Seq.toArray
@@ -56,25 +65,19 @@ type Configuration =
                 array
                 |> Seq.cast<TomlTable>
                 |> Seq.map(fun t ->
-                    match t["type"] :?> string with
-                    | "directory" -> Directory(t["path"] :?> string)
-                    | "zip" -> Zip(t["path"] :?> string)
+                    match getValue t "type" with
+                    | "directory" -> Directory(getValue t "path")
+                    | "zip" -> Zip(getValue t "path")
                     | other -> failwithf $"Packaged file source type not supported: {other}"
                 )
                 |> Seq.toArray
             )
 
-        let tryGetValue (table: TomlTable) key =
-            let value = ref Unchecked.defaultof<_>
-            if table.TryGetValue(key, value)
-            then Some(value.Value :?> 'a)
-            else None
-
         use reader = new StreamReader(stream)
         let! text = reader.ReadToEndAsync()
         let table = Toml.ToModel(text, sourcePath = Option.toObj filePath)
 
-        let sources = table["metadata_sources"] :?> TomlArray
+        let sources = getValue table "metadata_sources"
         let overrides = tryGetValue table "metadata_overrides"
         let lockFilePath = tryGetValue table "lock_file"
         let packagedFiles = tryGetValue table "packaged_files"
@@ -118,8 +121,11 @@ type Configuration =
         )
         map
 
+    static member NuGet(``include``: string, ?id: string): MetadataSource =
+        NuGetSource {| Id = id; Include = ``include`` |}
+
 and MetadataSource =
-    NuGetSource of ``include``: string
+    NuGetSource of {| Id: string option; Include: string |}
 
 and Override = {
     Id: string
