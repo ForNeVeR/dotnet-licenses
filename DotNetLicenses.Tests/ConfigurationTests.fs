@@ -20,7 +20,7 @@ metadata_sources = [
 ]
 lock_file = "foo.toml"
 packaged_files = [
-    { type = "file", path = "files" },
+    { type = "directory", path = "files" },
     { type = "zip", path = "files2/*.zip" },
 ]
 """
@@ -31,11 +31,11 @@ packaged_files = [
             NuGetSource "File.csproj"
             NuGetSource "File.fsproj"
         |]
-        MetadataOverrides = null
-        LockFilePath = "foo.toml"
-        PackagedFiles = [|
-            { Type = "file"; Path = "files" }
-            { Type = "zip"; Path = "files2/*.zip" }
+        MetadataOverrides = None
+        LockFilePath = Some "foo.toml"
+        PackagedFiles = Some [|
+            Directory "files"
+            Zip "files2/*.zip"
         |]
     }, configuration)
 }
@@ -43,7 +43,7 @@ packaged_files = [
 [<Fact>]
 let ``Metadata overrides should be read correctly``(): Task = task {
     let content = """
-metadata_sources = ["File.csproj"]
+metadata_sources = [{ type = "nuget", include = "File.csproj" }]
 metadata_overrides = [
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "" },
     { id = "Package1", version = "2.0.0", spdx = "MIT", copyright = "Copyright1" }
@@ -53,8 +53,8 @@ metadata_overrides = [
     let! configuration = Configuration.Read(input, Some "<test>")
     Assert.Equal({
         Configuration.Empty with
-            MetadataSources = [| "File.csproj" |]
-            MetadataOverrides = [|
+            MetadataSources = [| NuGetSource "File.csproj" |]
+            MetadataOverrides = Some [|
                 {
                     Id = "Package1"
                     Version = "1.0.0"

@@ -23,7 +23,7 @@ let ``Sources are enumerated for a file-system directory``(): Task = task {
     Directory.CreateDirectory(Path.Combine(directory.Path, "subdirectory")) |> ignore
     do! File.WriteAllTextAsync(Path.Combine(directory.Path, "subdirectory", "file.txt"), "content")
 
-    let spec = { Type = "directory"; Path  = directory.Path }
+    let spec = Directory directory.Path
     use ld = new LifetimeDefinition()
     let! entries = ReadEntries ld.Lifetime directory.Path [| spec |]
     Assert.Equivalent([|
@@ -34,8 +34,9 @@ let ``Sources are enumerated for a file-system directory``(): Task = task {
 
 [<Fact>]
 let ``SourceRelativePath is generated for a file set``(): unit =
-    let source = { Type = "directory"; Path = Path.GetTempPath() }
-    let file = Path.Combine(source.Path, Path.Combine("foo", "file.txt"))
+    use directory = DisposableDirectory.Create()
+    let source = Directory <| directory.Path
+    let file = Path.Combine(directory.Path, Path.Combine("foo", "file.txt"))
     let entry = FileSourceEntry(source, file) :> ISourceEntry
     Assert.Equal("foo/file.txt", entry.SourceRelativePath)
 
@@ -50,7 +51,7 @@ let ``SourceEntry calculates its hash correctly``(): Task = task {
     let expectedHash = calculateSha256 content
     let path = Path.Combine(directory.Path, "file.txt")
     File.WriteAllBytes(path, content)
-    let source = { Type = "directory"; Path = directory.Path }
+    let source = Directory directory.Path
     let entry = FileSourceEntry(source, path) :> ISourceEntry
     let! actualHash = entry.CalculateHash()
     Assert.Equal(expectedHash, actualHash)
@@ -65,7 +66,7 @@ let ``SourceEntry reads contents from a ZIP archive``(): Task = task {
     ZipFiles.SingleFileArchive(archivePath, fileName, Encoding.UTF8.GetBytes content)
     use stream = File.OpenRead archivePath
     use archive = new ZipArchive(stream)
-    let source = { Type = "zip"; Path = archivePath }
+    let source = Zip archivePath
     let entry = ZipSourceEntry(source, archive, archivePath, fileName) :> ISourceEntry
     use! stream = entry.ReadContent()
     use reader = new StreamReader(stream)

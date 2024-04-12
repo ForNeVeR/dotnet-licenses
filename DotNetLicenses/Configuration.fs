@@ -27,23 +27,62 @@ type Configuration =
     }
 
     static member Read(stream: Stream, filePath: string option): Task<Configuration> = task {
-        let readSources table = failwith "TODO"
-        let readOverrides = failwith "TODO"
-        let readPackagedFiles = failwith "TODO"
+        let readSources(array: TomlArray) =
+            array
+            |> Seq.cast<TomlTable>
+            |> Seq.map(fun t ->
+                match t["type"] :?> string with
+                | "nuget" -> NuGetSource(t["include"] :?> string)
+                | other -> failwithf $"Metadata source type not supported: {other}"
+            )
+            |> Seq.toArray
+
+        let readOverrides =
+            Option.map (fun array ->
+                array
+                |> Seq.cast<TomlTable>
+                |> Seq.map(fun t ->
+                    {
+                        Id = t["id"] :?> string
+                        Version = t["version"] :?> string
+                        Spdx = t["spdx"] :?> string
+                        Copyright = t["copyright"] :?> string
+                    }
+                )
+                |> Seq.toArray
+            )
+        let readPackagedFiles =
+            Option.map (fun array ->
+                array
+                |> Seq.cast<TomlTable>
+                |> Seq.map(fun t ->
+                    match t["type"] :?> string with
+                    | "directory" -> Directory(t["path"] :?> string)
+                    | "zip" -> Zip(t["path"] :?> string)
+                    | other -> failwithf $"Packaged file source type not supported: {other}"
+                )
+                |> Seq.toArray
+            )
+
+        let tryGetValue (table: TomlTable) key =
+            let value = ref Unchecked.defaultof<_>
+            if table.TryGetValue(key, value)
+            then Some(value.Value :?> 'a)
+            else None
 
         use reader = new StreamReader(stream)
         let! text = reader.ReadToEndAsync()
         let table = Toml.ToModel(text, sourcePath = Option.toObj filePath)
 
         let sources = table["metadata_sources"] :?> TomlArray
-        let overrides = table["metadata_overrides"] :?> TomlArray
-        let lockFilePath = table["lock_file"] :?> string
-        let packagedFiles = table["packaged_files"] :?> TomlArray
+        let overrides = tryGetValue table "metadata_overrides"
+        let lockFilePath = tryGetValue table "lock_file"
+        let packagedFiles = tryGetValue table "packaged_files"
 
         return {
             MetadataSources = readSources sources
             MetadataOverrides = readOverrides overrides
-            LockFilePath = Option.ofObj lockFilePath
+            LockFilePath = lockFilePath
             PackagedFiles = readPackagedFiles packagedFiles
         }
     }
@@ -80,7 +119,7 @@ type Configuration =
         map
 
 and MetadataSource =
-    NuGet of ``include``: string
+    NuGetSource of ``include``: string
 
 and Override = {
     Id: string

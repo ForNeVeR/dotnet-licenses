@@ -4,7 +4,6 @@
 
 module DotNetLicenses.Processor
 
-open System
 open System.Collections.Generic
 open System.IO
 open System.Reflection
@@ -35,6 +34,10 @@ let private ProcessWarnings(wp: WarningProcessor) =
         else Seq.max wp.Codes
     int exitCode
 
+let private GetMetadata (projectMetadataReader: MetadataReader) baseFolderPath overrides (NuGetSource relativeProjectPath) =
+    let projectPath = Path.Combine(baseFolderPath, relativeProjectPath)
+    projectMetadataReader.ReadFromProject(projectPath, overrides)
+
 let private CollectMetadata (config: Configuration) baseFolderPath nuGet wp = task {
     let reader = MetadataReader nuGet
 
@@ -42,16 +45,14 @@ let private CollectMetadata (config: Configuration) baseFolderPath nuGet wp = ta
     let mutable usedOverrides = Set.empty
 
     let metadataList = ResizeArray()
-    for relativeProjectPath in config.MetadataSources do
-        let projectPath = Path.Combine(baseFolderPath, relativeProjectPath)
-        let! metadata = reader.ReadFromProject(projectPath, overrides)
+    for source in config.MetadataSources do
+        let! metadata = GetMetadata reader baseFolderPath overrides source
         usedOverrides <- Set.union usedOverrides metadata.UsedOverrides
         metadataList.AddRange metadata.Items
 
     WarnUnusedOverrides overrides.Keys usedOverrides wp
     return metadataList
 }
-
 
 let internal PrintMetadata(
     config: Configuration,
@@ -70,24 +71,25 @@ let internal GenerateLockFile(
     nuGet: INuGetReader,
     wp: WarningProcessor
 ): Task = task {
-    if String.IsNullOrWhiteSpace config.LockFilePath
-    then wp.ProduceWarning(ExitCode.LockFileIsNotDefined, "lock_file is not specified in the configuration.")
-    else
+    match config.LockFilePath with
+    | None -> wp.ProduceWarning(ExitCode.LockFileIsNotDefined, "lock_file is not specified in the configuration.")
+    | Some lockFilePath ->
 
-    if config.PackagedFiles = null
-    then wp.ProduceWarning(
-        ExitCode.PackagedFilesAreNotDefined,
-        "packaged_files are not specified in the configuration."
-    )
-    else
+    match config.PackagedFiles with
+    | None ->
+        wp.ProduceWarning(
+            ExitCode.PackagedFilesAreNotDefined,
+            "packaged_files are not specified in the configuration."
+        )
+    | Some packagedFiles ->
 
-    let lockFilePath = Path.Combine(baseFolderPath, config.LockFilePath)
+    let lockFilePath = Path.Combine(baseFolderPath, lockFilePath)
     let! metadata = CollectMetadata config baseFolderPath nuGet wp
     let packages = metadata |> Seq.map _.Source |> Seq.toArray
     let packageMetadata = metadata |> Seq.map (fun m -> m.Source, m) |> Map.ofSeq
     use ld = new LifetimeDefinition()
 
-    let! sourceEntries = Sources.ReadEntries ld.Lifetime baseFolderPath config.PackagedFiles
+    let! sourceEntries = Sources.ReadEntries ld.Lifetime baseFolderPath packagedFiles
 
     let lockFileContent = Dictionary<_, IReadOnlyList<LockFileItem>>()
     use cache = new FileHashCache()

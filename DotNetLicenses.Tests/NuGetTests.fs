@@ -58,7 +58,7 @@ let ``Package file searcher works correctly``(): Task = task {
     use projectDir = DisposableDirectory.Create()
     let fileContent = "Hello"B
     let contentFullPath = Path.Combine(projectDir.Path, fileRelativePath)
-    let fileEntry = FileSourceEntry({ Type = "directory"; Path = projectDir.Path }, contentFullPath)
+    let fileEntry = FileSourceEntry(Directory projectDir.Path, contentFullPath)
 
     let deployFileTo(fullPath: string) =
         Directory.CreateDirectory(fullPath |> Path.GetDirectoryName) |> ignore
