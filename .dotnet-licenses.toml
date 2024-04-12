@@ -6,7 +6,7 @@
 # Note that these are not necessarily all the licenses used by the project; only those related to the packaged files.
 
 metadata_sources = [
-    "DotNetLicenses/DotNetLicenses.fsproj"
+    { type = "nuget", include = "DotNetLicenses/DotNetLicenses.fsproj" }
 ]
 lock_file = ".dotnet-licenses.lock.toml"
 packaged_files = [
