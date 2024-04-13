@@ -7,17 +7,19 @@ module DotNetLicenses.LockFile
 open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
+open JetBrains.Annotations
+open TruePath
 open Tomlyn
 
 [<CLIMutable>]
 type LockFileItem = {
-    SourceId: string
-    SourceVersion: string
+    [<CanBeNull>] SourceId: string
+    [<CanBeNull>] SourceVersion: string
     Spdx: string
     Copyright: string
 }
 
-let SaveLockFile(path: string, items: Dictionary<string, IReadOnlyList<LockFileItem>>): Task =
+let SaveLockFile(path: AbsolutePath, items: Dictionary<string, IReadOnlyList<LockFileItem>>): Task =
     // Dictionary is important, since Tomlyn casts to raw IDictionary under the cover, which is not supported by F# Map
     let text = Toml.FromModel items
-    File.WriteAllTextAsync(path, text)
+    File.WriteAllTextAsync(path.Value, text)

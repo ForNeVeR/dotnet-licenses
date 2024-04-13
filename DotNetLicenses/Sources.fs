@@ -12,6 +12,7 @@ open System.Security.Cryptography
 open System.Threading
 open System.Threading.Tasks
 open JetBrains.Lifetimes
+open TruePath
 open Microsoft.Extensions.FileSystemGlobbing
 
 type ISourceEntry =
@@ -20,10 +21,10 @@ type ISourceEntry =
     abstract member ReadContent: unit -> Task<Stream>
     abstract member CalculateHash: unit -> Task<string>
 
-type private HashCalculator(entry: ISourceEntry, filePathToCheck: string) =
+type private HashCalculator(entry: ISourceEntry, filePathToCheck: AbsolutePath) =
     let mutable hashCalculationCache = None
     member _.CalculateHash(): Task<string> =
-        let lastWriteTime = File.GetLastWriteTimeUtc filePathToCheck
+        let lastWriteTime = File.GetLastWriteTimeUtc filePathToCheck.Value
         match Volatile.Read(&hashCalculationCache) with
         | Some(cachedWriteTime, task) when cachedWriteTime >= lastWriteTime -> task
         | _ ->
@@ -39,10 +40,7 @@ type private HashCalculator(entry: ISourceEntry, filePathToCheck: string) =
             Volatile.Write(&hashCalculationCache, Some(lastWriteTime, calculationTask))
             calculationTask
 
-type internal FileSourceEntry(source: PackageSpec, fullPath: string) as this =
-    do if not <| Path.IsPathRooted fullPath then
-        failwithf $"Path is not absolute: \"{fullPath}\"."
-
+type internal FileSourceEntry(basePath: AbsolutePath, source: PackageSpec, fullPath: StrictAbsolutePath) as this =
     let calculator = HashCalculator(this, fullPath)
 
     interface ISourceEntry with
@@ -50,17 +48,22 @@ type internal FileSourceEntry(source: PackageSpec, fullPath: string) as this =
 
         member _.SourceRelativePath =
             match source with
-            | Directory path -> Path.GetRelativePath(path, fullPath).Replace(Path.DirectorySeparatorChar, '/')
+            | Directory path ->
+                let sourcePath = basePath / path
+                Path.GetRelativePath(sourcePath.Value, fullPath.Value).Replace(Path.DirectorySeparatorChar, '/')
             | other -> failwithf $"Package spec type not supported: {other}."
 
         member _.ReadContent(): Task<Stream> =
-            match source with
-            | Directory path -> Task.FromResult<Stream>(File.OpenRead fullPath)
-            | other -> failwithf $"Package spec type not supported: {other}."
+            Task.FromResult<Stream>(File.OpenRead fullPath.Value)
 
         member this.CalculateHash(): Task<string> = calculator.CalculateHash()
 
-type internal ZipSourceEntry(source: PackageSpec, archive: ZipArchive, archivePath: string, name: string) as this =
+type internal ZipSourceEntry(
+    source: PackageSpec,
+    archive: ZipArchive,
+    archivePath: AbsolutePath,
+    name: string
+) as this =
     let calculator = HashCalculator(this, archivePath)
 
     interface ISourceEntry with
@@ -77,9 +80,9 @@ type internal ZipSourceEntry(source: PackageSpec, archive: ZipArchive, archivePa
 
         member this.CalculateHash(): Task<string> = calculator.CalculateHash()
 
-let private ExtractZipFileEntries(lifetime: Lifetime, spec: PackageSpec, archivePath: string) = task {
+let private ExtractZipFileEntries(lifetime: Lifetime, spec: PackageSpec, archivePath: AbsolutePath) = task {
     do! Task.Yield()
-    let stream = File.OpenRead archivePath
+    let stream = File.OpenRead archivePath.Value
     let archive = new ZipArchive(stream, ZipArchiveMode.Read)
     lifetime.AddDispose archive |> ignore
     return
@@ -88,43 +91,46 @@ let private ExtractZipFileEntries(lifetime: Lifetime, spec: PackageSpec, archive
         |> Seq.toArray
 }
 
-let private IncludesMetaCharacters(s: string) =
+let private IncludesMetaCharacters(p: LocalPathPattern) =
+    let s = p.Value
     s.Contains '*' || s.Contains '?'
 
-let private ExtractEntries(lifetime: Lifetime, baseDirectory: string, spec: PackageSpec) = task {
+let private ExtractEntries(lifetime: Lifetime, baseDirectory: AbsolutePath, spec: PackageSpec) = task {
     do! Task.Yield()
 
     match spec with
     | Directory relativePath ->
-        let fullPath = Path.Combine(baseDirectory, relativePath)
+        let fullPath = baseDirectory / relativePath
         let options = EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
         return
-            Directory.EnumerateFileSystemEntries(fullPath, "*", options)
-            |> Seq.map(fun path -> FileSourceEntry(spec, path) :> ISourceEntry)
+            Directory.EnumerateFileSystemEntries(fullPath.Value, "*", options)
+            |> Seq.map(fun path -> FileSourceEntry(baseDirectory, spec, StrictAbsolutePath path) :> ISourceEntry)
             |> Seq.toArray
     | Zip relativePath ->
         if IncludesMetaCharacters relativePath then
-            let matcher = Matcher().AddInclude relativePath
+            let matcher = Matcher().AddInclude relativePath.Value
             let! entries =
-                matcher.GetResultsInFullPath baseDirectory
+                matcher.GetResultsInFullPath baseDirectory.Value
                 |> Seq.map (fun matchedArchivePath -> task {
                     let stream = File.OpenRead matchedArchivePath
                     let archive = new ZipArchive(stream, ZipArchiveMode.Read)
                     lifetime.AddDispose archive |> ignore
                     return
                         archive.Entries
-                        |> Seq.map(fun e -> ZipSourceEntry(spec, archive, matchedArchivePath, e.FullName) :> ISourceEntry)
+                        |> Seq.map(fun e ->
+                            ZipSourceEntry(spec, archive, AbsolutePath matchedArchivePath, e.FullName) :> ISourceEntry
+                        )
                         |> Seq.toArray
                 })
                 |> Task.WhenAll
             return entries |> Seq.concat |> Seq.toArray
         else
-            let archivePath = Path.Combine(baseDirectory, relativePath)
+            let archivePath = baseDirectory / RelativePath relativePath.Value
             return! ExtractZipFileEntries(lifetime, spec, archivePath)
 }
 
 let ReadEntries (lifetime: Lifetime)
-                (baseDirectory: string)
+                (baseDirectory: AbsolutePath)
                 (spec: PackageSpec seq): Task<IReadOnlyList<ISourceEntry>> = task {
     let result = ResizeArray()
     for package in spec do

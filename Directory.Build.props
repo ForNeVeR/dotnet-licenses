@@ -14,4 +14,8 @@ SPDX-License-Identifier: MIT
 © Microsoft Corporation. All rights reserved. <!-- This is from FSharp.Core -->
         </Copyright>
     </PropertyGroup>
+
+    <PropertyGroup Label="Build">
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    </PropertyGroup>
 </Project>

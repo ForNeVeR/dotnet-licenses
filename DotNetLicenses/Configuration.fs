@@ -8,15 +8,17 @@ open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
 open DotNetLicenses.CommandLine
-open LocalPath
+open TruePath
 open Tomlyn
 open Tomlyn.Model
+
+#nowarn "3511"
 
 type Configuration =
     {
         MetadataSources: MetadataSource[]
         MetadataOverrides: Override[]
-        LockFilePath: string option
+        LockFile: RelativePath option
         PackagedFiles: PackageSpec[]
         AssignedMetadata: AssignedMetadata[]
     }
@@ -24,7 +26,7 @@ type Configuration =
     static member Empty = {
         MetadataSources = Array.empty
         MetadataOverrides = Array.empty
-        LockFilePath = None
+        LockFile = None
         PackagedFiles = Array.empty
         AssignedMetadata = Array.empty
     }
@@ -45,7 +47,13 @@ type Configuration =
             |> Seq.cast<TomlTable>
             |> Seq.map(fun t ->
                 match getValue t "type" with
-                | "nuget" -> NuGetSource {| Id = tryGetValue t "id"; Include = getValue t "include" |}
+                | "nuget" -> NuGet { Include = getValue t "include" |> RelativePath }
+                | "license" ->
+                    License {
+                        Spdx = getValue t "spdx"
+                        Copyright = getValue t "copyright"
+                        FilesCovered = LocalPathPattern(getValue t "files_covered")
+                    }
                 | other -> failwithf $"Metadata source type not supported: {other}"
             )
             |> Seq.toArray
@@ -71,8 +79,8 @@ type Configuration =
 
         let readPackagedFiles = readOptArrayOfTablesUsing(fun t ->
             match getValue t "type" with
-            | "directory" -> Directory(getValue t "path")
-            | "zip" -> Zip(getValue t "path")
+            | "directory" -> Directory(getValue t "path" |> RelativePath)
+            | "zip" -> Zip(getValue t "path" |> LocalPathPattern)
             | other -> failwithf $"Packaged file source type not supported: {other}"
         )
 
@@ -89,14 +97,14 @@ type Configuration =
 
         let sources = getValue table "metadata_sources"
         let overrides = tryGetValue table "metadata_overrides"
-        let lockFilePath = tryGetValue table "lock_file"
+        let lockFilePath = tryGetValue table "lock_file" |> Option.map RelativePath
         let packagedFiles = tryGetValue table "packaged_files"
         let assignedMetadata = tryGetValue table "assigned_metadata"
 
         return {
             MetadataSources = readSources sources
             MetadataOverrides = readOverrides overrides
-            LockFilePath = lockFilePath
+            LockFile = lockFilePath
             PackagedFiles = readPackagedFiles packagedFiles
             AssignedMetadata = readAssignedMetadata assignedMetadata
         }
@@ -110,11 +118,11 @@ type Configuration =
     member this.GetMetadataOverrides(
         warningProcessor: WarningProcessor
     ): IReadOnlyDictionary<PackageReference, MetadataOverride> =
-        let packageReference o = {
+        let packageReference(o: Override) = {
             PackageId = o.Id
             Version = o.Version
         }
-        let metadataOverride o = {
+        let metadataOverride(o: Override) = {
             SpdxExpression = o.Spdx
             Copyright = o.Copyright
         }
@@ -132,11 +140,9 @@ type Configuration =
         )
         map
 
-    static member NuGet(``include``: string, ?id: string): MetadataSource =
-        NuGetSource {| Id = id; Include = ``include`` |}
-
 and MetadataSource =
-    NuGetSource of {| Id: string option; Include: string |}
+    | NuGet of NuGetSource
+    | License of LicenseSource
 
 and Override = {
     Id: string
@@ -146,10 +152,23 @@ and Override = {
 }
 
 and PackageSpec =
-    | Directory of path: string
-    | Zip of path: string
+    | Directory of path: RelativePath
+    | Zip of path: LocalPathPattern
 
 and AssignedMetadata = {
     Files: LocalPathPattern
     MetadataSourceId: string
+}
+
+and NuGetSource =
+    {
+        Include: RelativePath
+    }
+    static member Of(path: RelativePath) = NuGet { Include = path }
+    static member Of(relativePath: string) = NuGetSource.Of(RelativePath relativePath)
+
+and LicenseSource = {
+    Spdx: string
+    Copyright: string
+    FilesCovered: LocalPathPattern
 }

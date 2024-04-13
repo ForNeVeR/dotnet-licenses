@@ -9,21 +9,20 @@ open DotNetLicenses
 open DotNetLicenses.Metadata
 open DotNetLicenses.NuGet
 open DotNetLicenses.TestFramework
+open TruePath
 open Xunit
 
 [<Fact>]
 let ``Get metadata from .nuspec works correctly``(): Task = task {
     let path = DataFiles.Get "Test1.nuspec"
-    let! nuSpec = ReadNuSpec path
+    let! nuSpec = ReadNuSpec <| AbsolutePath.op_Implicit path
     let reference = {
         PackageId = "Package"
         Version = "1.0.0"
     }
     let metadata = GetMetadata reference nuSpec
     Assert.Equal({
-        Source = reference
-        Id = "FVNever.DotNetLicenses"
-        Version = "0.0.0"
+        Source = Package reference
         Spdx = "MIT"
         Copyright = "© 2024 Friedrich von Never"
     }, metadata)
@@ -40,14 +39,12 @@ let ``Overrides work as expected``(): Task = task {
     |])
     Assert.Equivalent([|
         {
-            Id = "FVNever.Package1"
-            Version = "0.0.0"
+            Source = Package { PackageId = "FVNever.Package1"; Version = "0.0.0" }
             Spdx = "EXPR1"
             Copyright = "C1"
         }
         {
-            Id = "FVNever.Package3"
-            Version = "0.0.0"
+            Source = Package { PackageId = "FVNever.Package3"; Version = "0.0.0" }
             Spdx = "License FVNever.Package3"
             Copyright = "Copyright FVNever.Package3"
         }

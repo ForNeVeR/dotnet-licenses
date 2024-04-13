@@ -12,7 +12,10 @@ open DotNetLicenses.CommandLine
 open DotNetLicenses.LockFile
 open DotNetLicenses.Metadata
 open DotNetLicenses.NuGet
+open DotNetLicenses.Sources
 open JetBrains.Lifetimes
+open Microsoft.Extensions.FileSystemGlobbing
+open TruePath
 
 let private WarnUnusedOverrides allOverrides usedOverrides (wp: WarningProcessor) =
     let allOverrides = Set.ofSeq allOverrides
@@ -34,11 +37,21 @@ let private ProcessWarnings(wp: WarningProcessor) =
         else Seq.max wp.Codes
     int exitCode
 
-let private GetMetadata (projectMetadataReader: MetadataReader) baseFolderPath overrides (NuGetSource relativeProjectPath) =
-    let projectPath = Path.Combine(baseFolderPath, relativeProjectPath.Include)
-    projectMetadataReader.ReadFromProject(projectPath, overrides)
+let private GetMetadata (projectMetadataReader: MetadataReader) (baseFolderPath: AbsolutePath) overrides = function
+    | MetadataSource.NuGet source ->
+        let projectPath = baseFolderPath / source.Include
+        projectMetadataReader.ReadFromProject(projectPath, overrides)
+    | MetadataSource.License source ->
+        Task.FromResult {
+            Items = [| {
+                Source = License source
+                Spdx = source.Spdx
+                Copyright = source.Copyright
+            } |].AsReadOnly()
+            UsedOverrides = Set.empty
+        }
 
-let private CollectMetadata (config: Configuration) baseFolderPath nuGet wp = task {
+let private CollectMetadata (config: Configuration) (baseFolderPath: AbsolutePath) nuGet wp = task {
     let reader = MetadataReader nuGet
 
     let overrides = config.GetMetadataOverrides wp
@@ -56,22 +69,31 @@ let private CollectMetadata (config: Configuration) baseFolderPath nuGet wp = ta
 
 let internal PrintMetadata(
     config: Configuration,
-    baseFolderPath: string,
+    baseFolderPath: AbsolutePath,
     nuGet: INuGetReader,
     wp: WarningProcessor
 ): Task = task {
     let! metadata = CollectMetadata config baseFolderPath nuGet wp
     for item in metadata do
-        printfn $"- {item.Id}: {item.Spdx}\n  {item.Copyright}"
+        let sourceInfo =
+            match item.Source with
+            | Package package -> $"{package.PackageId} {package.Version}"
+            | License _ -> "License"
+        printfn $"- {sourceInfo}: {item.Spdx}\n  {item.Copyright}"
 }
+
+let private IsCoveredByPattern (path: RelativePath) (pattern: LocalPathPattern) =
+    let matcher = Matcher().AddInclude pattern.Value
+    let result = matcher.Match path.Value
+    result.HasMatches
 
 let internal GenerateLockFile(
     config: Configuration,
-    baseFolderPath: string,
+    baseFolderPath: AbsolutePath,
     nuGet: INuGetReader,
     wp: WarningProcessor
 ): Task = task {
-    match config.LockFilePath with
+    match config.LockFile with
     | None -> wp.ProduceWarning(ExitCode.LockFileIsNotDefined, "lock_file is not specified in the configuration.")
     | Some lockFilePath ->
 
@@ -83,31 +105,73 @@ let internal GenerateLockFile(
         )
     | packagedFiles ->
 
-    let lockFilePath = Path.Combine(baseFolderPath, lockFilePath)
+    let lockFilePath = baseFolderPath / lockFilePath
     let! metadata = CollectMetadata config baseFolderPath nuGet wp
-    let packages = metadata |> Seq.map _.Source |> Seq.toArray
-    let packageMetadata = metadata |> Seq.map (fun m -> m.Source, m) |> Map.ofSeq
+    let packages =
+        metadata
+        |> Seq.map _.Source
+        |> Seq.collect(function
+            | Package p -> [| p |]
+            | _ -> Array.empty
+        )
+        |> Seq.toArray
+    let licenses =
+        metadata
+        |> Seq.map _.Source
+        |> Seq.collect(function
+            | License l -> [| l |]
+            | _ -> Array.empty
+        )
+        |> Seq.toArray
+    let packageMetadata =
+        metadata
+        |> Seq.collect(fun m ->
+            match m.Source with
+            | Package p -> [| p, m |]
+            | _ -> Array.empty
+        )
+        |> Map.ofSeq
     use ld = new LifetimeDefinition()
 
-    let! sourceEntries = Sources.ReadEntries ld.Lifetime baseFolderPath packagedFiles
+    let! sourceEntries = ReadEntries ld.Lifetime baseFolderPath packagedFiles
+
+    let findExplicitLicenses(entry: ISourceEntry) =
+        licenses
+        |> Seq.filter(fun license -> IsCoveredByPattern (RelativePath entry.SourceRelativePath) license.FilesCovered)
+
+    use cache = new FileHashCache()
+    let findLicensesForFile entry = task {
+        let! packageEntries = nuGet.FindFile cache packages entry
+        let packageSearchResults =
+            packageEntries
+            |> Seq.map (fun package ->
+                let metadata = packageMetadata[package]
+                {
+                    SourceId = package.PackageId
+                    SourceVersion = package.Version
+                    Spdx = metadata.Spdx
+                    Copyright = metadata.Copyright
+                }
+            )
+        let licenseSearchResults =
+            findExplicitLicenses entry
+            |> Seq.map (fun license -> {
+                SourceId = null
+                SourceVersion = null
+                Spdx = license.Spdx
+                Copyright = license.Copyright
+            })
+        return Seq.concat [|packageSearchResults; licenseSearchResults|] |> Seq.toArray
+    }
 
     let lockFileContent = Dictionary<_, IReadOnlyList<LockFileItem>>()
-    use cache = new FileHashCache()
     for entry in sourceEntries do
-        let! packageEntries = nuGet.FindFile cache packages entry
-        match packageEntries.Length with
+        let! resultEntries = findLicensesForFile entry
+        match resultEntries.Length with
         | 0 -> wp.ProduceWarning(ExitCode.LicenseForFileNotFound, $"No license found for file \"{entry.SourceRelativePath}\".")
-        | 1 ->
-            let package = Seq.exactlyOne packageEntries
-            let metadata = packageMetadata[package]
-            lockFileContent.Add(entry.SourceRelativePath, [|{
-                SourceId = package.PackageId
-                SourceVersion = package.Version
-                Spdx = metadata.Spdx
-                Copyright = metadata.Copyright
-            }|])
+        | 1 -> lockFileContent.Add(entry.SourceRelativePath, resultEntries)
         | _ ->
-            failwithf $"Several package sources found for one file: \"{entry.SourceRelativePath}\"."
+            failwithf $"Several licenses found for one file: \"{entry.SourceRelativePath}\"."
             // TODO[#28]: If all the packages yield the same license, just let it be.
             // TODO[#28]: Otherwise, report this situation as a warning, and collect all the licenses.
 
@@ -119,7 +183,7 @@ let private RunSynchronously(task: Task<'a>) =
 
 let private ProcessConfig(configFilePath: string) =
     task {
-        let baseFolderPath = Path.GetDirectoryName configFilePath
+        let baseFolderPath = AbsolutePath <| Path.GetDirectoryName configFilePath
         let! config = Configuration.ReadFromFile configFilePath
         return baseFolderPath, config
     }

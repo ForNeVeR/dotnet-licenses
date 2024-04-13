@@ -7,6 +7,7 @@ module DotNetLicenses.TestFramework.NuGetMock
 open System.Threading.Tasks
 open DotNetLicenses
 open DotNetLicenses.NuGet
+open TruePath
 
 let MirroringReader = {
     new INuGetReader with
@@ -24,7 +25,7 @@ let MirroringReader = {
         member _.FindFile _ packages _ = packages |> Seq.toArray |> Task.FromResult
 }
 
-let WithNuGetPackageRoot (rootPath: string) (action: unit -> Task): Task = task {
+let WithNuGetPackageRoot (rootPath: AbsolutePath) (action: unit -> Task): Task = task {
     let oldPath = PackagesFolderPath
     try
         PackagesFolderPath <- rootPath

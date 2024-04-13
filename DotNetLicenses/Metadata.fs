@@ -9,11 +9,14 @@ open System.Collections.ObjectModel
 open System.Threading.Tasks
 open DotNetLicenses.MsBuild
 open DotNetLicenses.NuGet
+open TruePath
+
+type MetadataItemSource =
+    | Package of PackageReference
+    | License of LicenseSource
 
 type MetadataItem = {
-    Source: PackageReference
-    Id: string
-    Version: string
+    Source: MetadataItemSource
     Spdx: string
     Copyright: string
 }
@@ -24,9 +27,7 @@ let internal GetMetadata (source: PackageReference) (nuSpec: NuSpec): MetadataIt
     if license.Type <> "expression" then
         failwithf $"Unsupported license type: {license.Type}"
     {
-        Source = source
-        Id = metadata.Id
-        Version = metadata.Version
+        Source = Package source
         Spdx = metadata.License.Value
         Copyright = metadata.Copyright
     }
@@ -38,7 +39,7 @@ type MetadataReadResult = {
 
 type MetadataReader(nuGet: INuGetReader) =
     member _.ReadFromProject(
-        projectFilePath: string,
+        projectFilePath: AbsolutePath,
         overrides: IReadOnlyDictionary<PackageReference, MetadataOverride>
     ): Task<MetadataReadResult> = task {
         let mutable usedOverrides = Set.empty
@@ -51,9 +52,7 @@ type MetadataReader(nuGet: INuGetReader) =
                 | true, metaOverride ->
                     usedOverrides <- usedOverrides |> Set.add reference
                     Task.FromResult {
-                        Source = reference
-                        Id = reference.PackageId
-                        Version = reference.Version
+                        Source = Package reference
                         Spdx = metaOverride.SpdxExpression
                         Copyright = metaOverride.Copyright
                     }

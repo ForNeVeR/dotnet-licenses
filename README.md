@@ -48,8 +48,8 @@ Configuration
 The configuration file format is TOML. The format:
 ```toml
 metadata_sources = [ # required
-  { id = "optional_id", type = "nuget", include = "path/to/project1.csproj" },
-  { type = "nuget", include = "path/to/project2.csproj" }
+  { type = "nuget", include = "path/to/project1.csproj" },
+  { type = "license", spdx = "MIT", copyright = "My Copyright", files_covered = "*" }
 ]
 metadata_overrides = [ # optional
   { id = "package1", version = "1.0.0", spdx = "MIT" , copyright = "Copyright"},
@@ -60,17 +60,19 @@ packaged_files = [ # required for generate-lock
     { type = "directory", path = "bin" },
     { type = "zip", path = "bin/*.zip" }
 ]
-assigned_metadata = [ # optional
-    { files = "*", metadata_source_id = "optional_id" }
-]
 ```
-The `metadata_sources` parameter (required) is a list of paths to the projects to analyze. The paths are either absolute or relative to the directory containing the configuration file.
 
-Each of the metadata sources may have an optional `id` attribute, used by the `assigned_metadata`.
+Any file paths in the configuration file may be either absolute or relative. Relative paths will be resolved relatively to the configuration file's parent directory.
+
+The `metadata_sources` parameter (required) is a list of paths to the projects to analyze.
+
+Currently supported metadata sources types are:
+- `type = "nuget", include = "<path/to/project>"` to extract metadata from NuGet packages used by the designated project,
+- `type = "license"` to provide metadata for the licenses that are not covered by NuGet packages. The `id` attribute is mandatory and should be unique across all metadata sources. The `spdx` and `copyright` attributes are mandatory. `files_covered` is also mandatory, and it should be a glob mask or a path, applied to the base directory of each declared package, to mark the files covered by the license.
 
 The `metadata_overrides` parameter (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
 
-The `lock_file` parameter (optional) is the path to the license lock file that will be produced or verified by the corresponding commands. The path is either absolute or relative to the directory containing the configuration file. This parameter is mandatory for the `generate-lock` command.
+The `lock_file` parameter (optional) is the path to the license lock file that will be produced or verified by the corresponding commands. This parameter is mandatory for the `generate-lock` command.
 
 The `packaged_files` parameter (optional) describes the list of the files you want to check for their license contents. It is a list of the entries having the following structure:
 - `type` (required) should be either `directory` (to point to the root of the file hierarchy that will be processed recursively) or `zip`, to point to a zip archive that the tool will analyze,
@@ -78,26 +80,24 @@ The `packaged_files` parameter (optional) describes the list of the files you wa
 
 The `packaged_files` parameter is mandatory for the `generate-lock` command.
 
-The `assigned_metadata` parameter (optional) allows to mark any specific files in the package as covered by the combined licenses from the specified source. `files` is a glob mask that will be applied to any of the packaged files, while `metadata_source_id` is a value of the `id` attribute in the `metadata_sources` collection.
-
 Lock File
 ---------
 License lock file looks like this:
 ```toml
-[["file_name.txt"]]
+[["file_name"]]
 source_id = "FSharp.Core"
 source_version = "8.0.200"
 spdx = "MIT"
 copyright = "© Microsoft Corporation. All rights reserved."
 ```
 
-- `file_name` is the path of the file relatively to the package root. May be a glob in some cases.
-- `source_id` is the NuGet package that is the origin of the file.
-- `source_version` is the version of the package.
+- `file_name` is the path of the file relatively to the package root.
+- `source_id` _(optional)_ is the NuGet package that is the origin of the file, if it originated from a NuGet package.
+- `source_version` _(optional)_ is the version of the NuGet package, if the file originates from NuGet.
 - `spdx` is the SPDX identifier of the license.
 - `copyright` is the copyright statement of the license.
 
-One file may have several records in case it is covered by several licenses.
+One file may have several records in case it is covered by several licenses simultaneously.
 
 You are meant to commit the lock file and update it if something in the package contents change.
 

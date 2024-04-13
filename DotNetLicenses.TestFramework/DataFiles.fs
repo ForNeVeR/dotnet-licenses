@@ -7,26 +7,27 @@ module DotNetLicenses.TestFramework.DataFiles
 open System.IO
 open System.Reflection
 open System.Threading.Tasks
+open TruePath
 
-let Get(name: string): string =
+let Get(name: string): StrictAbsolutePath =
     let currentAssemblyPath = Assembly.GetExecutingAssembly().Location
     let filePath = Path.Combine(Path.GetDirectoryName(currentAssemblyPath), "Data", name)
     if not (File.Exists filePath) then
         failwithf $"Data file \"{name}\" not found."
-    Path.GetFullPath filePath
+    StrictAbsolutePath <| Path.GetFullPath filePath
 
-let private CopyDataFile(path: string) =
-    let tempDir = Path.GetTempFileName()
-    File.Delete tempDir
-    Directory.CreateDirectory tempDir |> ignore
-    let tempPath = Path.Combine(tempDir, Path.GetFileName path)
-    File.Copy(path, tempPath)
+let private CopyDataFile(path: StrictAbsolutePath) =
+    let tempDir = AbsolutePath <| Path.GetTempFileName()
+    File.Delete tempDir.Value
+    Directory.CreateDirectory tempDir.Value |> ignore
+    let tempPath = tempDir / path.FileName
+    File.Copy(path.Value, tempPath.Value)
     tempPath
 
-let Deploy(name: string) (action: string -> Task): Task = task {
+let Deploy(name: string) (action: AbsolutePath -> Task): Task = task {
     let path = CopyDataFile(Get name)
     try
         do! action path
     finally
-        File.Delete path
+        File.Delete path.Value
 }

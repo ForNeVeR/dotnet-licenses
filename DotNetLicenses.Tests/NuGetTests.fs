@@ -10,6 +10,7 @@ open DotNetLicenses
 open DotNetLicenses.NuGet
 open DotNetLicenses.Sources
 open DotNetLicenses.TestFramework
+open TruePath
 open Xunit
 
 [<Fact>]
@@ -17,12 +18,11 @@ let ``NuSpec file path should be determined correctly``(): unit =
     let nuGetPackagesRootPath = PackagesFolderPath
     let package = "FVNever.DotNetLicenses"
     let version = "1.0.0"
-    let expectedPath = Path.Combine(
-        nuGetPackagesRootPath,
-        package.ToLowerInvariant(),
-        version.ToLowerInvariant(),
-        package.ToLowerInvariant() + ".nuspec"
-    )
+    let expectedPath =
+        nuGetPackagesRootPath /
+        package.ToLowerInvariant() /
+        version.ToLowerInvariant() /
+        (package.ToLowerInvariant() + ".nuspec")
     Assert.Equal(expectedPath, GetNuSpecFilePath {
         PackageId = package
         Version = version
@@ -32,7 +32,7 @@ let ``NuSpec file path should be determined correctly``(): unit =
 [<InlineData("Test1.nuspec"); InlineData("Test2.nuspec")>]
 let ``NuSpec file should be read correctly``(fileName: string): Task = task {
     let path = DataFiles.Get fileName
-    let! nuSpec = ReadNuSpec path
+    let! nuSpec = ReadNuSpec(AbsolutePath.op_Implicit path)
     Assert.Equal({
         Metadata = {
             Id = "FVNever.DotNetLicenses"
@@ -57,22 +57,22 @@ let ``Package file searcher works correctly``(): Task = task {
 
     use projectDir = DisposableDirectory.Create()
     let fileContent = "Hello"B
-    let contentFullPath = Path.Combine(projectDir.Path, fileRelativePath)
-    let fileEntry = FileSourceEntry(Directory projectDir.Path, contentFullPath)
+    let contentFullPath = projectDir.Path / fileRelativePath
+    let fileEntry = FileSourceEntry(projectDir.Path, Directory(projectDir.Path.AsRelative()), contentFullPath)
 
-    let deployFileTo(fullPath: string) =
-        Directory.CreateDirectory(fullPath |> Path.GetDirectoryName) |> ignore
-        File.WriteAllBytesAsync(fullPath, fileContent)
+    let deployFileTo(fullPath: AbsolutePath) =
+        Directory.CreateDirectory(fullPath.Value |> Path.GetDirectoryName) |> ignore
+        File.WriteAllBytesAsync(fullPath.Value, fileContent)
 
     use cache = new FileHashCache()
-    do! NuGetMock.WithNuGetPackageRoot mockedPackageRoot.Path <| fun() -> task {
-        do! deployFileTo contentFullPath
-        do! deployFileTo(Path.Combine(UnpackedPackagePath package, "file.txt"))
+    do! NuGetMock.WithNuGetPackageRoot (AbsolutePath.op_Implicit mockedPackageRoot.Path) <| fun() -> task {
+        do! deployFileTo(AbsolutePath.op_Implicit contentFullPath)
+        do! deployFileTo(UnpackedPackagePath package / "file.txt")
 
         let! contains = ContainsFile cache (package, fileEntry)
         Assert.True(contains, "File should be considered as part of the package while it is unchanged.")
 
-        File.WriteAllBytes(Path.Combine(projectDir.Path, fileRelativePath), "Hello2"B)
+        File.WriteAllBytes((projectDir.Path / fileRelativePath).Value, "Hello2"B)
 
         let! contains = ContainsFile cache (package, fileEntry)
         Assert.False(contains, "File should not be considered as part of the package after change.")

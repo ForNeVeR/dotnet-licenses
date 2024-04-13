@@ -6,6 +6,7 @@ module DotNetLicenses.MsBuild
 
 open System.Text.Json
 open System.Threading.Tasks
+open TruePath
 open Medallion.Shell
 
 [<CLIMutable>]
@@ -27,8 +28,8 @@ and [<CLIMutable>] MsBuildPackageReference =
             Version = this.Version
         }
 
-let GetPackageReferences(projectFilePath: string): Task<PackageReference[]> = task {
-    let! result = Command.Run("dotnet", "build", "-getItem:PackageReference", projectFilePath).Task
+let GetPackageReferences(projectFilePath: AbsolutePath): Task<PackageReference[]> = task {
+    let! result = Command.Run("dotnet", "build", "-getItem:PackageReference", projectFilePath.Value).Task
     let stdOut = result.StandardOutput
     let stdErr = result.StandardError
     if not result.Success then

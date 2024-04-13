@@ -9,11 +9,18 @@ open System.Text
 open System.Threading.Tasks
 open DotNetLicenses
 open DotNetLicenses.CommandLine
-open LocalPath
+open TruePath
 open Xunit
 
+let private doTest (content: string) (expected: Configuration) =
+    task {
+        use input = new MemoryStream(Encoding.UTF8.GetBytes content)
+        let! configuration = Configuration.Read(input, Some "<test>")
+        Assert.Equal(expected, configuration)
+    }
+
 [<Fact>]
-let ``Configuration should be read correctly``(): Task = task {
+let ``Configuration should be read correctly``(): Task =
     let content = """
 metadata_sources = [
   { type = "nuget", include = "File.csproj" },
@@ -25,43 +32,21 @@ packaged_files = [
     { type = "zip", path = "files2/*.zip" },
 ]
 """
-    use input = new MemoryStream(Encoding.UTF8.GetBytes content)
-    let! configuration = Configuration.Read(input, Some "<test>")
-    Assert.Equal({
+    doTest content {
         Configuration.Empty with
             MetadataSources = [|
-                Configuration.NuGet "File.csproj"
-                Configuration.NuGet "File.fsproj"
+                NuGetSource.Of "File.csproj"
+                NuGetSource.Of "File.fsproj"
             |]
-            LockFilePath = Some "foo.toml"
+            LockFile = Some <| RelativePath "foo.toml"
             PackagedFiles = [|
-                Directory "files"
-                Zip "files2/*.zip"
+                Directory <| RelativePath "files"
+                Zip <| LocalPathPattern "files2/*.zip"
             |]
-    }, configuration)
-}
+    }
 
 [<Fact>]
-let ``Optional metadata ids are read``(): Task = task {
-    let content = """
-metadata_sources = [
-  { id = "my_id", type = "nuget", include = "file1.csproj" },
-  { type = "nuget", include = "file2.csproj" },
-]
-"""
-    use input = new MemoryStream(Encoding.UTF8.GetBytes content)
-    let! configuration = Configuration.Read(input, Some "<test>")
-    Assert.Equal({
-        Configuration.Empty with
-            MetadataSources = [|
-                NuGetSource {| Id = Some "my_id"; Include = "file1.csproj" |}
-                Configuration.NuGet "file2.csproj"
-            |]
-    }, configuration)
-}
-
-[<Fact>]
-let ``Metadata overrides are read correctly``(): Task = task {
+let ``Metadata overrides are read correctly``(): Task =
     let content = """
 metadata_sources = [{ type = "nuget", include = "File.csproj" }]
 metadata_overrides = [
@@ -69,11 +54,9 @@ metadata_overrides = [
     { id = "Package1", version = "2.0.0", spdx = "MIT", copyright = "Copyright1" }
 ]
 """
-    use input = new MemoryStream(Encoding.UTF8.GetBytes content)
-    let! configuration = Configuration.Read(input, Some "<test>")
-    Assert.Equal({
+    doTest content {
         Configuration.Empty with
-            MetadataSources = [| Configuration.NuGet "File.csproj" |]
+            MetadataSources = [| NuGetSource.Of "File.csproj" |]
             MetadataOverrides = [|
                 {
                     Id = "Package1"
@@ -88,8 +71,7 @@ metadata_overrides = [
                     Copyright = "Copyright1"
                 }
             |]
-    }, configuration)
-}
+    }
 
 [<Fact>]
 let ``Assigned metadata is read correctly``(): Task =
@@ -99,18 +81,26 @@ assigned_metadata = [
     { files = "*/*", metadata_source_id = "my-id" }
 ]
 """
-    let expectedConfig = {
+    doTest content  {
         Configuration.Empty with
             AssignedMetadata = [|
                 { Files = LocalPathPattern "*/*"; MetadataSourceId = "my-id" }
             |]
     }
-    task {
-        use input = new MemoryStream(Encoding.UTF8.GetBytes content)
-        let! configuration = Configuration.Read(input, Some "<test>")
-        Assert.Equal(expectedConfig, configuration)
-    }
 
+[<Fact>]
+let ``License metadata source is read correctly``(): Task =
+    let content = """
+metadata_sources = [
+    { type = "license", spdx = "MIT", copyright = "Me", files_covered = "**/*.txt" }
+]
+"""
+    doTest content {
+        Configuration.Empty with
+            MetadataSources = [|
+                License { Spdx = "MIT"; Copyright =  "Me"; FilesCovered = LocalPathPattern "**/*.txt" }
+            |]
+    }
 
 [<Fact>]
 let ``GetOverrides works on duplicate package names (not versions)``(): Task = task {

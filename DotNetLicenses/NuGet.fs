@@ -10,31 +10,26 @@ open System.Threading.Tasks
 open System.Xml
 open System.Xml.Serialization
 open DotNetLicenses.Sources
+open TruePath
 
-let mutable internal PackagesFolderPath =
+let mutable internal PackagesFolderPath: AbsolutePath =
     Environment.GetEnvironmentVariable "NUGET_PACKAGES"
     |> Option.ofObj
+    |> Option.map AbsolutePath
     |> Option.defaultWith(fun() ->
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nuget", "packages")
+        (AbsolutePath <| Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)) / ".nuget" / "packages"
     )
 
-let internal UnpackedPackagePath(packageReference: PackageReference): string =
-    Path.Combine(
-        PackagesFolderPath,
-        packageReference.PackageId.ToLowerInvariant(),
-        packageReference.Version.ToLowerInvariant()
-    )
+let internal UnpackedPackagePath(packageReference: PackageReference): AbsolutePath =
+    PackagesFolderPath / packageReference.PackageId.ToLowerInvariant() / packageReference.Version.ToLowerInvariant()
 
-let internal GetNuSpecFilePath(packageReference: PackageReference): string =
-    Path.Combine(
-        UnpackedPackagePath packageReference,
-        $"{packageReference.PackageId.ToLowerInvariant()}.nuspec"
-    )
+let internal GetNuSpecFilePath(packageReference: PackageReference): AbsolutePath =
+    UnpackedPackagePath packageReference / $"{packageReference.PackageId.ToLowerInvariant()}.nuspec"
 
 let internal ContainsFile (fileHashCache: FileHashCache)
                           (package: PackageReference, entry: ISourceEntry): Task<bool> = task {
     let files = Directory.EnumerateFileSystemEntries(
-        UnpackedPackagePath package,
+        (UnpackedPackagePath package).Value,
         "*",
         EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
     )
@@ -81,8 +76,8 @@ type NoNamespaceXmlReader(input: Stream) =
     override this.NamespaceURI = ""
 
 let private serializer = XmlSerializer typeof<NuSpec>
-let internal ReadNuSpec(filePath: string): Task<NuSpec> = Task.Run(fun() ->
-    use stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read)
+let internal ReadNuSpec(filePath: AbsolutePath): Task<NuSpec> = Task.Run(fun() ->
+    use stream = File.Open(filePath.Value, FileMode.Open, FileAccess.Read, FileShare.Read)
     use reader = new NoNamespaceXmlReader(stream)
     serializer.Deserialize(reader) :?> NuSpec
 )

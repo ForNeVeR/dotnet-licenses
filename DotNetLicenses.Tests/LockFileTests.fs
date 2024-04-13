@@ -8,6 +8,7 @@ open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
 open DotNetLicenses.LockFile
+open TruePath
 open Xunit
 
 [<Fact>]
@@ -39,8 +40,8 @@ spdx = "MIT"
 copyright = "none"
 """
     task {
-        let lockFilePath = Path.GetTempFileName()
+        let lockFilePath = AbsolutePath <| Path.GetTempFileName()
         do! SaveLockFile(lockFilePath, data)
-        let! content = File.ReadAllTextAsync lockFilePath
+        let! content = File.ReadAllTextAsync lockFilePath.Value
         Assert.Equal(expectedContent.ReplaceLineEndings "\n", content.ReplaceLineEndings "\n")
     }
