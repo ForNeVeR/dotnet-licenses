@@ -247,13 +247,10 @@ copyright = "Me"
     let config = {
         Configuration.Empty with
             MetadataSources = [|
-                License { Spdx = "MIT"; Copyright = "Me"; FilesCovered = LocalPathPattern "*.txt" }
+                License { Spdx = "MIT"; Copyright = "Me"; FilesCovered = [| LocalPathPattern "*.txt" |] }
             |]
             LockFile = Some <| lockFile.AsRelative()
             PackagedFiles = [| Directory <| directory.Path.AsRelative() |]
-            AssignedMetadata = [|
-                { Files = LocalPathPattern "my-file.txt"; MetadataSourceId = "test" }
-            |]
     }
 
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)

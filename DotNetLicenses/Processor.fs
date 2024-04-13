@@ -137,7 +137,10 @@ let internal GenerateLockFile(
 
     let findExplicitLicenses(entry: ISourceEntry) =
         licenses
-        |> Seq.filter(fun license -> IsCoveredByPattern (RelativePath entry.SourceRelativePath) license.FilesCovered)
+        |> Seq.filter(fun license ->
+            license.FilesCovered
+            |> Seq.exists(fun pattern -> IsCoveredByPattern (RelativePath entry.SourceRelativePath) pattern)
+        )
 
     use cache = new FileHashCache()
     let findLicensesForFile entry = task {

@@ -6,7 +6,21 @@
 # Note that these are not necessarily all the licenses used by the project; only those related to the packaged files.
 
 metadata_sources = [
-    { type = "nuget", include = "DotNetLicenses/DotNetLicenses.fsproj" }
+    { type = "nuget", include = "DotNetLicenses/DotNetLicenses.fsproj" },
+    # TODO: Read the licensing information below (SPDX, copyright) from REUSE.
+    { type = "license", spdx = "MIT", copyright = "2024 Friedrich von Never <friedrich@fornever.me>", files_covered = [
+        # TODO: These should come from a NuGet pattern:
+        "_rels/.rels",
+        "FVNever.DotNetLicenses.nuspec",
+        "tools/net8.0/any/DotnetToolSettings.xml",
+        "tools/net8.0/any/DotNetLicenses.*",
+        "[Content_Types].xml",
+        "package/services/metadata/core-properties/*.psmdcp",
+
+        # TODO: These should come from source file pattern:
+        "CHANGELOG.md",
+        "README.md"
+    ] }
 ]
 lock_file = ".dotnet-licenses.lock.toml"
 packaged_files = [

@@ -74,31 +74,21 @@ metadata_overrides = [
     }
 
 [<Fact>]
-let ``Assigned metadata is read correctly``(): Task =
-    let content = """
-metadata_sources = []
-assigned_metadata = [
-    { files = "*/*", metadata_source_id = "my-id" }
-]
-"""
-    doTest content  {
-        Configuration.Empty with
-            AssignedMetadata = [|
-                { Files = LocalPathPattern "*/*"; MetadataSourceId = "my-id" }
-            |]
-    }
-
-[<Fact>]
 let ``License metadata source is read correctly``(): Task =
     let content = """
 metadata_sources = [
-    { type = "license", spdx = "MIT", copyright = "Me", files_covered = "**/*.txt" }
+    { type = "license", spdx = "MIT", copyright = "Me", files_covered = "**/*.txt" },
+    { type = "license", spdx = "MIT", copyright = "Me", files_covered = ["**/*.pdf", "**/*.pdb"] },
 ]
 """
     doTest content {
         Configuration.Empty with
             MetadataSources = [|
-                License { Spdx = "MIT"; Copyright =  "Me"; FilesCovered = LocalPathPattern "**/*.txt" }
+                License { Spdx = "MIT"; Copyright =  "Me"; FilesCovered = [| LocalPathPattern "**/*.txt" |] }
+                License { Spdx = "MIT"; Copyright =  "Me"; FilesCovered = [|
+                    LocalPathPattern "**/*.pdf"
+                    LocalPathPattern "**/*.pdb"
+                |] }
             |]
     }
 

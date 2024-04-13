@@ -47,16 +47,21 @@ Configuration
 -------------
 The configuration file format is TOML. The format:
 ```toml
-metadata_sources = [ # required
-  { type = "nuget", include = "path/to/project1.csproj" },
-  { type = "license", spdx = "MIT", copyright = "My Copyright", files_covered = "*" }
+metadata_sources = [# required
+    { type = "nuget", include = "path/to/project1.csproj" },
+    { type = "license", spdx = "MIT", copyright = "My Copyright", files_covered = "*" },
+    { type = "license", spdx = "MIT", copyright = "My Other Copyright", files_covered = [
+        # You can also include lists into this field.
+        "*.txt",
+        "*.css"
+    ] },
 ]
-metadata_overrides = [ # optional
-  { id = "package1", version = "1.0.0", spdx = "MIT" , copyright = "Copyright"},
-  { id = "package2", version = "2.0.0", spdx = "GPL-3.0", copyright = "Copyright" }
+metadata_overrides = [# optional
+    { id = "package1", version = "1.0.0", spdx = "MIT", copyright = "Copyright" },
+    { id = "package2", version = "2.0.0", spdx = "GPL-3.0", copyright = "Copyright" }
 ]
 lock_file = "path/to/lock-file.toml" # required for generate-lock
-packaged_files = [ # required for generate-lock
+packaged_files = [# required for generate-lock
     { type = "directory", path = "bin" },
     { type = "zip", path = "bin/*.zip" }
 ]
@@ -69,6 +74,8 @@ The `metadata_sources` parameter (required) is a list of paths to the projects t
 Currently supported metadata sources types are:
 - `type = "nuget", include = "<path/to/project>"` to extract metadata from NuGet packages used by the designated project,
 - `type = "license"` to provide metadata for the licenses that are not covered by NuGet packages. The `id` attribute is mandatory and should be unique across all metadata sources. The `spdx` and `copyright` attributes are mandatory. `files_covered` is also mandatory, and it should be a glob mask or a path, applied to the base directory of each declared package, to mark the files covered by the license.
+
+  `files_covered` may be a single pattern or a list of patterns.
 
 The `metadata_overrides` parameter (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
 

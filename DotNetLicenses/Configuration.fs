@@ -20,7 +20,6 @@ type Configuration =
         MetadataOverrides: Override[]
         LockFile: RelativePath option
         PackagedFiles: PackageSpec[]
-        AssignedMetadata: AssignedMetadata[]
     }
 
     static member Empty = {
@@ -28,7 +27,6 @@ type Configuration =
         MetadataOverrides = Array.empty
         LockFile = None
         PackagedFiles = Array.empty
-        AssignedMetadata = Array.empty
     }
 
     static member Read(stream: Stream, filePath: string option): Task<Configuration> = task {
@@ -52,7 +50,12 @@ type Configuration =
                     License {
                         Spdx = getValue t "spdx"
                         Copyright = getValue t "copyright"
-                        FilesCovered = LocalPathPattern(getValue t "files_covered")
+                        FilesCovered =
+                            let value: obj = getValue t "files_covered"
+                            match value with
+                            | :? string as s -> [| LocalPathPattern s |]
+                            | :? TomlArray as a -> a |> Seq.cast<string> |> Seq.map LocalPathPattern |> Seq.toArray
+                            | other -> failwithf $"files_covered type not supported: {other}."
                     }
                 | other -> failwithf $"Metadata source type not supported: {other}"
             )
@@ -84,13 +87,6 @@ type Configuration =
             | other -> failwithf $"Packaged file source type not supported: {other}"
         )
 
-        let readAssignedMetadata = readOptArrayOfTablesUsing(fun t ->
-            {
-                Files = LocalPathPattern(getValue t "files")
-                MetadataSourceId = getValue t "metadata_source_id"
-            }
-        )
-
         use reader = new StreamReader(stream)
         let! text = reader.ReadToEndAsync()
         let table = Toml.ToModel(text, sourcePath = Option.toObj filePath)
@@ -99,14 +95,12 @@ type Configuration =
         let overrides = tryGetValue table "metadata_overrides"
         let lockFilePath = tryGetValue table "lock_file" |> Option.map RelativePath
         let packagedFiles = tryGetValue table "packaged_files"
-        let assignedMetadata = tryGetValue table "assigned_metadata"
 
         return {
             MetadataSources = readSources sources
             MetadataOverrides = readOverrides overrides
             LockFile = lockFilePath
             PackagedFiles = readPackagedFiles packagedFiles
-            AssignedMetadata = readAssignedMetadata assignedMetadata
         }
     }
 
@@ -170,5 +164,5 @@ and NuGetSource =
 and LicenseSource = {
     Spdx: string
     Copyright: string
-    FilesCovered: LocalPathPattern
+    FilesCovered: LocalPathPattern[]
 }

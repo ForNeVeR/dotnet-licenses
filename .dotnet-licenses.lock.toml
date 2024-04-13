@@ -1,8 +1,33 @@
+[["_rels/.rels"]]
+spdx = "MIT"
+copyright = "2024 Friedrich von Never <friedrich@fornever.me>"
+[["FVNever.DotNetLicenses.nuspec"]]
+spdx = "MIT"
+copyright = "2024 Friedrich von Never <friedrich@fornever.me>"
+[["tools/net8.0/any/DotnetToolSettings.xml"]]
+spdx = "MIT"
+copyright = "2024 Friedrich von Never <friedrich@fornever.me>"
+[["tools/net8.0/any/DotNetLicenses.dll"]]
+spdx = "MIT"
+copyright = "2024 Friedrich von Never <friedrich@fornever.me>"
+[["tools/net8.0/any/DotNetLicenses.deps.json"]]
+spdx = "MIT"
+copyright = "2024 Friedrich von Never <friedrich@fornever.me>"
+[["tools/net8.0/any/DotNetLicenses.runtimeconfig.json"]]
+spdx = "MIT"
+copyright = "2024 Friedrich von Never <friedrich@fornever.me>"
+[["tools/net8.0/any/DotNetLicenses.pdb"]]
+spdx = "MIT"
+copyright = "2024 Friedrich von Never <friedrich@fornever.me>"
 [["tools/net8.0/any/FSharp.Core.dll"]]
 source_id = "FSharp.Core"
 source_version = "8.0.200"
 spdx = "MIT"
 copyright = "© Microsoft Corporation. All rights reserved."
+[["tools/net8.0/any/JetBrains.Annotations.dll"]]
+source_id = "JetBrains.Annotations"
+source_version = "2023.3.0"
+spdx = "MIT"
 [["tools/net8.0/any/JetBrains.Lifetimes.dll"]]
 source_id = "JetBrains.Lifetimes"
 source_version = "2024.1.1"
@@ -88,3 +113,15 @@ source_id = "FSharp.Core"
 source_version = "8.0.200"
 spdx = "MIT"
 copyright = "© Microsoft Corporation. All rights reserved."
+[["CHANGELOG.md"]]
+spdx = "MIT"
+copyright = "2024 Friedrich von Never <friedrich@fornever.me>"
+[["README.md"]]
+spdx = "MIT"
+copyright = "2024 Friedrich von Never <friedrich@fornever.me>"
+[["[Content_Types].xml"]]
+spdx = "MIT"
+copyright = "2024 Friedrich von Never <friedrich@fornever.me>"
+[["package/services/metadata/core-properties/51caf11c597e4730853bfe21d3bdd1bf.psmdcp"]]
+spdx = "MIT"
+copyright = "2024 Friedrich von Never <friedrich@fornever.me>"
