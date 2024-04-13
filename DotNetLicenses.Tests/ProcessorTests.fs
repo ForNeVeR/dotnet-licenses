@@ -37,9 +37,10 @@ let private runGenerator t = Runner.RunFunction(Processor.GenerateLockFile, t)
 
 [<Fact>]
 let ``Generator produces an error if no lock file is defined``(): Task = task {
+    use directory = DisposableDirectory.Create()
     let config = {
         Configuration.Empty with
-            MetadataSources = [| NuGetSource.Of "non-important.csproj" |]
+            MetadataSources = [| NuGetSource.Of(directory.Path.AsRelative()) |]
     }
     let! wp = runGenerator config
     Assert.Equal([|ExitCode.LockFileIsNotDefined|], wp.Codes)
@@ -48,11 +49,12 @@ let ``Generator produces an error if no lock file is defined``(): Task = task {
 
 [<Fact>]
 let ``Generator produces an error if no package contents are defined``(): Task = task {
-    let lockFile = AbsolutePath <| Path.GetTempFileName()
+    use directory = DisposableDirectory.Create()
+    let lockFile = directory.Path / "lock-file.toml"
     try
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource.Of "non-important.csproj" |]
+                MetadataSources = [| NuGetSource.Of(directory.Path.AsRelative()) |]
                 LockFile = Some <| lockFile.AsRelative()
         }
         let! wp = runGenerator config
