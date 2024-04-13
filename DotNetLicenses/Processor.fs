@@ -76,12 +76,12 @@ let internal GenerateLockFile(
     | Some lockFilePath ->
 
     match config.PackagedFiles with
-    | None ->
+    | [||] ->
         wp.ProduceWarning(
             ExitCode.PackagedFilesAreNotDefined,
             "packaged_files are not specified in the configuration."
         )
-    | Some packagedFiles ->
+    | packagedFiles ->
 
     let lockFilePath = Path.Combine(baseFolderPath, lockFilePath)
     let! metadata = CollectMetadata config baseFolderPath nuGet wp

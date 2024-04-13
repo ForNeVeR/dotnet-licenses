@@ -57,4 +57,12 @@ SPDX-License-Identifier: MIT
       <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="8.0.0" />
       <PackageReference Include="Tomlyn" Version="0.17.0" />
     </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\LocalPath\LocalPath.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\LocalPath\LocalPath.csproj" />
+    </ItemGroup>
 </Project>

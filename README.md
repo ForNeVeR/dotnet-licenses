@@ -60,10 +60,13 @@ packaged_files = [ # required for generate-lock
     { type = "directory", path = "bin" },
     { type = "zip", path = "bin/*.zip" }
 ]
+assigned_metadata = [ # optional
+    { files = "*", metadata_source_id = "optional_id" }
+]
 ```
 The `metadata_sources` parameter (required) is a list of paths to the projects to analyze. The paths are either absolute or relative to the directory containing the configuration file.
 
-Each of the metadata sources may have an optional `id` attribute, unused by the tool for now.
+Each of the metadata sources may have an optional `id` attribute, used by the `assigned_metadata`.
 
 The `metadata_overrides` parameter (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
 
@@ -74,6 +77,8 @@ The `packaged_files` parameter (optional) describes the list of the files you wa
 - `path` (required) is a path on disk; for zip archives, we support glob patterns.
 
 The `packaged_files` parameter is mandatory for the `generate-lock` command.
+
+The `assigned_metadata` parameter (optional) allows to mark any specific files in the package as covered by the combined licenses from the specified source. `files` is a glob mask that will be applied to any of the packaged files, while `metadata_source_id` is a value of the `id` attribute in the `metadata_sources` collection.
 
 Lock File
 ---------

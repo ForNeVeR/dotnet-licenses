@@ -61,6 +61,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DotNetLicenses.Tests", "Dot
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DotNetLicenses.TestFramework", "DotNetLicenses.TestFramework\DotNetLicenses.TestFramework.fsproj", "{3272F71B-9EDF-4553-826D-3201B46B02ED}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LocalPath", "LocalPath\LocalPath.csproj", "{B7D11259-9984-45D2-8C91-1C5B3DCFC274}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -82,6 +84,10 @@ Global
 		{3272F71B-9EDF-4553-826D-3201B46B02ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3272F71B-9EDF-4553-826D-3201B46B02ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3272F71B-9EDF-4553-826D-3201B46B02ED}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B7D11259-9984-45D2-8C91-1C5B3DCFC274}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B7D11259-9984-45D2-8C91-1C5B3DCFC274}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B7D11259-9984-45D2-8C91-1C5B3DCFC274}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B7D11259-9984-45D2-8C91-1C5B3DCFC274}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3E052F53-740F-4399-99E3-677A722B113E} = {0FE1F889-3A72-4D9B-883F-E6A6A40753F8}

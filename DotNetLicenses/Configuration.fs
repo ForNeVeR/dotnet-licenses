@@ -8,33 +8,37 @@ open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
 open DotNetLicenses.CommandLine
+open LocalPath
 open Tomlyn
 open Tomlyn.Model
 
 type Configuration =
     {
         MetadataSources: MetadataSource[]
-        MetadataOverrides: Override[] option
+        MetadataOverrides: Override[]
         LockFilePath: string option
-        PackagedFiles: PackageSpec[] option
+        PackagedFiles: PackageSpec[]
+        AssignedMetadata: AssignedMetadata[]
     }
 
     static member Empty = {
         MetadataSources = Array.empty
-        MetadataOverrides = None
+        MetadataOverrides = Array.empty
         LockFilePath = None
-        PackagedFiles = None
+        PackagedFiles = Array.empty
+        AssignedMetadata = Array.empty
     }
 
     static member Read(stream: Stream, filePath: string option): Task<Configuration> = task {
-        let getValue (table: TomlTable) key =
-            table[key] :?> 'a
-
         let tryGetValue (table: TomlTable) key =
             let value = ref Unchecked.defaultof<_>
             if table.TryGetValue(key, value)
             then Some(value.Value :?> 'a)
             else None
+
+        let getValue (table: TomlTable) key =
+            tryGetValue table key
+            |> Option.defaultWith(fun () -> failwithf $"Key not found in table \"{table}\": \"{key}\".")
 
         let readSources(array: TomlArray) =
             array
@@ -46,32 +50,38 @@ type Configuration =
             )
             |> Seq.toArray
 
-        let readOverrides =
-            Option.map (fun array ->
+        let readOptArrayOfTablesUsing mapping input =
+            input
+            |> Option.map (fun array ->
                 array
                 |> Seq.cast<TomlTable>
-                |> Seq.map(fun t ->
-                    {
-                        Id = getValue t "id"
-                        Version = getValue t "version"
-                        Spdx = getValue t "spdx"
-                        Copyright = getValue t "copyright"
-                    }
-                )
+                |> Seq.map mapping
                 |> Seq.toArray
             )
-        let readPackagedFiles =
-            Option.map (fun array ->
-                array
-                |> Seq.cast<TomlTable>
-                |> Seq.map(fun t ->
-                    match getValue t "type" with
-                    | "directory" -> Directory(getValue t "path")
-                    | "zip" -> Zip(getValue t "path")
-                    | other -> failwithf $"Packaged file source type not supported: {other}"
-                )
-                |> Seq.toArray
-            )
+            |> Option.defaultValue Array.empty
+
+        let readOverrides = readOptArrayOfTablesUsing(fun t ->
+            {
+                Id = getValue t "id"
+                Version = getValue t "version"
+                Spdx = getValue t "spdx"
+                Copyright = getValue t "copyright"
+            }
+        )
+
+        let readPackagedFiles = readOptArrayOfTablesUsing(fun t ->
+            match getValue t "type" with
+            | "directory" -> Directory(getValue t "path")
+            | "zip" -> Zip(getValue t "path")
+            | other -> failwithf $"Packaged file source type not supported: {other}"
+        )
+
+        let readAssignedMetadata = readOptArrayOfTablesUsing(fun t ->
+            {
+                Files = LocalPathPattern(getValue t "files")
+                MetadataSourceId = getValue t "metadata_source_id"
+            }
+        )
 
         use reader = new StreamReader(stream)
         let! text = reader.ReadToEndAsync()
@@ -81,12 +91,14 @@ type Configuration =
         let overrides = tryGetValue table "metadata_overrides"
         let lockFilePath = tryGetValue table "lock_file"
         let packagedFiles = tryGetValue table "packaged_files"
+        let assignedMetadata = tryGetValue table "assigned_metadata"
 
         return {
             MetadataSources = readSources sources
             MetadataOverrides = readOverrides overrides
             LockFilePath = lockFilePath
             PackagedFiles = readPackagedFiles packagedFiles
+            AssignedMetadata = readAssignedMetadata assignedMetadata
         }
     }
 
@@ -109,7 +121,6 @@ type Configuration =
 
         let map = Dictionary()
         this.MetadataOverrides
-        |> Option.defaultValue Array.empty
         |> Seq.map(fun o -> packageReference o, metadataOverride o)
         |> Seq.iter(fun (k, v) ->
             if not <| map.TryAdd(k, v) then
@@ -137,3 +148,8 @@ and Override = {
 and PackageSpec =
     | Directory of path: string
     | Zip of path: string
+
+and AssignedMetadata = {
+    Files: LocalPathPattern
+    MetadataSourceId: string
+}

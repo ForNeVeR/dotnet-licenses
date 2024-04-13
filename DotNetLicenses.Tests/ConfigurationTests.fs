@@ -9,6 +9,7 @@ open System.Text
 open System.Threading.Tasks
 open DotNetLicenses
 open DotNetLicenses.CommandLine
+open LocalPath
 open Xunit
 
 [<Fact>]
@@ -27,16 +28,16 @@ packaged_files = [
     use input = new MemoryStream(Encoding.UTF8.GetBytes content)
     let! configuration = Configuration.Read(input, Some "<test>")
     Assert.Equal({
-        MetadataSources = [|
-            Configuration.NuGet "File.csproj"
-            Configuration.NuGet "File.fsproj"
-        |]
-        MetadataOverrides = None
-        LockFilePath = Some "foo.toml"
-        PackagedFiles = Some [|
-            Directory "files"
-            Zip "files2/*.zip"
-        |]
+        Configuration.Empty with
+            MetadataSources = [|
+                Configuration.NuGet "File.csproj"
+                Configuration.NuGet "File.fsproj"
+            |]
+            LockFilePath = Some "foo.toml"
+            PackagedFiles = [|
+                Directory "files"
+                Zip "files2/*.zip"
+            |]
     }, configuration)
 }
 
@@ -60,7 +61,7 @@ metadata_sources = [
 }
 
 [<Fact>]
-let ``Metadata overrides should be read correctly``(): Task = task {
+let ``Metadata overrides are read correctly``(): Task = task {
     let content = """
 metadata_sources = [{ type = "nuget", include = "File.csproj" }]
 metadata_overrides = [
@@ -73,7 +74,7 @@ metadata_overrides = [
     Assert.Equal({
         Configuration.Empty with
             MetadataSources = [| Configuration.NuGet "File.csproj" |]
-            MetadataOverrides = Some [|
+            MetadataOverrides = [|
                 {
                     Id = "Package1"
                     Version = "1.0.0"
@@ -89,6 +90,27 @@ metadata_overrides = [
             |]
     }, configuration)
 }
+
+[<Fact>]
+let ``Assigned metadata is read correctly``(): Task =
+    let content = """
+metadata_sources = []
+assigned_metadata = [
+    { files = "*/*", metadata_source_id = "my-id" }
+]
+"""
+    let expectedConfig = {
+        Configuration.Empty with
+            AssignedMetadata = [|
+                { Files = LocalPathPattern "*/*"; MetadataSourceId = "my-id" }
+            |]
+    }
+    task {
+        use input = new MemoryStream(Encoding.UTF8.GetBytes content)
+        let! configuration = Configuration.Read(input, Some "<test>")
+        Assert.Equal(expectedConfig, configuration)
+    }
+
 
 [<Fact>]
 let ``GetOverrides works on duplicate package names (not versions)``(): Task = task {

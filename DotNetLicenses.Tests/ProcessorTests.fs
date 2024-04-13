@@ -64,7 +64,7 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
         let config = {
             Configuration.Empty with
                 MetadataSources = [| Configuration.NuGet project |]
-                MetadataOverrides = Some [|{
+                MetadataOverrides = [|{
                     Id = "NonExistent"
                     Version = ""
                     Spdx = ""
@@ -109,7 +109,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
         Configuration.Empty with
             MetadataSources = [| Configuration.NuGet project |]
             LockFilePath = Some <| Path.GetTempFileName()
-            PackagedFiles = Some [|
+            PackagedFiles = [|
                 Directory directory.Path
             |]
     }
@@ -140,7 +140,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
             Configuration.Empty with
                 MetadataSources = [| Configuration.NuGet project |]
                 LockFilePath = Some lockFile
-                PackagedFiles = Some [|
+                PackagedFiles = [|
                     Directory directory.Path
                 |]
         }
@@ -171,7 +171,7 @@ copyright = "Copyright FVNever.DotNetLicenses"
             Configuration.Empty with
                 MetadataSources = [| Configuration.NuGet project |]
                 LockFilePath = Some lockFile
-                PackagedFiles = Some [|
+                PackagedFiles = [|
                     Zip <| Path.GetFileName archivePath
                 |]
         }
@@ -198,7 +198,7 @@ let ``Processor processes ZIP files using a glob pattern``(): Task = task {
             Configuration.Empty with
                 MetadataSources = [| Configuration.NuGet project |]
                 LockFilePath = Some lockFile
-                PackagedFiles = Some [|
+                PackagedFiles = [|
                     Zip archiveGlob
                 |]
         }
@@ -218,7 +218,7 @@ let ``Lock file generator produces a warning if it's unable to find a license fo
         Configuration.Empty with
             MetadataSources = [||]
             LockFilePath = Some <| Path.Combine(directory.Path, "lock.toml")
-            PackagedFiles = Some [|
+            PackagedFiles = [|
                 Directory directory.Path
             |]
     }
