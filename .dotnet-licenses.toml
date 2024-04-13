@@ -7,9 +7,9 @@
 
 metadata_sources = [
     { type = "nuget", include = "DotNetLicenses/DotNetLicenses.fsproj" },
-    # TODO: Read the licensing information below (SPDX, copyright) from REUSE.
+    # TODO[#37]: Read the licensing information below (SPDX, copyright) from REUSE.
     { type = "license", spdx = "MIT", copyright = "2024 Friedrich von Never <friedrich@fornever.me>", files_covered = [
-        # TODO: These should come from a NuGet pattern:
+        # TODO[#39]: These should come from a NuGet pattern:
         "_rels/.rels",
         "FVNever.DotNetLicenses.nuspec",
         "tools/net8.0/any/DotnetToolSettings.xml",
@@ -17,7 +17,7 @@ metadata_sources = [
         "[Content_Types].xml",
         "package/services/metadata/core-properties/*.psmdcp",
 
-        # TODO: These should come from source file pattern:
+        # TODO[#38]: These should come from source file pattern:
         "CHANGELOG.md",
         "README.md"
     ] }
