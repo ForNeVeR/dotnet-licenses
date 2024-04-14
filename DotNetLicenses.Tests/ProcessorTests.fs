@@ -350,6 +350,7 @@ let ``Combined licenses from REUSE source work``(): Task = task {
     use directory = DisposableDirectory.Create()
     let mitFile = directory.Path / "source" / "my-mit-file.txt"
     let cc0File = directory.Path / "source" / "my-cc0-file.txt"
+    let ccBy1File = directory.Path / "source" / "my-cc-by-1-file.txt"
     let ccBy3File = directory.Path / "source" / "my-cc-by-3-file.txt"
     let ccBy4File = directory.Path / "source" / "my-cc-by-4-file.txt"
     let packagedFile1 = directory.Path / "package" / "my-mit-file.txt"
@@ -370,6 +371,13 @@ text
 SPDX-License-Identifier: CC-BY-3.0
 text
     """)
+    do! File.WriteAllTextAsync(ccBy1File.Value, "text")
+    do! File.WriteAllTextAsync(
+        (directory.Path / "source" / "my-cc-by-1-file.txt.license").Value,
+        """SPDX-FileCopyrightText: 2024 Me
+
+SPDX-License-Identifier: CC-BY-1.0
+    """)
     do! File.WriteAllTextAsync(ccBy4File.Value, """SPDX-FileCopyrightText: 2024 Me
 SPDX-License-Identifier: CC-BY-4.0
 text
@@ -385,6 +393,9 @@ spdx = "MIT"
 copyright = "2024 Me"
 [["my-combined-file.txt"]]
 spdx = "CC0"
+copyright = "2024 Me"
+[["my-combined-file.txt"]]
+spdx = "CC-BY-1.0"
 copyright = "2024 Me"
 """
 

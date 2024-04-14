@@ -15,8 +15,8 @@ open Tomlyn
 type LockFileItem = {
     [<CanBeNull>] SourceId: string
     [<CanBeNull>] SourceVersion: string
-    Spdx: string
-    Copyright: string
+    Spdx: string[]
+    Copyright: string[]
 }
 
 let SaveLockFile(path: AbsolutePath, items: Dictionary<string, IReadOnlyList<LockFileItem>>): Task =

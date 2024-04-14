@@ -14,6 +14,7 @@ open TruePath
 type MetadataItem =
     | Package of {| Source: PackageReference; Spdx: string; Copyright: string |}
     | License of LicenseSource
+    | Reuse of ReuseSource
 
 let internal GetMetadata (source: PackageReference) (nuSpec: NuSpec): MetadataItem =
     let metadata = nuSpec.Metadata

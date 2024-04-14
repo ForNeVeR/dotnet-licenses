@@ -100,18 +100,16 @@ Lock File
 ---------
 License lock file looks like this:
 ```toml
-[["file_name"]]
-source_id = "FSharp.Core"
-source_version = "8.0.200"
-spdx = "MIT"
-copyright = "© Microsoft Corporation. All rights reserved."
+"file_name" = [
+    { source_id = "FSharp.Core", source_version = "8.0.200", spdx = ["MIT"], copyright = ["© Microsoft Corporation. All rights reserved."] }
+]
 ```
-
+where
 - `file_name` is the path of the file relatively to the package root.
 - `source_id` _(optional)_ is the NuGet package that is the origin of the file, if it originated from a NuGet package.
 - `source_version` _(optional)_ is the version of the NuGet package, if the file originates from NuGet.
-- `spdx` is the SPDX identifier of the license.
-- `copyright` is the copyright statement of the license.
+- `spdx` is the list of SPDX identifiers of the license.
+- `copyright` is the list of the copyright statements of the license.
 
 One file may have several records in case it is covered by several licenses simultaneously.
 
