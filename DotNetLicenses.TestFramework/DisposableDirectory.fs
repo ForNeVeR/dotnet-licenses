@@ -20,3 +20,8 @@ type DisposableDirectory =
         File.Delete path.Value
         Directory.CreateDirectory path.Value |> ignore
         { Path = path }
+
+    member this.MakeSubDirs(paths: RelativePath seq) =
+        paths
+        |> Seq.map (fun p -> this.Path / p)
+        |> Seq.iter(fun d -> Directory.CreateDirectory d.Value |> ignore)

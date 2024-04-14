@@ -266,6 +266,8 @@ copyright = "Me"
 [<Fact>]
 let ``Basic REUSE specification works``(): Task = task {
     use directory = DisposableDirectory.Create()
+    directory.MakeSubDirs [| RelativePath "source"; RelativePath "package" |]
+
     let sourceFile = directory.Path / "source" / "my-file.txt"
     let packagedFile = directory.Path / "package" / "my-file.txt"
 
