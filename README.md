@@ -55,6 +55,7 @@ metadata_sources = [# required
         "*.txt",
         "*.css"
     ] },
+    { type = "reuse", root = ".", excludes = [".idea/"], files_covered = "README.md" },
 ]
 metadata_overrides = [# optional
     { id = "package1", version = "1.0.0", spdx = "MIT", copyright = "Copyright" },
@@ -76,6 +77,12 @@ Currently supported metadata sources types are:
 - `type = "license"` to provide metadata for the licenses that are not covered by NuGet packages. The `id` attribute is mandatory and should be unique across all metadata sources. The `spdx` and `copyright` attributes are mandatory. `files_covered` is also mandatory, and it should be a glob mask or a path, applied to the base directory of each declared package, to mark the files covered by the license.
 
   `files_covered` may be a single pattern or a list of patterns.
+- `type = "reuse"` to provide licenses read according to [the REUSE specification v 3.0][reuse.spec]. Attributes:
+  - `root` (required) is the root directory of the REUSE-compliant project,
+  - `excludes` (optional) is a list of paths to exclude from the analysis. For example, you may want to ignore the IDE-generated files or test resources if they have different license.
+  - `files_covered` (optional) — either a glob or an array of globs. This is optional, and files that are included into the current directory and covered by the REUSE specification are _automatically_ considered as covered in any case.
+
+  Item with `type = "reuse"` should point to a set of licenses exactly covering the sources from which the covered packaged files are built.
 
 The `metadata_overrides` parameter (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
 
