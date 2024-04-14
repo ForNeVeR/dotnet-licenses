@@ -47,7 +47,10 @@ public class DebianControlFile(List<Stanza> stanzas)
             }
 
             if (line.StartsWith(' '))
+            {
                 AppendContinuationValue(line);
+                continue;
+            }
 
             var components = line.Split(Separator, 2);
             if (components.Length != 2)
