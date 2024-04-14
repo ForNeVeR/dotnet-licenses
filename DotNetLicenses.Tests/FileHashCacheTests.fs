@@ -9,6 +9,7 @@ open System.IO
 open System.Security.Cryptography
 open System.Threading.Tasks
 open DotNetLicenses
+open TruePath
 open Xunit
 
 let private CalculateSha256(bytes: byte[]) =
@@ -19,8 +20,8 @@ let private CalculateSha256(bytes: byte[]) =
 let ``FileHashCache calculates cache of a file on disk``(): Task = task {
     use cache = new FileHashCache()
     let bytes = "Hello World"B
-    let path = Path.GetTempFileName()
-    do! File.WriteAllBytesAsync(path, bytes)
+    let path = AbsolutePath <| Path.GetTempFileName()
+    do! File.WriteAllBytesAsync(path.Value, bytes)
     let expectedHash = CalculateSha256 bytes
     let! actualHash = cache.CalculateFileHash path
     Assert.Equal(expectedHash, actualHash)

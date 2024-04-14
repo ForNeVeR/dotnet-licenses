@@ -129,14 +129,23 @@ let internal GenerateLockFile(
             | _ -> Array.empty
         )
         |> Map.ofSeq
-    let reuseMetadata =
-        metadata
-        |> Seq.collect(fun m ->
-            match m with
-            | Reuse r -> [| r |]
-            | _ -> Array.empty
-        )
-        |> Seq.toArray
+    let! reuseMetadata = task {
+        let sources =
+            metadata
+            |> Seq.collect(fun m ->
+                match m with
+                | Reuse r -> [| r |]
+                | _ -> Array.empty
+            )
+            |> Seq.map(fun r ->
+                let root = baseFolderPath / r.Root
+                let excludes = r.Exclude |> Seq.map (fun e -> baseFolderPath / e)
+                Reuse.ReadReuseDirectory(root, excludes))
+            |> Task.WhenAll
+        let! sources = sources
+        return Seq.concat sources
+    }
+
     use ld = new LifetimeDefinition()
 
     let! sourceEntries = ReadEntries ld.Lifetime baseFolderPath packagedFiles
@@ -147,13 +156,12 @@ let internal GenerateLockFile(
             license.FilesCovered
             |> Seq.exists(fun pattern -> IsCoveredByPattern (RelativePath entry.SourceRelativePath) pattern)
         )
+    use hashCache = new FileHashCache()
     let findReuseLicenses(entry: ISourceEntry) =
-        reuseMetadata
-        |> Seq.choose(fun s -> Reuse.CollectLicenses s entry)
+        Reuse.CollectLicenses hashCache reuseMetadata entry
 
-    use cache = new FileHashCache()
     let findLicensesForFile entry = task {
-        let! packageEntries = nuGet.FindFile cache packages entry
+        let! packageEntries = nuGet.FindFile hashCache packages entry
         let packageSearchResults =
             packageEntries
             |> Seq.map (fun package ->
@@ -176,13 +184,14 @@ let internal GenerateLockFile(
                 Spdx = [|license.Spdx|]
                 Copyright = [|license.Copyright|]
             })
+        let! reuseEntries = findReuseLicenses entry
         let reuseSearchResults =
-            findReuseLicenses entry
+            reuseEntries
             |> Seq.map (fun license -> {
                 SourceId = null
                 SourceVersion = null
-                Spdx = license.SpdxExpressions
-                Copyright = license.CopyrightStatements
+                Spdx = Seq.toArray license.SpdxExpressions
+                Copyright = Seq.toArray license.CopyrightStatements
             })
         return Seq.concat [|packageSearchResults; licenseSearchResults; reuseSearchResults|] |> Seq.toArray
     }

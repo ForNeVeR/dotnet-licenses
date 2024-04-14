@@ -61,6 +61,7 @@ SPDX-License-Identifier: MIT
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\ReuseSpec\ReuseSpec.csproj" />
       <ProjectReference Include="..\TruePath\TruePath.csproj" />
     </ItemGroup>
 </Project>

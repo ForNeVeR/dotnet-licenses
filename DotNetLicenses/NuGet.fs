@@ -28,13 +28,15 @@ let internal GetNuSpecFilePath(packageReference: PackageReference): AbsolutePath
 
 let internal ContainsFile (fileHashCache: FileHashCache)
                           (package: PackageReference, entry: ISourceEntry): Task<bool> = task {
-    let files = Directory.EnumerateFileSystemEntries(
-        (UnpackedPackagePath package).Value,
-        "*",
-        EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
-    )
+    let files =
+        Directory.EnumerateFileSystemEntries(
+            (UnpackedPackagePath package).Value,
+            "*",
+            EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
+        )
+        |> Seq.map AbsolutePath
     let fileName = Path.GetFileName entry.SourceRelativePath
-    let possibleFiles = files |> Seq.filter(fun f -> Path.GetFileName f = fileName)
+    let possibleFiles = files |> Seq.filter(fun f -> f.FileName = fileName)
     let! possibleFileCheckResults =
         possibleFiles
         |> Seq.map(fun f -> task {

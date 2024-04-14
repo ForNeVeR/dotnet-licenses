@@ -10,14 +10,15 @@ open System.IO
 open System.Security.Cryptography
 open System.Threading
 open System.Threading.Tasks
+open TruePath
 
 type FileHashCache() =
     let cts = new CancellationTokenSource()
-    let map = ConcurrentDictionary<string, Task<string>>()
+    let map = ConcurrentDictionary<AbsolutePath, Task<string>>()
 
-    member _.CalculateFileHash(path: string): Task<string> =
+    member _.CalculateFileHash(path: AbsolutePath): Task<string> =
         map.GetOrAdd(path, fun path -> task {
-            let! bytes = File.ReadAllBytesAsync(path, cts.Token)
+            let! bytes = File.ReadAllBytesAsync(path.Value, cts.Token)
             use sha = SHA256.Create()
             let hash = sha.ComputeHash bytes
             return Convert.ToHexString hash
