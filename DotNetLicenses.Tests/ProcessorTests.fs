@@ -262,3 +262,148 @@ copyright = "Me"
     let! actualContent = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
     Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
 }
+
+[<Fact>]
+let ``Basic REUSE specification works``(): Task = task {
+    use directory = DisposableDirectory.Create()
+    let sourceFile = directory.Path / "source" / "my-file.txt"
+    let packagedFile = directory.Path / "package" / "my-file.txt"
+
+    let fileContent = """SPDX-FileCopyrightText: 2024 Me
+SPDX-License-Identifier: MIT
+text
+"""
+    do! File.WriteAllTextAsync(packagedFile.Value, fileContent)
+    do! File.WriteAllTextAsync(sourceFile.Value, fileContent)
+
+    let expectedLock = """[["my-file.txt"]]
+spdx = "MIT"
+copyright = "2024 Me"
+"""
+
+    let lockFile = directory.Path / "lock.toml"
+    let config = {
+        Configuration.Empty with
+            MetadataSources = [|
+                ReuseSource.Of((directory.Path / "source").AsRelative())
+            |]
+            LockFile = Some <| lockFile.AsRelative()
+            PackagedFiles = [| Directory <| (directory.Path / "package").AsRelative() |]
+    }
+
+    let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)
+    Assert.Empty wp.Codes
+    Assert.Empty wp.Messages
+
+    let! actualContent = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
+    Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
+}
+
+[<Fact>]
+let ``DEP5 part of the REUSE specification works``(): Task = task {
+    use directory = DisposableDirectory.Create()
+    let sourceFile = directory.Path / "source" / "my-file.txt"
+    let packagedFile = directory.Path / "package" / "my-file.txt"
+
+    let fileContent = "Hello World!"
+    do! File.WriteAllTextAsync(packagedFile.Value, fileContent)
+    do! File.WriteAllTextAsync(sourceFile.Value, fileContent)
+
+    let dep5 = directory.Path / "source" / ".reuse" / "dep5"
+    do! File.WriteAllTextAsync(dep5.Value, """Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: dotnet-licenses
+Upstream-Contact: Friedrich von Never <friedrich@fornever.me>
+Source: https://github.com/ForNeVeR/dotnet-licenses
+
+Files: **/*.txt
+Copyright: 2024 Me
+License: MIT
+    """)
+
+    let expectedLock = """[["my-file.txt"]]
+spdx = "MIT"
+copyright = "2024 Me"
+"""
+
+    let lockFile = directory.Path / "lock.toml"
+    let config = {
+        Configuration.Empty with
+            MetadataSources = [|
+                ReuseSource.Of((directory.Path / "source").AsRelative())
+            |]
+            LockFile = Some <| lockFile.AsRelative()
+            PackagedFiles = [| Directory <| (directory.Path / "package").AsRelative() |]
+    }
+
+    let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)
+    Assert.Empty wp.Codes
+    Assert.Empty wp.Messages
+
+    let! actualContent = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
+    Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
+}
+
+[<Fact>]
+let ``Combined licenses from REUSE source work``(): Task = task {
+    use directory = DisposableDirectory.Create()
+    let mitFile = directory.Path / "source" / "my-mit-file.txt"
+    let cc0File = directory.Path / "source" / "my-cc0-file.txt"
+    let ccBy3File = directory.Path / "source" / "my-cc-by-3-file.txt"
+    let ccBy4File = directory.Path / "source" / "my-cc-by-4-file.txt"
+    let packagedFile1 = directory.Path / "package" / "my-mit-file.txt"
+    let packagedFile2 = directory.Path / "package" / "my-combined-file.txt"
+
+    let mitFileContent = """SPDX-FileCopyrightText: 2024 Me
+SPDX-License-Identifier: MIT
+text
+"""
+    do! File.WriteAllTextAsync(mitFile.Value, mitFileContent)
+    do! File.WriteAllTextAsync(packagedFile1.Value, mitFileContent)
+
+    do! File.WriteAllTextAsync(cc0File.Value, """SPDX-FileCopyrightText: 2024 Me
+SPDX-License-Identifier: CC-0
+text
+    """)
+    do! File.WriteAllTextAsync(ccBy3File.Value, """SPDX-FileCopyrightText: 2024 Me
+SPDX-License-Identifier: CC-BY-3.0
+text
+    """)
+    do! File.WriteAllTextAsync(ccBy4File.Value, """SPDX-FileCopyrightText: 2024 Me
+SPDX-License-Identifier: CC-BY-4.0
+text
+    """)
+
+    do! File.WriteAllTextAsync((directory.Path / "source" / ".gitignore").Value, "/my-cc-by-3-file.txt")
+
+    let expectedLock = """[["my-mit-file.txt"]]
+spdx = "MIT"
+copyright = "2024 Me"
+[["my-combined-file.txt"]]
+spdx = "MIT"
+copyright = "2024 Me"
+[["my-combined-file.txt"]]
+spdx = "CC0"
+copyright = "2024 Me"
+"""
+
+    let lockFile = directory.Path / "lock.toml"
+    let config = {
+        Configuration.Empty with
+            MetadataSources = [|
+                Reuse {
+                    Root = (directory.Path / "source").AsRelative()
+                    Exclude = [| ccBy3File.AsRelative() |]
+                    FilesCovered = [| LocalPathPattern packagedFile2.Value |]
+                }
+            |]
+            LockFile = Some <| lockFile.AsRelative()
+            PackagedFiles = [| Directory <| (directory.Path / "package").AsRelative() |]
+    }
+
+    let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)
+    Assert.Empty wp.Codes
+    Assert.Empty wp.Messages
+
+    let! actualContent = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
+    Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
+}

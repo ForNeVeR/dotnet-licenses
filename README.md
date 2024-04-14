@@ -82,6 +82,8 @@ Currently supported metadata sources types are:
   - `excludes` (optional) is a list of paths to exclude from the analysis. For example, you may want to ignore the IDE-generated files or test resources if they have different license. Any path is excluded as a subtree.
   - `files_covered` (optional) — either a glob or an array of globs. This is optional, and files that are included into the current directory and covered by the REUSE specification are _automatically_ considered as covered in any case. So, this collection should only contain the generated/built files, and not the files that are copied as-is from the REUSE-covered set of files.
 
+    Any file that's copied as-is is considered to be covered by the exact license according to its REUSE specification. Any additional file from `files_covered` is considered to be covered by the combination of all the licenses in the source (except the `exclude`d files).
+
   Item with `type = "reuse"` should point to a set of licenses exactly covering the sources from which the covered packaged files are built.
 
 The `metadata_overrides` parameter (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.

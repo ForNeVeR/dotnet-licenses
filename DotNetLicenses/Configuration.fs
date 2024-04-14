@@ -185,8 +185,9 @@ and ReuseSource =
         Exclude: RelativePath[]
         FilesCovered: LocalPathPattern[]
     }
-    static member Of(relativePath: string) = Reuse {
-        Root = RelativePath relativePath
+    static member Of(path: RelativePath) = Reuse {
+        Root = path
         Exclude = Array.empty
         FilesCovered = Array.empty
     }
+    static member Of(relativePath: string) = ReuseSource.Of(RelativePath relativePath)
