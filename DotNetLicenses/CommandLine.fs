@@ -7,7 +7,7 @@ module DotNetLicenses.CommandLine
 [<RequireQualifiedAccess>]
 type Command =
     | GenerateLock of configFilePath: string
-    | PrintMetadata of configFilePath: string
+    | PrintPackages of configFilePath: string
     | PrintHelp
     | PrintVersion
 
@@ -30,7 +30,7 @@ let Parse(args: string[]): struct(Command * ExitCode) =
     match args with
     | [| "--help" |] -> Command.PrintHelp, ExitCode.Success
     | [| "--version" |] -> Command.PrintVersion, ExitCode.Success
-    | [| path |] -> Command.PrintMetadata path, ExitCode.Success
-    | [| "print"; path |] -> Command.PrintMetadata path, ExitCode.Success
+    | [| path |] -> Command.PrintPackages path, ExitCode.Success
+    | [| "print-packages"; path |] -> Command.PrintPackages path, ExitCode.Success
     | [| "generate-lock"; path |] -> Command.GenerateLock path, ExitCode.Success
     | _ -> Command.PrintHelp, ExitCode.InvalidArguments

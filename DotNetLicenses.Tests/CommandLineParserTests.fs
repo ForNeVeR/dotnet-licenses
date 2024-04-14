@@ -10,13 +10,13 @@ open Xunit
 [<Fact>]
 let ``print command is the default``(): unit =
     let path = "foo/bar.toml"
-    Assert.Equal(struct(Command.PrintMetadata path, ExitCode.Success), Parse [| path |])
+    Assert.Equal(struct(Command.PrintPackages path, ExitCode.Success), Parse [| path |])
 
 [<Fact>]
 let ``print command is supported``(): unit =
     let path = "foo/bar.toml"
-    let command = Parse [| "print"; path |]
-    Assert.Equal(struct(Command.PrintMetadata path, ExitCode.Success), command)
+    let command = Parse [| "print-packages"; path |]
+    Assert.Equal(struct(Command.PrintPackages path, ExitCode.Success), command)
 
 [<Fact>]
 let ``generate-lock command is supported``(): unit =

@@ -31,7 +31,7 @@ Usage
 -----
 To run the tool, use the following shell command:
 ```console
-$ dotnet licenses [print] <config-file-path>
+$ dotnet licenses [print-packages] <config-file-path>
 ```
 This command will print the packages used by the configured projects.
 

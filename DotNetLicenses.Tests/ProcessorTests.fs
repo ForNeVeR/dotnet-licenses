@@ -32,7 +32,7 @@ type private Runner =
         return wp
     }
 
-let private runPrinter t = Runner.RunFunction(Processor.PrintMetadata, t)
+let private runPrinter t = Runner.RunFunction(Processor.PrintPackages, t)
 let private runGenerator t = Runner.RunFunction(Processor.GenerateLockFile, t)
 
 [<Fact>]

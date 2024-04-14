@@ -43,11 +43,7 @@ let private GetMetadata (projectMetadataReader: MetadataReader) (baseFolderPath:
         projectMetadataReader.ReadFromProject(projectPath, overrides)
     | MetadataSource.License source ->
         Task.FromResult {
-            Items = [| {
-                Source = License source
-                Spdx = source.Spdx
-                Copyright = source.Copyright
-            } |].AsReadOnly()
+            Items = [| License source |].AsReadOnly()
             UsedOverrides = Set.empty
         }
     | MetadataSource.Reuse _ -> failwith "TODO"
@@ -68,7 +64,7 @@ let private CollectMetadata (config: Configuration) (baseFolderPath: AbsolutePat
     return metadataList
 }
 
-let internal PrintMetadata(
+let internal PrintPackages(
     config: Configuration,
     baseFolderPath: AbsolutePath,
     nuGet: INuGetReader,
@@ -76,11 +72,10 @@ let internal PrintMetadata(
 ): Task = task {
     let! metadata = CollectMetadata config baseFolderPath nuGet wp
     for item in metadata do
-        let sourceInfo =
-            match item.Source with
-            | Package package -> $"{package.PackageId} {package.Version}"
-            | License _ -> "License"
-        printfn $"- {sourceInfo}: {item.Spdx}\n  {item.Copyright}"
+        match item with
+        | Package package ->
+            printfn $"- {package.Source.PackageId} {package.Source.Version}: {package.Spdx}\n  {package.Copyright}"
+        | _ -> ()
 }
 
 let private IsCoveredByPattern (path: RelativePath) (pattern: LocalPathPattern) =
@@ -110,15 +105,13 @@ let internal GenerateLockFile(
     let! metadata = CollectMetadata config baseFolderPath nuGet wp
     let packages =
         metadata
-        |> Seq.map _.Source
         |> Seq.collect(function
-            | Package p -> [| p |]
+            | Package p -> [| p.Source |]
             | _ -> Array.empty
         )
         |> Seq.toArray
     let licenses =
         metadata
-        |> Seq.map _.Source
         |> Seq.collect(function
             | License l -> [| l |]
             | _ -> Array.empty
@@ -127,8 +120,8 @@ let internal GenerateLockFile(
     let packageMetadata =
         metadata
         |> Seq.collect(fun m ->
-            match m.Source with
-            | Package p -> [| p, m |]
+            match m with
+            | Package p -> [| p.Source, m |]
             | _ -> Array.empty
         )
         |> Map.ofSeq
@@ -150,12 +143,15 @@ let internal GenerateLockFile(
             packageEntries
             |> Seq.map (fun package ->
                 let metadata = packageMetadata[package]
-                {
-                    SourceId = package.PackageId
-                    SourceVersion = package.Version
-                    Spdx = metadata.Spdx
-                    Copyright = metadata.Copyright
-                }
+                match metadata with
+                | Package p ->
+                    {
+                        SourceId = package.PackageId
+                        SourceVersion = package.Version
+                        Spdx = p.Spdx
+                        Copyright = p.Copyright
+                    }
+                | _ -> failwithf $"Unexpected metadata type in object {metadata}."
             )
         let licenseSearchResults =
             findExplicitLicenses entry
@@ -205,11 +201,11 @@ let Process: Command -> int =
 - generate-lock <config-file-path> - Generate a license lock file and place it accordingly to the configuration.
     """
         0
-    | Command.PrintMetadata configFilePath ->
+    | Command.PrintPackages configFilePath ->
         task {
             let! baseFolderPath, config = ProcessConfig configFilePath
             let wp = WarningProcessor()
-            do! PrintMetadata(config, baseFolderPath, NuGetReader(), wp)
+            do! PrintPackages(config, baseFolderPath, NuGetReader(), wp)
             return ProcessWarnings wp
         }
         |> RunSynchronously
