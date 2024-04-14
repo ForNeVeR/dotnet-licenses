@@ -76,7 +76,7 @@ Currently supported metadata sources types are:
 - `type = "nuget", include = "<path/to/project>"` to extract metadata from NuGet packages used by the designated project,
 - `type = "license"` to provide metadata for the licenses that are not covered by NuGet packages. The `id` attribute is mandatory and should be unique across all metadata sources. The `spdx` and `copyright` attributes are mandatory. `files_covered` is also mandatory, and it should be a glob mask or a path, applied to the base directory of each declared package, to mark the files covered by the license.
 
-  `files_covered` may be a single pattern or a list of patterns.
+  `files_covered` may be a single glob or a list of globs, applied relative to the package root of the containing package.
 - `type = "reuse"` to provide licenses read according to [the REUSE specification v 3.0][reuse.spec]. Attributes:
   - `root` (required) is the root directory of the REUSE-compliant project,
   - `excludes` (optional) is a list of paths to exclude from the analysis. For example, you may want to ignore the IDE-generated files or test resources if they have different license. Any path is excluded as a subtree.

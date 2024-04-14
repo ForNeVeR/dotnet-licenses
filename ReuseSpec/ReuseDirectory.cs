@@ -25,7 +25,7 @@ public static class ReuseDirectory
             if (entry != null)
                 return entry;
 
-            return FindDep5Entry(dep5, file);
+            return FindDep5Entry(dep5, directory, file);
         })).ConfigureAwait(false);
         return results.Where(x => x != null).ToList()!;
     }
@@ -73,10 +73,13 @@ public static class ReuseDirectory
         return entries!;
     }
 
-    private static ReuseFileEntry? FindDep5Entry(List<DebianCopyrightFilesEntry> dep5, AbsolutePath path)
+    private static ReuseFileEntry? FindDep5Entry(
+        List<DebianCopyrightFilesEntry> dep5,
+        AbsolutePath directory,
+        AbsolutePath path)
     {
         // Mind the order from the comment in the ReadDep5File method.
-        var entry = dep5.FirstOrDefault(x => x.Matcher.Match(path.Value).HasMatches);
+        var entry = dep5.FirstOrDefault(x => x.Matcher.Match(directory.Value, path.Value).HasMatches);
         if (entry == null)
             return null;
         return new ReuseFileEntry(path, [entry.License], entry.Copyright.ToImmutableArray());

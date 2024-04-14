@@ -12,9 +12,11 @@ open DotNetLicenses.CommandLine
 open DotNetLicenses.LockFile
 open DotNetLicenses.Metadata
 open DotNetLicenses.NuGet
+open DotNetLicenses.Reuse
 open DotNetLicenses.Sources
 open JetBrains.Lifetimes
 open Microsoft.Extensions.FileSystemGlobbing
+open ReuseSpec
 open TruePath
 
 let private WarnUnusedOverrides allOverrides usedOverrides (wp: WarningProcessor) =
@@ -129,22 +131,30 @@ let internal GenerateLockFile(
             | _ -> Array.empty
         )
         |> Map.ofSeq
-    let! reuseMetadata = task {
+    let reuseMetadata =
+        metadata
+        |> Seq.collect(fun m ->
+            match m with
+            | Reuse r -> [| r |]
+            | _ -> Array.empty
+        )
+        |> Seq.toArray
+    let! reuseEntries = task {
         let sources =
-            metadata
-            |> Seq.collect(fun m ->
-                match m with
-                | Reuse r -> [| r |]
-                | _ -> Array.empty
-            )
-            |> Seq.map(fun r ->
+            reuseMetadata
+            |> Seq.map(fun r -> task {
                 let root = baseFolderPath / r.Root
                 let excludes = r.Exclude |> Seq.map (fun e -> baseFolderPath / e)
-                Reuse.ReadReuseDirectory(root, excludes))
+                let! entries = ReadReuseDirectory(root, excludes)
+                return r, entries
+            })
             |> Task.WhenAll
         let! sources = sources
-        return Seq.concat sources
+        let dict = Dictionary()
+        for r, s in sources do dict[r] <- s
+        return dict
     }
+    let allReuseEntries = reuseEntries.Values |> Seq.concat |> Seq.toArray
 
     use ld = new LifetimeDefinition()
 
@@ -158,7 +168,19 @@ let internal GenerateLockFile(
         )
     use hashCache = new FileHashCache()
     let findReuseLicenses(entry: ISourceEntry) =
-        Reuse.CollectLicenses hashCache reuseMetadata entry
+        CollectLicenses hashCache allReuseEntries entry
+    let findReuseCombinedLicenses(entry: ISourceEntry) =
+        reuseMetadata
+        |> Seq.filter(fun r ->
+            let matcher = Matcher()
+            let patterns = r.FilesCovered |> Seq.map _.Value
+            matcher.AddIncludePatterns(patterns)
+            matcher.Match(entry.SourceRelativePath).HasMatches
+        )
+        |> Seq.map (fun r ->
+            reuseEntries[r]
+            |> ReuseFileEntry.CombineEntries
+        )
 
     let findLicensesForFile entry = task {
         let! packageEntries = nuGet.FindFile hashCache packages entry
@@ -193,7 +215,20 @@ let internal GenerateLockFile(
                 Spdx = Seq.toArray license.SpdxExpressions
                 Copyright = Seq.toArray license.CopyrightStatements
             })
-        return Seq.concat [|packageSearchResults; licenseSearchResults; reuseSearchResults|] |> Seq.toArray
+        let reuseCombinedSearchResults =
+            findReuseCombinedLicenses entry
+            |> Seq.map(fun fe -> {
+                SourceId = null
+                SourceVersion = null
+                Spdx = Seq.toArray fe.LicenseIdentifiers
+                Copyright = Seq.toArray fe.CopyrightStatements
+            })
+        return Seq.concat [|
+            packageSearchResults
+            licenseSearchResults
+            reuseSearchResults
+            reuseCombinedSearchResults
+        |] |> Seq.toArray
     }
 
     let lockFileContent = Dictionary<_, IReadOnlyList<LockFileItem>>()

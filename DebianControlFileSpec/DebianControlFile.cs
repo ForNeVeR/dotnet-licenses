@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-﻿namespace DebianControlFileSpec;
+namespace DebianControlFileSpec;
 
 public class DebianControlFile(List<Stanza> stanzas)
 {
@@ -41,7 +41,10 @@ public class DebianControlFile(List<Stanza> stanzas)
         {
             if (line.StartsWith('#')) continue;
             if (line.Trim().Length == 0)
+            {
                 EndStanza();
+                continue;
+            }
 
             if (line.StartsWith(' '))
                 AppendContinuationValue(line);

@@ -105,11 +105,7 @@ let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj"
     use directory = DisposableDirectory.Create()
     do! File.WriteAllTextAsync((directory.Path / "test.txt").Value, "Hello!")
 
-    let expectedLock = """[["test.txt"]]
-source_id = "FVNever.DotNetLicenses"
-source_version = "1.0.0"
-spdx = "License FVNever.DotNetLicenses"
-copyright = "Copyright FVNever.DotNetLicenses"
+    let expectedLock = """"test.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
 """
     let config = {
         Configuration.Empty with
@@ -133,11 +129,7 @@ let ``Processor generates a lock file for a file tree``(): Task = task {
     use directory = DisposableDirectory.Create()
     let packagedFile = directory.Path / "my-file.txt"
     do! File.WriteAllTextAsync(packagedFile.Value, "Hello World!")
-    let expectedLock = """[["my-file.txt"]]
-source_id = "FVNever.DotNetLicenses"
-source_version = "1.0.0"
-spdx = "License FVNever.DotNetLicenses"
-copyright = "Copyright FVNever.DotNetLicenses"
+    let expectedLock = """"my-file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
 """
 
     do! DataFiles.Deploy "Test.csproj" (fun project -> task {
@@ -165,11 +157,7 @@ let ``Processor generates a lock file for a ZIP archive``(): Task = task {
     use directory = DisposableDirectory.Create()
     let archivePath = directory.Path / "file.zip"
     ZipFiles.SingleFileArchive(AbsolutePath.op_Implicit archivePath, "content/my-file.txt", "Hello World"B)
-    let expectedLock = """[["content/my-file.txt"]]
-source_id = "FVNever.DotNetLicenses"
-source_version = "1.0.0"
-spdx = "License FVNever.DotNetLicenses"
-copyright = "Copyright FVNever.DotNetLicenses"
+    let expectedLock = """"content/my-file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
 """
     do! DataFiles.Deploy "Test.csproj" (fun project -> task {
         let lockFile = directory.Path / "lock.toml"
@@ -240,9 +228,7 @@ let ``License metadata gets saved to the lock file``(): Task = task {
     let packagedFile = directory.Path / "my-file.txt"
     do! File.WriteAllTextAsync(packagedFile.Value, "")
 
-    let expectedLock = """[["my-file.txt"]]
-spdx = "MIT"
-copyright = "Me"
+    let expectedLock = """"my-file.txt" = [{spdx = ["MIT"], copyright = ["Me"]}]
 """
 
     let lockFile = directory.Path / "lock.toml"
@@ -278,9 +264,7 @@ text
     do! File.WriteAllTextAsync(packagedFile.Value, fileContent)
     do! File.WriteAllTextAsync(sourceFile.Value, fileContent)
 
-    let expectedLock = """[["my-file.txt"]]
-spdx = "MIT"
-copyright = "2024 Me"
+    let expectedLock = """"my-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
 """
 
     let lockFile = directory.Path / "lock.toml"
@@ -304,6 +288,8 @@ copyright = "2024 Me"
 [<Fact>]
 let ``DEP5 part of the REUSE specification works``(): Task = task {
     use directory = DisposableDirectory.Create()
+    directory.MakeSubDirs [| RelativePath "package"; RelativePath "source/.reuse" |]
+
     let sourceFile = directory.Path / "source" / "my-file.txt"
     let packagedFile = directory.Path / "package" / "my-file.txt"
 
@@ -317,14 +303,12 @@ Upstream-Name: dotnet-licenses
 Upstream-Contact: Friedrich von Never <friedrich@fornever.me>
 Source: https://github.com/ForNeVeR/dotnet-licenses
 
-Files: **/*.txt
+Files: *.txt
 Copyright: 2024 Me
 License: MIT
     """)
 
-    let expectedLock = """[["my-file.txt"]]
-spdx = "MIT"
-copyright = "2024 Me"
+    let expectedLock = """"my-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
 """
 
     let lockFile = directory.Path / "lock.toml"
@@ -338,8 +322,8 @@ copyright = "2024 Me"
     }
 
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)
-    Assert.Empty wp.Codes
     Assert.Empty wp.Messages
+    Assert.Empty wp.Codes
 
     let! actualContent = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
     Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
@@ -348,6 +332,8 @@ copyright = "2024 Me"
 [<Fact>]
 let ``Combined licenses from REUSE source work``(): Task = task {
     use directory = DisposableDirectory.Create()
+    directory.MakeSubDirs [| RelativePath "source"; RelativePath "package" |]
+
     let mitFile = directory.Path / "source" / "my-mit-file.txt"
     let cc0File = directory.Path / "source" / "my-cc0-file.txt"
     let ccBy1File = directory.Path / "source" / "my-cc-by-1-file.txt"
@@ -362,6 +348,7 @@ text
 """
     do! File.WriteAllTextAsync(mitFile.Value, mitFileContent)
     do! File.WriteAllTextAsync(packagedFile1.Value, mitFileContent)
+    do! File.WriteAllTextAsync(packagedFile2.Value, "My Combined Content")
 
     do! File.WriteAllTextAsync(cc0File.Value, """SPDX-FileCopyrightText: 2024 Me
 SPDX-License-Identifier: CC-0
@@ -385,18 +372,8 @@ text
 
     do! File.WriteAllTextAsync((directory.Path / "source" / ".gitignore").Value, "/my-cc-by-3-file.txt")
 
-    let expectedLock = """[["my-mit-file.txt"]]
-spdx = "MIT"
-copyright = "2024 Me"
-[["my-combined-file.txt"]]
-spdx = "MIT"
-copyright = "2024 Me"
-[["my-combined-file.txt"]]
-spdx = "CC0"
-copyright = "2024 Me"
-[["my-combined-file.txt"]]
-spdx = "CC-BY-1.0"
-copyright = "2024 Me"
+    let expectedLock = """"my-combined-file.txt" = [{spdx = ["CC-BY-1.0", "CC-BY-4.0", "CC-0", "MIT"], copyright = ["2024 Me"]}]
+"my-mit-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
 """
 
     let lockFile = directory.Path / "lock.toml"
@@ -406,7 +383,7 @@ copyright = "2024 Me"
                 Reuse {
                     Root = (directory.Path / "source").AsRelative()
                     Exclude = [| ccBy3File.AsRelative() |]
-                    FilesCovered = [| LocalPathPattern packagedFile2.Value |]
+                    FilesCovered = [| LocalPathPattern packagedFile2.FileName |]
                 }
             |]
             LockFile = Some <| lockFile.AsRelative()

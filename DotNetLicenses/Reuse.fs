@@ -9,7 +9,6 @@ open System.Collections.Immutable
 open System.IO
 open System.Threading.Tasks
 open DotNetLicenses.Sources
-open Microsoft.Extensions.FileSystemGlobbing
 open ReuseSpec
 open TruePath
 
@@ -21,10 +20,8 @@ type ReuseLicenseEntry = {
 let ReadReuseDirectory(root: AbsolutePath, excludes: AbsolutePath seq): Task<ResizeArray<ReuseFileEntry>> = task {
     let! entries = ReuseDirectory.ReadEntries root
     let result = ResizeArray()
-    let matcher = Matcher().AddInclude "*"
-    matcher.AddExcludePatterns(excludes |> Seq.map _.Value)
     for entry in entries do
-        if not <| matcher.Match(entry.Path.Value).HasMatches then
+        if excludes |> Seq.tryFind(fun e -> e.IsPrefixOf entry.Path) |> Option.isNone then
             result.Add entry
     return result
 }

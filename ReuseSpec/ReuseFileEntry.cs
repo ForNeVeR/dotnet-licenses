@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-﻿using System.Collections.Immutable;
+using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 using TruePath;
 
@@ -35,8 +35,8 @@ public record ReuseFileEntry(
 
         return new ReuseFileEntry(
             file,
-            licenseIdentifiers.ToImmutableArray(),
-            copyrightStatements.ToImmutableArray());
+            [..licenseIdentifiers],
+            [..copyrightStatements]);
     }
 
     private static IEnumerable<string> FilterIgnoredBlocks(IEnumerable<string> input)
@@ -64,7 +64,7 @@ public record ReuseFileEntry(
     }
 
     private static readonly Regex[] CopyrightPatterns = [
-        new(@"SPDX-(File|Snippet)CopyrightText:\s*(.*)"),
+        new(@"SPDX-(?:File|Snippet)CopyrightText:\s*(.*)"),
         new(@"Copyright\s?(?:\([Cc]\))\s+(.*)"),
         new(@"©\s+(.*)")
     ];
@@ -78,7 +78,7 @@ public record ReuseFileEntry(
         {
             if (line.Contains("SPDX-License-Identifier:"))
             {
-                licenses.Add(line.Split("SPDX-License-Identifier:", 2)[1]);
+                licenses.Add(line.Split("SPDX-License-Identifier:", 2)[1].Trim());
                 continue;
             }
 
@@ -92,5 +92,20 @@ public record ReuseFileEntry(
         }
 
         return (licenses, copyrights);
+    }
+
+    public static ReuseFileEntry CombineEntries(IEnumerable<ReuseFileEntry> entries)
+    {
+        var licenses = new List<string>();
+        var copyrights = new List<string>();
+        var licenseHash = new HashSet<string>();
+        var copyrightHash = new HashSet<string>();
+        foreach (var entry in entries)
+        {
+            licenses.AddRange(entry.LicenseIdentifiers.Where(license => licenseHash.Add(license)));
+            copyrights.AddRange(entry.CopyrightStatements.Where(statement => copyrightHash.Add(statement)));
+        }
+
+        return new ReuseFileEntry(new AbsolutePath("*"), [..licenses], [..copyrights]);
     }
 }
