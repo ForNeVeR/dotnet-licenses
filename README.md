@@ -55,7 +55,7 @@ metadata_sources = [# required
         "*.txt",
         "*.css"
     ] },
-    { type = "reuse", root = ".", excludes = [".idea/"], files_covered = "README.md" },
+    { type = "reuse", root = ".", exclude = [".idea/"], files_covered = "README.md" },
 ]
 metadata_overrides = [# optional
     { id = "package1", version = "1.0.0", spdx = "MIT", copyright = "Copyright" },
@@ -79,8 +79,8 @@ Currently supported metadata sources types are:
   `files_covered` may be a single pattern or a list of patterns.
 - `type = "reuse"` to provide licenses read according to [the REUSE specification v 3.0][reuse.spec]. Attributes:
   - `root` (required) is the root directory of the REUSE-compliant project,
-  - `excludes` (optional) is a list of paths to exclude from the analysis. For example, you may want to ignore the IDE-generated files or test resources if they have different license.
-  - `files_covered` (optional) — either a glob or an array of globs. This is optional, and files that are included into the current directory and covered by the REUSE specification are _automatically_ considered as covered in any case.
+  - `excludes` (optional) is a list of paths to exclude from the analysis. For example, you may want to ignore the IDE-generated files or test resources if they have different license. Any path is excluded as a subtree.
+  - `files_covered` (optional) — either a glob or an array of globs. This is optional, and files that are included into the current directory and covered by the REUSE specification are _automatically_ considered as covered in any case. So, this collection should only contain the generated/built files, and not the files that are copied as-is from the REUSE-covered set of files.
 
   Item with `type = "reuse"` should point to a set of licenses exactly covering the sources from which the covered packaged files are built.
 

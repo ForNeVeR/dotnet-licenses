@@ -41,6 +41,16 @@ type Configuration =
             |> Option.defaultWith(fun () -> failwithf $"Key not found in table \"{table}\": \"{key}\".")
 
         let readSources(array: TomlArray) =
+            let readItemOrArray key transform t =
+                let value: obj option = tryGetValue t key
+                match value with
+                | None -> Array.empty
+                | Some(:? string as s) -> [| transform s |]
+                | Some(:? TomlArray as a) -> a |> Seq.cast<string> |> Seq.map transform |> Seq.toArray
+                | Some other -> failwithf $"{key}'s type not supported: {other}."
+
+            let readFilesCovered = readItemOrArray "files_covered" LocalPathPattern
+
             array
             |> Seq.cast<TomlTable>
             |> Seq.map(fun t ->
@@ -50,12 +60,13 @@ type Configuration =
                     License {
                         Spdx = getValue t "spdx"
                         Copyright = getValue t "copyright"
-                        FilesCovered =
-                            let value: obj = getValue t "files_covered"
-                            match value with
-                            | :? string as s -> [| LocalPathPattern s |]
-                            | :? TomlArray as a -> a |> Seq.cast<string> |> Seq.map LocalPathPattern |> Seq.toArray
-                            | other -> failwithf $"files_covered type not supported: {other}."
+                        FilesCovered = readFilesCovered t
+                    }
+                | "reuse" ->
+                    Reuse {
+                        Root = getValue t "root" |> RelativePath
+                        Exclude = readItemOrArray "exclude" RelativePath t
+                        FilesCovered = readFilesCovered t
                     }
                 | other -> failwithf $"Metadata source type not supported: {other}"
             )
@@ -137,6 +148,7 @@ type Configuration =
 and MetadataSource =
     | NuGet of NuGetSource
     | License of LicenseSource
+    | Reuse of ReuseSource
 
 and Override = {
     Id: string
@@ -166,3 +178,15 @@ and LicenseSource = {
     Copyright: string
     FilesCovered: LocalPathPattern[]
 }
+
+and ReuseSource =
+    {
+        Root: RelativePath
+        Exclude: RelativePath[]
+        FilesCovered: LocalPathPattern[]
+    }
+    static member Of(relativePath: string) = Reuse {
+        Root = RelativePath relativePath
+        Exclude = Array.empty
+        FilesCovered = Array.empty
+    }

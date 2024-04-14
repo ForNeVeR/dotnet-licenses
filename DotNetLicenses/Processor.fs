@@ -50,6 +50,7 @@ let private GetMetadata (projectMetadataReader: MetadataReader) (baseFolderPath:
             } |].AsReadOnly()
             UsedOverrides = Set.empty
         }
+    | MetadataSource.Reuse _ -> failwith "TODO"
 
 let private CollectMetadata (config: Configuration) (baseFolderPath: AbsolutePath) nuGet wp = task {
     let reader = MetadataReader nuGet

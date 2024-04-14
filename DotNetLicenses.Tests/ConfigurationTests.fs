@@ -93,6 +93,32 @@ metadata_sources = [
     }
 
 [<Fact>]
+let ``REUSE source is read correctly``(): Task =
+    let content = """
+metadata_sources = [
+    { type = "reuse", root = "path1" },
+    { type = "reuse", root = "path2", exclude = ["path2/exclude"], files_covered = ["README.md"] },
+    { type = "reuse", root = "path3", exclude = "path3/exclude", files_covered = "README.md" },
+]
+"""
+    doTest content {
+        Configuration.Empty with
+            MetadataSources = [|
+                ReuseSource.Of "path1"
+                Reuse {
+                    Root = RelativePath "path2"
+                    Exclude = [|RelativePath "path2/exclude"|]
+                    FilesCovered = [| LocalPathPattern "README.md" |]
+                }
+                Reuse {
+                    Root = RelativePath "path3"
+                    Exclude = [|RelativePath "path3/exclude"|]
+                    FilesCovered = [| LocalPathPattern "README.md" |]
+                }
+            |]
+    }
+
+[<Fact>]
 let ``GetOverrides works on duplicate package names (not versions)``(): Task = task {
     let content = """
 metadata_sources = []
