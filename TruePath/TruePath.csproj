@@ -13,4 +13,7 @@ SPDX-License-Identifier: MIT
         <IsPackable>false</IsPackable>
     </PropertyGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="TruePath.Tests"/>
+    </ItemGroup>
 </Project>
