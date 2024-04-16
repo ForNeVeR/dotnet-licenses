@@ -3,7 +3,9 @@
 // SPDX-License-Identifier: MIT
 
 using System.Collections.Immutable;
+using System.Text;
 using DebianControlFileSpec;
+using GitignoreParserNet;
 using Microsoft.Extensions.FileSystemGlobbing;
 using TruePath;
 
@@ -13,8 +15,7 @@ public static class ReuseDirectory
 {
     public static async Task<List<ReuseFileEntry>> ReadEntries(AbsolutePath directory)
     {
-        var gitIgnorePatterns = await ReadGitIgnoreEntries(directory).ConfigureAwait(false);
-        var allFiles = EnumerateAllFiles(directory, gitIgnorePatterns);
+        var allFiles = await EnumerateFiles(directory).ConfigureAwait(false);
         var dep5 = await ReadDep5File(directory).ConfigureAwait(false);
         var results = await Task.WhenAll(allFiles.Select(async file =>
         {
@@ -30,28 +31,26 @@ public static class ReuseDirectory
         return results.Where(x => x != null).ToList()!;
     }
 
-    private static async Task<Matcher?> ReadGitIgnoreEntries(AbsolutePath directory)
+    private static async Task<List<AbsolutePath>> EnumerateFiles(AbsolutePath directory)
     {
-        // TODO: Migrate to a GitIgnore library, https://github.com/Guiorgy/GitignoreParserNet
+        await Task.Yield();
+
         var gitIgnorePath = directory / ".gitignore";
         if (!File.Exists(gitIgnorePath.Value))
-            return null;
+        {
+            return Directory.EnumerateFiles(directory.Value, "*", SearchOption.AllDirectories)
+                .Select(x => new AbsolutePath(x))
+                .ToList();
+        }
 
-        var patterns = await File.ReadAllLinesAsync(gitIgnorePath.Value);
-        var matcher = new Matcher();
-        matcher.AddIncludePatterns(patterns);
-        return matcher;
-    }
+        // TODO: Support nested .gitignore files on parent/child levels
 
-    private static IEnumerable<AbsolutePath> EnumerateAllFiles(AbsolutePath directory, Matcher? gitIgnorePatterns)
-    {
-        var allFiles = Directory.EnumerateFiles(directory.Value, "*", SearchOption.AllDirectories);
-        if (gitIgnorePatterns == null)
-            return allFiles.Select(x => new AbsolutePath(x));
-
-        return allFiles
-            .Where(x => !gitIgnorePatterns.Match(x).HasMatches)
-            .Select(x => new AbsolutePath(x));
+        var (accepted, _) = GitignoreParser.Parse(gitIgnorePath.Value, Encoding.UTF8);
+        return accepted
+            .Where(x => !x.EndsWith("/"))
+            .Select(x => directory / x)
+            .Where(x => File.Exists(x.Value))
+            .ToList();
     }
 
     private static async Task<List<DebianCopyrightFilesEntry>> ReadDep5File(AbsolutePath directory)

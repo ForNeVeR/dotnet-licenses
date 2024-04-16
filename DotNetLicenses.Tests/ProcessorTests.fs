@@ -339,16 +339,16 @@ let ``Combined licenses from REUSE source work``(): Task = task {
     let ccBy1File = directory.Path / "source" / "my-cc-by-1-file.txt"
     let ccBy3File = directory.Path / "source" / "my-cc-by-3-file.txt"
     let ccBy4File = directory.Path / "source" / "my-cc-by-4-file.txt"
-    let packagedFile1 = directory.Path / "package" / "my-mit-file.txt"
-    let packagedFile2 = directory.Path / "package" / "my-combined-file.txt"
+    let myMitFile = directory.Path / "package" / "my-mit-file.txt"
+    let myCombinedFile = directory.Path / "package" / "my-combined-file.txt"
 
     let mitFileContent = """SPDX-FileCopyrightText: 2024 Me
 SPDX-License-Identifier: MIT
 text
 """
     do! File.WriteAllTextAsync(mitFile.Value, mitFileContent)
-    do! File.WriteAllTextAsync(packagedFile1.Value, mitFileContent)
-    do! File.WriteAllTextAsync(packagedFile2.Value, "My Combined Content")
+    do! File.WriteAllTextAsync(myMitFile.Value, mitFileContent)
+    do! File.WriteAllTextAsync(myCombinedFile.Value, "My Combined Content")
 
     do! File.WriteAllTextAsync(cc0File.Value, """SPDX-FileCopyrightText: 2024 Me
 SPDX-License-Identifier: CC-0
@@ -383,7 +383,7 @@ text
                 Reuse {
                     Root = (directory.Path / "source").AsRelative()
                     Exclude = [| ccBy3File.AsRelative() |]
-                    FilesCovered = [| LocalPathPattern packagedFile2.FileName |]
+                    FilesCovered = [| LocalPathPattern myCombinedFile.FileName |]
                 }
             |]
             LockFile = Some <| lockFile.AsRelative()
@@ -391,8 +391,8 @@ text
     }
 
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)
-    Assert.Empty wp.Codes
     Assert.Empty wp.Messages
+    Assert.Empty wp.Codes
 
     let! actualContent = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
     Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
