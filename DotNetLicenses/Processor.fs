@@ -180,8 +180,7 @@ let internal GenerateLockFile(
             matcher.Match(entry.SourceRelativePath).HasMatches
         )
         |> Seq.map (fun r ->
-            reuseEntries[r]
-            |> ReuseFileEntry.CombineEntries
+            ReuseFileEntry.CombineEntries(baseFolderPath, reuseEntries[r])
         )
 
     let findLicensesForFile entry = task {
