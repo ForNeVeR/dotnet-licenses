@@ -43,7 +43,7 @@ public static class ReuseDirectory
                 .ToList();
         }
 
-        // TODO: Support nested .gitignore files on parent/child levels
+        // TODO[#46]: Support nested .gitignore files on parent/child levels
 
         var (accepted, _) = GitignoreParser.Parse(gitIgnorePath.Value, Encoding.UTF8);
         return accepted
