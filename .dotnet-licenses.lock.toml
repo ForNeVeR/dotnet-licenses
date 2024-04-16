@@ -24,5 +24,7 @@
 "tools/net8.0/any/tr/FSharp.Core.resources.dll" = [{source_id = "FSharp.Core", source_version = "8.0.200", spdx = ["MIT"], copyright = ["© Microsoft Corporation. All rights reserved."]}]
 "tools/net8.0/any/zh-Hans/FSharp.Core.resources.dll" = [{source_id = "FSharp.Core", source_version = "8.0.200", spdx = ["MIT"], copyright = ["© Microsoft Corporation. All rights reserved."]}]
 "tools/net8.0/any/zh-Hant/FSharp.Core.resources.dll" = [{source_id = "FSharp.Core", source_version = "8.0.200", spdx = ["MIT"], copyright = ["© Microsoft Corporation. All rights reserved."]}]
+"CHANGELOG.md" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
+"README.md" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>", "Microsoft Corporation. All rights reserved.\"] }"]}]
 "[Content_Types].xml" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
-"package/services/metadata/core-properties/51caf11c597e4730853bfe21d3bdd1bf.psmdcp" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
+"package/services/metadata/core-properties/2058dcc1998d45388f15a08bb5071282.psmdcp" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
