@@ -265,7 +265,7 @@ let Process: Command -> int =
         printfn """Supported arguments:
 - --version - Print the program version.
 - --help - Print this help message.
-- [print] <config-file-path> - Print the licenses used by the projects designated by the configuration.
+- [print-packages] <config-file-path> - Print the licenses used by the projects designated by the configuration.
 - generate-lock <config-file-path> - Generate a license lock file and place it accordingly to the configuration.
     """
         0
