@@ -19,11 +19,13 @@ let ``LockFile should be have expected format``(): Task =
         Spdx = [|"MIT"|]
         Copyright = [|"none"|]
     }
-    let data = Dictionary<_, IReadOnlyList<_>>()
+    let data = SortedDictionary<_, IReadOnlyList<_>>()
     data.Add("x.txt", [| item "a"; item "b" |])
     data.Add("y.txt", [| item "a" |])
+    data.Add("a.txt", [| item "a" |])
 
-    let expectedContent = """"x.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}, {source_id = "b", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
+    let expectedContent = """"a.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
+"x.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}, {source_id = "b", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
 "y.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
 """
     task {

@@ -233,7 +233,7 @@ let internal GenerateLockFile(
         |] |> Seq.toArray
     }
 
-    let lockFileContent = Dictionary<_, IReadOnlyList<LockFileItem>>()
+    let lockFileContent = SortedDictionary<_, IReadOnlyList<LockFileItem>>()
     for entry in sourceEntries do
         let! resultEntries = findLicensesForFile entry
         match resultEntries.Length with

@@ -19,7 +19,7 @@ type LockFileItem = {
     Copyright: string[]
 }
 
-let SaveLockFile(path: AbsolutePath, items: Dictionary<string, IReadOnlyList<LockFileItem>>): Task =
+let SaveLockFile(path: AbsolutePath, items: SortedDictionary<string, IReadOnlyList<LockFileItem>>): Task =
     // Dictionary is important, since Tomlyn casts to raw IDictionary under the cover, which is not supported by F# Map
     let text = Toml.FromModel items
     File.WriteAllTextAsync(path.Value, text)
