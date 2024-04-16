@@ -89,6 +89,8 @@ let private IsCoveredByPattern (path: RelativePath) (pattern: LocalPathPattern) 
     let result = matcher.Match path.Value
     result.HasMatches
 
+#nowarn "3511"
+
 let internal GenerateLockFile(
     config: Configuration,
     baseFolderPath: AbsolutePath,
@@ -250,7 +252,7 @@ let private RunSynchronously(task: Task<'a>) =
 
 let private ProcessConfig(configFilePath: string) =
     task {
-        let baseFolderPath = AbsolutePath <| Path.GetDirectoryName configFilePath
+        let baseFolderPath = AbsolutePath <| Path.GetFullPath(Path.GetDirectoryName configFilePath)
         let! config = Configuration.ReadFromFile configFilePath
         return baseFolderPath, config
     }
