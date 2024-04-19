@@ -19,6 +19,14 @@ Use the following shell command:
 $ dotnet build
 ```
 
+Test
+----
+Use the following shell command:
+
+```console
+$ dotnet test
+```
+
 Pack
 ----
 To prepare a NuGet package with the tool, use the following shell command:
