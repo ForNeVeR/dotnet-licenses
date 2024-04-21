@@ -136,8 +136,14 @@ Note that the particular non-zero exit codes are not considered part of the publ
 
 License
 -------
-This project's licensing follows the [REUSE specification v 3.0][reuse.spec]. The main license for the source is MIT, consult each file's headers and the REUSE specification for possible details.
+This project's licensing follows the [REUSE specification v 3.0][reuse.spec]. Consult each file's headers and the REUSE specification for possible details.
 
+### Contribution Policy
+By contributing to this repository, you agree that any new files you contribute will be covered by the MIT license. If you want to contribute a file under a different license, you should clearly mark it in the file's header, according to the REUSE specification.
+
+You are welcome to explicitly state your copyright in the file's header as described in [the contributor guide][docs.contributing], but the project maintainers may do this for you as well.
+
+### Packaged Content License
 <!-- TODO[#6]: We should use the tool itself to deliver this license, obviously. -->
 The package of this program bundles FSharp.Core, see its license (MIT) [on the NuGet page][fsharp.core.nuget].
 
