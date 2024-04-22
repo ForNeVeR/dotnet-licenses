@@ -15,12 +15,12 @@ SPDX-License-Identifier: MIT
 
     <ItemGroup>
       <ProjectReference Include="..\DebianControlFileSpec\DebianControlFileSpec.csproj" />
-      <ProjectReference Include="..\TruePath\TruePath.csproj" />
     </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="GitignoreParserNet" Version="0.2.0.12" />
       <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="8.0.0" />
+      <PackageReference Include="TruePath" Version="1.0.0" />
     </ItemGroup>
 
 </Project>

@@ -94,18 +94,23 @@ public record ReuseFileEntry(
         return (licenses, copyrights);
     }
 
-    public static ReuseFileEntry CombineEntries(AbsolutePath baseDirectory, IEnumerable<ReuseFileEntry> entries)
+    public static ReuseCombinedEntry CombineEntries(AbsolutePath baseDirectory, IEnumerable<ReuseFileEntry> entries)
     {
         var licenses = new List<string>();
         var copyrights = new List<string>();
         var licenseHash = new HashSet<string>();
         var copyrightHash = new HashSet<string>();
-        foreach (var entry in entries.OrderBy(x => x.Path.RelativeTo(baseDirectory).Value))
+        foreach (var entry in entries.OrderBy(x => ((LocalPath)x.Path).RelativeTo(baseDirectory).Value))
         {
             licenses.AddRange(entry.LicenseIdentifiers.Where(license => licenseHash.Add(license)));
             copyrights.AddRange(entry.CopyrightStatements.Where(statement => copyrightHash.Add(statement)));
         }
 
-        return new ReuseFileEntry(new AbsolutePath("*"), [..licenses], [..copyrights]);
+        return new ReuseCombinedEntry([..licenses], [..copyrights]);
     }
 }
+
+public record ReuseCombinedEntry(
+    ImmutableArray<string> LicenseIdentifiers,
+    ImmutableArray<string> CopyrightStatements
+);

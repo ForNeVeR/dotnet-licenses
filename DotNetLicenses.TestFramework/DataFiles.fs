@@ -9,14 +9,14 @@ open System.Reflection
 open System.Threading.Tasks
 open TruePath
 
-let Get(name: string): StrictAbsolutePath =
+let Get(name: string): AbsolutePath =
     let currentAssemblyPath = Assembly.GetExecutingAssembly().Location
     let filePath = Path.Combine(Path.GetDirectoryName(currentAssemblyPath), "Data", name)
     if not (File.Exists filePath) then
         failwithf $"Data file \"{name}\" not found."
-    StrictAbsolutePath <| Path.GetFullPath filePath
+    AbsolutePath <| Path.GetFullPath filePath
 
-let private CopyDataFile(path: StrictAbsolutePath) =
+let private CopyDataFile(path: AbsolutePath) =
     let tempDir = AbsolutePath <| Path.GetTempFileName()
     File.Delete tempDir.Value
     Directory.CreateDirectory tempDir.Value |> ignore

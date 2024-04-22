@@ -40,7 +40,7 @@ type private HashCalculator(entry: ISourceEntry, filePathToCheck: AbsolutePath) 
             Volatile.Write(&hashCalculationCache, Some(lastWriteTime, calculationTask))
             calculationTask
 
-type internal FileSourceEntry(basePath: AbsolutePath, source: PackageSpec, fullPath: StrictAbsolutePath) as this =
+type internal FileSourceEntry(basePath: AbsolutePath, source: PackageSpec, fullPath: AbsolutePath) as this =
     let calculator = HashCalculator(this, fullPath)
 
     interface ISourceEntry with
@@ -104,7 +104,7 @@ let private ExtractEntries(lifetime: Lifetime, baseDirectory: AbsolutePath, spec
         let options = EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
         return
             Directory.EnumerateFileSystemEntries(fullPath.Value, "*", options)
-            |> Seq.map(fun path -> FileSourceEntry(baseDirectory, spec, StrictAbsolutePath path) :> ISourceEntry)
+            |> Seq.map(fun path -> FileSourceEntry(baseDirectory, spec, AbsolutePath path) :> ISourceEntry)
             |> Seq.toArray
     | Zip relativePath ->
         if IncludesMetaCharacters relativePath then
@@ -125,7 +125,7 @@ let private ExtractEntries(lifetime: Lifetime, baseDirectory: AbsolutePath, spec
                 |> Task.WhenAll
             return entries |> Seq.concat |> Seq.toArray
         else
-            let archivePath = baseDirectory / RelativePath relativePath.Value
+            let archivePath = baseDirectory / LocalPath relativePath.Value
             return! ExtractZipFileEntries(lifetime, spec, archivePath)
 }
 

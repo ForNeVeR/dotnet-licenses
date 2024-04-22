@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-using System.Collections.Immutable;
 using System.Text;
 using DebianControlFileSpec;
 using GitignoreParserNet;
@@ -79,8 +78,8 @@ public static class ReuseDirectory
     {
         // Mind the order from the comment in the ReadDep5File method.
         var entry = dep5.FirstOrDefault(x => x.Matcher.Match(directory.Value, path.Value).HasMatches);
-        if (entry == null)
-            return null;
-        return new ReuseFileEntry(path, [entry.License], entry.Copyright.ToImmutableArray());
+        return entry == null
+            ? null
+            : new ReuseFileEntry(path, [entry.License], [..entry.Copyright]);
     }
 }

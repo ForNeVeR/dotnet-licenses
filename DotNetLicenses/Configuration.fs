@@ -18,7 +18,7 @@ type Configuration =
     {
         MetadataSources: MetadataSource[]
         MetadataOverrides: Override[]
-        LockFile: RelativePath option
+        LockFile: LocalPath option
         PackagedFiles: PackageSpec[]
     }
 
@@ -55,7 +55,7 @@ type Configuration =
             |> Seq.cast<TomlTable>
             |> Seq.map(fun t ->
                 match getValue t "type" with
-                | "nuget" -> NuGet { Include = getValue t "include" |> RelativePath }
+                | "nuget" -> NuGet { Include = getValue t "include" |> LocalPath }
                 | "license" ->
                     License {
                         Spdx = getValue t "spdx"
@@ -64,8 +64,8 @@ type Configuration =
                     }
                 | "reuse" ->
                     Reuse {
-                        Root = getValue t "root" |> RelativePath
-                        Exclude = readItemOrArray "exclude" RelativePath t
+                        Root = getValue t "root" |> LocalPath
+                        Exclude = readItemOrArray "exclude" (fun x -> LocalPath x) t
                         FilesCovered = readFilesCovered t
                     }
                 | other -> failwithf $"Metadata source type not supported: {other}"
@@ -93,7 +93,7 @@ type Configuration =
 
         let readPackagedFiles = readOptArrayOfTablesUsing(fun t ->
             match getValue t "type" with
-            | "directory" -> Directory(getValue t "path" |> RelativePath)
+            | "directory" -> Directory(getValue t "path" |> LocalPath)
             | "zip" -> Zip(getValue t "path" |> LocalPathPattern)
             | other -> failwithf $"Packaged file source type not supported: {other}"
         )
@@ -104,7 +104,7 @@ type Configuration =
 
         let sources = getValue table "metadata_sources"
         let overrides = tryGetValue table "metadata_overrides"
-        let lockFilePath = tryGetValue table "lock_file" |> Option.map RelativePath
+        let lockFilePath = tryGetValue table "lock_file" |> Option.map LocalPath
         let packagedFiles = tryGetValue table "packaged_files"
 
         return {
@@ -158,7 +158,7 @@ and Override = {
 }
 
 and PackageSpec =
-    | Directory of path: RelativePath
+    | Directory of path: LocalPath
     | Zip of path: LocalPathPattern
 
 and AssignedMetadata = {
@@ -168,10 +168,10 @@ and AssignedMetadata = {
 
 and NuGetSource =
     {
-        Include: RelativePath
+        Include: LocalPath
     }
-    static member Of(path: RelativePath) = NuGet { Include = path }
-    static member Of(relativePath: string) = NuGetSource.Of(RelativePath relativePath)
+    static member Of(path: LocalPath) = NuGet { Include = path }
+    static member Of(relativePath: string) = NuGetSource.Of(LocalPath relativePath)
 
 and LicenseSource = {
     Spdx: string
@@ -181,13 +181,13 @@ and LicenseSource = {
 
 and ReuseSource =
     {
-        Root: RelativePath
-        Exclude: RelativePath[]
+        Root: LocalPath
+        Exclude: LocalPath[]
         FilesCovered: LocalPathPattern[]
     }
-    static member Of(path: RelativePath) = Reuse {
+    static member Of(path: LocalPath) = Reuse {
         Root = path
         Exclude = Array.empty
         FilesCovered = Array.empty
     }
-    static member Of(relativePath: string) = ReuseSource.Of(RelativePath relativePath)
+    static member Of(relativePath: string) = ReuseSource.Of(LocalPath relativePath)

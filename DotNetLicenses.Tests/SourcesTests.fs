@@ -24,9 +24,9 @@ let ``Sources are enumerated for a file-system directory``(): Task = task {
     Directory.CreateDirectory (directory.Path / "subdirectory").Value |> ignore
     do! File.WriteAllTextAsync((directory.Path / "subdirectory" / "file.txt").Value, "content")
 
-    let spec = Directory <| directory.Path.AsRelative()
+    let spec = Directory <| LocalPath.op_Implicit directory.Path
     use ld = new LifetimeDefinition()
-    let! entries = ReadEntries ld.Lifetime (AbsolutePath.op_Implicit directory.Path) [| spec |]
+    let! entries = ReadEntries ld.Lifetime directory.Path [| spec |]
     Assert.Equivalent([|
         FileSourceEntry(directory.Path, spec, directory.Path / "file.txt")
         FileSourceEntry(directory.Path, spec, directory.Path / "subdirectory" / "file.txt")
@@ -36,7 +36,7 @@ let ``Sources are enumerated for a file-system directory``(): Task = task {
 [<Fact>]
 let ``SourceRelativePath is generated for a file set``(): unit =
     use directory = DisposableDirectory.Create()
-    let source = Directory <| directory.Path.AsRelative()
+    let source = Directory <| LocalPath.op_Implicit directory.Path
     let file = directory.Path / "foo" / "file.txt"
     let entry = FileSourceEntry(directory.Path, source, file) :> ISourceEntry
     Assert.Equal("foo/file.txt", entry.SourceRelativePath)
@@ -52,7 +52,7 @@ let ``SourceEntry calculates its hash correctly``(): Task = task {
     let expectedHash = calculateSha256 content
     let path = directory.Path / "file.txt"
     File.WriteAllBytes(path.Value, content)
-    let source = Directory <| directory.Path.AsRelative()
+    let source = Directory <| LocalPath.op_Implicit directory.Path
     let entry = FileSourceEntry(directory.Path, source, path) :> ISourceEntry
     let! actualHash = entry.CalculateHash()
     Assert.Equal(expectedHash, actualHash)
@@ -64,7 +64,7 @@ let ``SourceEntry reads contents from a ZIP archive``(): Task = task {
     let fileName = "file.txt"
     use directory = DisposableDirectory.Create()
     let archivePath = directory.Path / "archive.zip"
-    ZipFiles.SingleFileArchive(AbsolutePath.op_Implicit archivePath, fileName, Encoding.UTF8.GetBytes content)
+    ZipFiles.SingleFileArchive(archivePath, fileName, Encoding.UTF8.GetBytes content)
     use stream = File.OpenRead archivePath.Value
     use archive = new ZipArchive(stream)
     let source = Zip <| LocalPathPattern archivePath.Value

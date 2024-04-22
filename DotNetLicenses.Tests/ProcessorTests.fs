@@ -20,7 +20,7 @@ type private Runner =
                     match Seq.exactlyOne config.MetadataSources with
                     | NuGet source -> source.Include
                     | other -> failwithf $"Unexpected metadata source: {other}"
-                AbsolutePath.op_Implicit (StrictAbsolutePath path.Value).Parent.Value
+                (AbsolutePath path.Value).Parent.Value
             )
         let wp = WarningProcessor()
         do! func(
@@ -40,7 +40,7 @@ let ``Generator produces an error if no lock file is defined``(): Task = task {
     use directory = DisposableDirectory.Create()
     let config = {
         Configuration.Empty with
-            MetadataSources = [| NuGetSource.Of(directory.Path.AsRelative()) |]
+            MetadataSources = [| NuGetSource.Of directory.Path |]
     }
     let! wp = runGenerator config
     Assert.Equal([|ExitCode.LockFileIsNotDefined|], wp.Codes)
@@ -54,8 +54,8 @@ let ``Generator produces an error if no package contents are defined``(): Task =
     try
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource.Of(directory.Path.AsRelative()) |]
-                LockFile = Some <| lockFile.AsRelative()
+                MetadataSources = [| NuGetSource.Of directory.Path |]
+                LockFile = Some <| LocalPath.op_Implicit lockFile
         }
         let! wp = runGenerator config
         Assert.Equal([|ExitCode.PackagedFilesAreNotDefined|], wp.Codes)
@@ -69,14 +69,14 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource.Of(project.AsRelative()) |]
+                MetadataSources = [| NuGetSource.Of project |]
                 MetadataOverrides = [|{
                     Id = "NonExistent"
                     Version = ""
                     Spdx = ""
                     Copyright = ""
                 }|]
-                LockFile = Some <| RelativePath "lock.toml"
+                LockFile = Some <| LocalPath "lock.toml"
         }
         let! wp = runPrinter config
 
@@ -91,8 +91,8 @@ let ``Printer generates no warnings on a valid config``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource.Of(project.AsRelative()) |]
-                LockFile = Some <| RelativePath "lock.toml"
+                MetadataSources = [| NuGetSource.Of project |]
+                LockFile = Some <| LocalPath "lock.toml"
         }
         let! wp = runPrinter config
 
@@ -109,10 +109,10 @@ let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj"
 """
     let config = {
         Configuration.Empty with
-            MetadataSources = [| NuGetSource.Of(project.AsRelative()) |]
-            LockFile = Some(RelativePath <| Path.GetTempFileName())
+            MetadataSources = [| NuGetSource.Of project |]
+            LockFile = Some(LocalPath <| Path.GetTempFileName())
             PackagedFiles = [|
-                Directory <| directory.Path.AsRelative()
+                Directory <| LocalPath.op_Implicit directory.Path
             |]
     }
 
@@ -136,10 +136,10 @@ let ``Processor generates a lock file for a file tree``(): Task = task {
         let lockFile = directory.Path / "lock.toml"
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource.Of(project.AsRelative()) |]
-                LockFile = Some <| lockFile.AsRelative()
+                MetadataSources = [| NuGetSource.Of project |]
+                LockFile = Some <| LocalPath.op_Implicit lockFile
                 PackagedFiles = [|
-                    Directory <| directory.Path.AsRelative()
+                    Directory <| LocalPath.op_Implicit directory.Path
                 |]
         }
 
@@ -156,15 +156,15 @@ let ``Processor generates a lock file for a file tree``(): Task = task {
 let ``Processor generates a lock file for a ZIP archive``(): Task = task {
     use directory = DisposableDirectory.Create()
     let archivePath = directory.Path / "file.zip"
-    ZipFiles.SingleFileArchive(AbsolutePath.op_Implicit archivePath, "content/my-file.txt", "Hello World"B)
+    ZipFiles.SingleFileArchive(archivePath, "content/my-file.txt", "Hello World"B)
     let expectedLock = """"content/my-file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
 """
     do! DataFiles.Deploy "Test.csproj" (fun project -> task {
         let lockFile = directory.Path / "lock.toml"
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource.Of(project.AsRelative()) |]
-                LockFile = Some <| lockFile.AsRelative()
+                MetadataSources = [| NuGetSource.Of project |]
+                LockFile = Some <| LocalPath.op_Implicit lockFile
                 PackagedFiles = [|
                     Zip <| LocalPathPattern archivePath.FileName
                 |]
@@ -184,14 +184,14 @@ let ``Processor processes ZIP files using a glob pattern``(): Task = task {
     use directory = DisposableDirectory.Create()
     let archivePath = directory.Path / "file.zip"
     let archiveGlob = LocalPathPattern <| (directory.Path / "*.zip").Value
-    ZipFiles.SingleFileArchive(AbsolutePath.op_Implicit archivePath, "content/my-file.txt", "Hello World"B)
+    ZipFiles.SingleFileArchive(archivePath, "content/my-file.txt", "Hello World"B)
 
     do! DataFiles.Deploy "Test.csproj" (fun project -> task {
         let lockFile = directory.Path / "lock.toml"
         let config = {
             Configuration.Empty with
-                MetadataSources = [| NuGetSource.Of(project.AsRelative()) |]
-                LockFile = Some <| lockFile.AsRelative()
+                MetadataSources = [| NuGetSource.Of project |]
+                LockFile = Some <| LocalPath.op_Implicit lockFile
                 PackagedFiles = [|
                     Zip archiveGlob
                 |]
@@ -211,9 +211,9 @@ let ``Lock file generator produces a warning if it's unable to find a license fo
     let config = {
         Configuration.Empty with
             MetadataSources = [||]
-            LockFile = Some <| (directory.Path / "lock.toml").AsRelative()
+            LockFile = Some <| LocalPath.op_Implicit(directory.Path / "lock.toml")
             PackagedFiles = [|
-                Directory <| directory.Path.AsRelative()
+                Directory <| LocalPath.op_Implicit directory.Path
             |]
     }
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, directory.Path)
@@ -237,8 +237,8 @@ let ``License metadata gets saved to the lock file``(): Task = task {
             MetadataSources = [|
                 License { Spdx = "MIT"; Copyright = "Me"; FilesCovered = [| LocalPathPattern "*.txt" |] }
             |]
-            LockFile = Some <| lockFile.AsRelative()
-            PackagedFiles = [| Directory <| directory.Path.AsRelative() |]
+            LockFile = Some <| LocalPath.op_Implicit lockFile
+            PackagedFiles = [| Directory <| LocalPath.op_Implicit directory.Path |]
     }
 
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)
@@ -252,7 +252,7 @@ let ``License metadata gets saved to the lock file``(): Task = task {
 [<Fact>]
 let ``Basic REUSE specification works``(): Task = task {
     use directory = DisposableDirectory.Create()
-    directory.MakeSubDirs [| RelativePath "source"; RelativePath "package" |]
+    directory.MakeSubDirs [| LocalPath "source"; LocalPath "package" |]
 
     let sourceFile = directory.Path / "source" / "my-file.txt"
     let packagedFile = directory.Path / "package" / "my-file.txt"
@@ -271,10 +271,10 @@ text
     let config = {
         Configuration.Empty with
             MetadataSources = [|
-                ReuseSource.Of((directory.Path / "source").AsRelative())
+                ReuseSource.Of(directory.Path / "source")
             |]
-            LockFile = Some <| lockFile.AsRelative()
-            PackagedFiles = [| Directory <| (directory.Path / "package").AsRelative() |]
+            LockFile = Some <| LocalPath.op_Implicit lockFile
+            PackagedFiles = [| Directory <| LocalPath.op_Implicit(directory.Path / "package") |]
     }
 
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)
@@ -288,7 +288,7 @@ text
 [<Fact>]
 let ``DEP5 part of the REUSE specification works``(): Task = task {
     use directory = DisposableDirectory.Create()
-    directory.MakeSubDirs [| RelativePath "package"; RelativePath "source/.reuse" |]
+    directory.MakeSubDirs [| LocalPath "package"; LocalPath "source/.reuse" |]
 
     let sourceFile = directory.Path / "source" / "my-file.txt"
     let packagedFile = directory.Path / "package" / "my-file.txt"
@@ -315,10 +315,10 @@ License: MIT
     let config = {
         Configuration.Empty with
             MetadataSources = [|
-                ReuseSource.Of((directory.Path / "source").AsRelative())
+                ReuseSource.Of(LocalPath.op_Implicit(directory.Path / "source"))
             |]
-            LockFile = Some <| lockFile.AsRelative()
-            PackagedFiles = [| Directory <| (directory.Path / "package").AsRelative() |]
+            LockFile = Some <| LocalPath.op_Implicit lockFile
+            PackagedFiles = [| Directory <| LocalPath.op_Implicit(directory.Path / "package") |]
     }
 
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)
@@ -332,7 +332,7 @@ License: MIT
 [<Fact>]
 let ``Combined licenses from REUSE source work``(): Task = task {
     use directory = DisposableDirectory.Create()
-    directory.MakeSubDirs [| RelativePath "source"; RelativePath "package" |]
+    directory.MakeSubDirs [| LocalPath "source"; LocalPath "package" |]
 
     let mitFile = directory.Path / "source" / "my-mit-file.txt"
     let cc0File = directory.Path / "source" / "my-cc0-file.txt"
@@ -381,13 +381,13 @@ text
         Configuration.Empty with
             MetadataSources = [|
                 Reuse {
-                    Root = (directory.Path / "source").AsRelative()
-                    Exclude = [| ccBy3File.AsRelative() |]
+                    Root = LocalPath.op_Implicit(directory.Path / "source")
+                    Exclude = [| LocalPath.op_Implicit ccBy3File |]
                     FilesCovered = [| LocalPathPattern myCombinedFile.FileName |]
                 }
             |]
-            LockFile = Some <| lockFile.AsRelative()
-            PackagedFiles = [| Directory <| (directory.Path / "package").AsRelative() |]
+            LockFile = Some <| LocalPath.op_Implicit lockFile
+            PackagedFiles = [| Directory <| LocalPath.op_Implicit(directory.Path / "package") |]
     }
 
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)

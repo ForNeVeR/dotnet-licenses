@@ -21,7 +21,7 @@ let ReadReuseDirectory(root: AbsolutePath, excludes: AbsolutePath seq): Task<Res
     let! entries = ReuseDirectory.ReadEntries root
     let result = ResizeArray()
     for entry in entries do
-        if excludes |> Seq.tryFind(fun e -> e.IsPrefixOf entry.Path) |> Option.isNone then
+        if excludes |> Seq.tryFind(fun e -> (LocalPath.op_Implicit e).IsPrefixOf entry.Path) |> Option.isNone then
             result.Add entry
     return result
 }

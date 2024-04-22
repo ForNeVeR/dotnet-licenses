@@ -9,13 +9,12 @@ open DotNetLicenses
 open DotNetLicenses.Metadata
 open DotNetLicenses.NuGet
 open DotNetLicenses.TestFramework
-open TruePath
 open Xunit
 
 [<Fact>]
 let ``Get metadata from .nuspec works correctly``(): Task = task {
     let path = DataFiles.Get "Test1.nuspec"
-    let! nuSpec = ReadNuSpec <| AbsolutePath.op_Implicit path
+    let! nuSpec = ReadNuSpec path
     let reference = {
         PackageId = "Package"
         Version = "1.0.0"

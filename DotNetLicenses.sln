@@ -62,10 +62,6 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DotNetLicenses.Tests", "Dot
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DotNetLicenses.TestFramework", "DotNetLicenses.TestFramework\DotNetLicenses.TestFramework.fsproj", "{3272F71B-9EDF-4553-826D-3201B46B02ED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruePath", "TruePath\TruePath.csproj", "{B7D11259-9984-45D2-8C91-1C5B3DCFC274}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TruePath.Tests", "TruePath.Tests\TruePath.Tests.csproj", "{3E461E0D-E4B6-4452-B968-2EF48F1ADE45}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReuseSpec", "ReuseSpec\ReuseSpec.csproj", "{3AC685FD-71A1-456C-B33B-0224C3313429}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebianControlFileSpec", "DebianControlFileSpec\DebianControlFileSpec.csproj", "{EA745ABC-75F5-4342-8A95-44EDFBD29CC4}"
@@ -91,14 +87,6 @@ Global
 		{3272F71B-9EDF-4553-826D-3201B46B02ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3272F71B-9EDF-4553-826D-3201B46B02ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3272F71B-9EDF-4553-826D-3201B46B02ED}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B7D11259-9984-45D2-8C91-1C5B3DCFC274}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B7D11259-9984-45D2-8C91-1C5B3DCFC274}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B7D11259-9984-45D2-8C91-1C5B3DCFC274}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B7D11259-9984-45D2-8C91-1C5B3DCFC274}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3E461E0D-E4B6-4452-B968-2EF48F1ADE45}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3E461E0D-E4B6-4452-B968-2EF48F1ADE45}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3E461E0D-E4B6-4452-B968-2EF48F1ADE45}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3E461E0D-E4B6-4452-B968-2EF48F1ADE45}.Release|Any CPU.Build.0 = Release|Any CPU
 		{3AC685FD-71A1-456C-B33B-0224C3313429}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{3AC685FD-71A1-456C-B33B-0224C3313429}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3AC685FD-71A1-456C-B33B-0224C3313429}.Release|Any CPU.ActiveCfg = Release|Any CPU

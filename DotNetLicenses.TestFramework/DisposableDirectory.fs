@@ -9,19 +9,19 @@ open System.IO
 open TruePath
 
 type DisposableDirectory =
-    { Path: StrictAbsolutePath }
+    { Path: AbsolutePath }
 
     interface IDisposable with
         member this.Dispose() =
             Directory.Delete(this.Path.Value, true)
 
     static member Create() =
-        let path = StrictAbsolutePath <| Path.GetTempFileName()
+        let path = AbsolutePath <| Path.GetTempFileName()
         File.Delete path.Value
         Directory.CreateDirectory path.Value |> ignore
         { Path = path }
 
-    member this.MakeSubDirs(paths: RelativePath seq) =
+    member this.MakeSubDirs(paths: LocalPath seq) =
         paths
         |> Seq.map (fun p -> this.Path / p)
         |> Seq.iter(fun d -> Directory.CreateDirectory d.Value |> ignore)

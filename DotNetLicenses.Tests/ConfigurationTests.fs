@@ -38,9 +38,9 @@ packaged_files = [
                 NuGetSource.Of "File.csproj"
                 NuGetSource.Of "File.fsproj"
             |]
-            LockFile = Some <| RelativePath "foo.toml"
+            LockFile = Some <| LocalPath "foo.toml"
             PackagedFiles = [|
-                Directory <| RelativePath "files"
+                Directory <| LocalPath "files"
                 Zip <| LocalPathPattern "files2/*.zip"
             |]
     }
@@ -106,13 +106,13 @@ metadata_sources = [
             MetadataSources = [|
                 ReuseSource.Of "path1"
                 Reuse {
-                    Root = RelativePath "path2"
-                    Exclude = [|RelativePath "path2/exclude"|]
+                    Root = LocalPath "path2"
+                    Exclude = [|LocalPath "path2/exclude"|]
                     FilesCovered = [| LocalPathPattern "README.md" |]
                 }
                 Reuse {
-                    Root = RelativePath "path3"
-                    Exclude = [|RelativePath "path3/exclude"|]
+                    Root = LocalPath "path3"
+                    Exclude = [|LocalPath "path3/exclude"|]
                     FilesCovered = [| LocalPathPattern "README.md" |]
                 }
             |]

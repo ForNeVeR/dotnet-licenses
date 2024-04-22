@@ -84,7 +84,7 @@ let internal PrintPackages(
         | _ -> ()
 }
 
-let private IsCoveredByPattern (path: RelativePath) (pattern: LocalPathPattern) =
+let private IsCoveredByPattern (path: LocalPath) (pattern: LocalPathPattern) =
     let matcher = Matcher().AddInclude pattern.Value
     let result = matcher.Match path.Value
     result.HasMatches
@@ -166,7 +166,7 @@ let internal GenerateLockFile(
         licenses
         |> Seq.filter(fun license ->
             license.FilesCovered
-            |> Seq.exists(fun pattern -> IsCoveredByPattern (RelativePath entry.SourceRelativePath) pattern)
+            |> Seq.exists(fun pattern -> IsCoveredByPattern (LocalPath entry.SourceRelativePath) pattern)
         )
     use hashCache = new FileHashCache()
     let findReuseLicenses(entry: ISourceEntry) =
