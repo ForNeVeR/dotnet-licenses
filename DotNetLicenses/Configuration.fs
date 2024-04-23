@@ -29,6 +29,10 @@ type Configuration =
         PackagedFiles = Array.empty
     }
 
+    static member private DefaultIgnores = [|
+        Preset "licenses"
+    |]
+
     static member Read(stream: Stream, filePath: string option): Task<Configuration> = task {
         let tryGetValue (table: TomlTable) key =
             let value = ref Unchecked.defaultof<_>
@@ -91,11 +95,27 @@ type Configuration =
             }
         )
 
+        let readIgnores t =
+            tryGetValue t "ignores"
+            |> Option.map (fun array ->
+                array
+                |> Seq.map (fun item ->
+                    match getValue item "type" with
+                    | "preset" -> Preset(getValue item "name")
+                    | other -> failwithf $"Ignore pattern type not supported: {other}."
+                )
+                |> Seq.toArray
+            )
+            |> Option.defaultValue Configuration.DefaultIgnores
+
         let readPackagedFiles = readOptArrayOfTablesUsing(fun t ->
-            match getValue t "type" with
-            | "directory" -> Directory(getValue t "path" |> LocalPath)
-            | "zip" -> Zip(getValue t "path" |> LocalPathPattern)
-            | other -> failwithf $"Packaged file source type not supported: {other}"
+            let source =
+                match getValue t "type" with
+                | "directory" -> Directory(getValue t "path" |> LocalPath)
+                | "zip" -> Zip(getValue t "path" |> LocalPathPattern)
+                | other -> failwithf $"Packaged file source type not supported: {other}"
+            let ignores = readIgnores t
+            { Source = source; Ignores = ignores }
         )
 
         use reader = new StreamReader(stream)
@@ -158,8 +178,21 @@ and Override = {
 }
 
 and PackageSpec =
+    {
+        Source: PackageSource
+        Ignores: IgnorePattern[]
+    }
+    static member Zip(pattern: string) = { Source = Zip <| LocalPathPattern pattern; Ignores = Array.empty }
+    static member Directory(path: string) = { Source = Directory <| LocalPath path; Ignores = Array.empty }
+    static member Directory(path: AbsolutePath) =
+        { Source = Directory <| LocalPath.op_Implicit path; Ignores = Array.empty }
+
+and PackageSource =
     | Directory of path: LocalPath
     | Zip of path: LocalPathPattern
+
+and IgnorePattern =
+    | Preset of name: string
 
 and AssignedMetadata = {
     Files: LocalPathPattern

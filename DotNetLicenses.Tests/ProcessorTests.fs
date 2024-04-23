@@ -112,7 +112,7 @@ let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj"
             MetadataSources = [| NuGetSource.Of project |]
             LockFile = Some(LocalPath <| Path.GetTempFileName())
             PackagedFiles = [|
-                Directory <| LocalPath.op_Implicit directory.Path
+                PackageSpec.Directory directory.Path
             |]
     }
 
@@ -139,7 +139,7 @@ let ``Processor generates a lock file for a file tree``(): Task = task {
                 MetadataSources = [| NuGetSource.Of project |]
                 LockFile = Some <| LocalPath.op_Implicit lockFile
                 PackagedFiles = [|
-                    Directory <| LocalPath.op_Implicit directory.Path
+                    PackageSpec.Directory directory.Path
                 |]
         }
 
@@ -166,7 +166,7 @@ let ``Processor generates a lock file for a ZIP archive``(): Task = task {
                 MetadataSources = [| NuGetSource.Of project |]
                 LockFile = Some <| LocalPath.op_Implicit lockFile
                 PackagedFiles = [|
-                    Zip <| LocalPathPattern archivePath.FileName
+                    PackageSpec.Zip archivePath.FileName
                 |]
         }
 
@@ -183,7 +183,7 @@ let ``Processor generates a lock file for a ZIP archive``(): Task = task {
 let ``Processor processes ZIP files using a glob pattern``(): Task = task {
     use directory = DisposableDirectory.Create()
     let archivePath = directory.Path / "file.zip"
-    let archiveGlob = LocalPathPattern <| (directory.Path / "*.zip").Value
+    let archiveGlob = (directory.Path / "*.zip").Value
     ZipFiles.SingleFileArchive(archivePath, "content/my-file.txt", "Hello World"B)
 
     do! DataFiles.Deploy "Test.csproj" (fun project -> task {
@@ -193,7 +193,7 @@ let ``Processor processes ZIP files using a glob pattern``(): Task = task {
                 MetadataSources = [| NuGetSource.Of project |]
                 LockFile = Some <| LocalPath.op_Implicit lockFile
                 PackagedFiles = [|
-                    Zip archiveGlob
+                    PackageSpec.Zip archiveGlob
                 |]
         }
 
@@ -213,7 +213,7 @@ let ``Lock file generator produces a warning if it's unable to find a license fo
             MetadataSources = [||]
             LockFile = Some <| LocalPath.op_Implicit(directory.Path / "lock.toml")
             PackagedFiles = [|
-                Directory <| LocalPath.op_Implicit directory.Path
+                PackageSpec.Directory directory.Path
             |]
     }
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, directory.Path)
@@ -238,7 +238,7 @@ let ``License metadata gets saved to the lock file``(): Task = task {
                 License { Spdx = "MIT"; Copyright = "Me"; FilesCovered = [| LocalPathPattern "*.txt" |] }
             |]
             LockFile = Some <| LocalPath.op_Implicit lockFile
-            PackagedFiles = [| Directory <| LocalPath.op_Implicit directory.Path |]
+            PackagedFiles = [| PackageSpec.Directory directory.Path |]
     }
 
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)
@@ -274,7 +274,7 @@ text
                 ReuseSource.Of(directory.Path / "source")
             |]
             LockFile = Some <| LocalPath.op_Implicit lockFile
-            PackagedFiles = [| Directory <| LocalPath.op_Implicit(directory.Path / "package") |]
+            PackagedFiles = [| PackageSpec.Directory(directory.Path / "package") |]
     }
 
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)
@@ -318,7 +318,7 @@ License: MIT
                 ReuseSource.Of(LocalPath.op_Implicit(directory.Path / "source"))
             |]
             LockFile = Some <| LocalPath.op_Implicit lockFile
-            PackagedFiles = [| Directory <| LocalPath.op_Implicit(directory.Path / "package") |]
+            PackagedFiles = [| PackageSpec.Directory(directory.Path / "package") |]
     }
 
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)
@@ -387,7 +387,7 @@ text
                 }
             |]
             LockFile = Some <| LocalPath.op_Implicit lockFile
-            PackagedFiles = [| Directory <| LocalPath.op_Implicit(directory.Path / "package") |]
+            PackagedFiles = [| PackageSpec.Directory(directory.Path / "package") |]
     }
 
     let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = directory.Path)

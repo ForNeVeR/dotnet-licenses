@@ -40,8 +40,8 @@ packaged_files = [
             |]
             LockFile = Some <| LocalPath "foo.toml"
             PackagedFiles = [|
-                Directory <| LocalPath "files"
-                Zip <| LocalPathPattern "files2/*.zip"
+                PackageSpec.Directory "files"
+                PackageSpec.Zip "files2/*.zip"
             |]
     }
 
@@ -116,6 +116,37 @@ metadata_sources = [
                     FilesCovered = [| LocalPathPattern "README.md" |]
                 }
             |]
+    }
+
+[<Fact>]
+let ``Ignore presets read correctly``: Task =
+    let content = """
+packaged_files = [
+    { type = "zip", path = "files2/*.zip", ignore = [
+        { type = "preset", name = "licenses" }
+    ] },
+]
+"""
+    doTest content {
+        Configuration.Empty with
+            PackagedFiles = [|
+                { PackageSpec.Zip "files2/*.zip" with Ignores = [| Preset "licenses" |] }
+            |]
+    }
+
+[<Fact>]
+let ``Configuration should throw on unknown ignore pattern``(): Task =
+    let content = """
+packaged_files = [
+    { type = "zip", path = "files2/*.zip", ignore = [
+        { type = "preset", name = "unknown" }
+    ] },
+]
+"""
+    task {
+        use input = new MemoryStream(Encoding.UTF8.GetBytes content)
+        let! ex = Assert.ThrowsAsync<InvalidDataException>(fun () -> Configuration.Read(input, Some "<test>"))
+        Assert.Equal("Unknown ignore preset name \"unknown\".", ex.Message)
     }
 
 [<Fact>]

@@ -40,14 +40,14 @@ type private HashCalculator(entry: ISourceEntry, filePathToCheck: AbsolutePath) 
             Volatile.Write(&hashCalculationCache, Some(lastWriteTime, calculationTask))
             calculationTask
 
-type internal FileSourceEntry(basePath: AbsolutePath, source: PackageSpec, fullPath: AbsolutePath) as this =
+type internal FileSourceEntry(basePath: AbsolutePath, package: PackageSpec, fullPath: AbsolutePath) as this =
     let calculator = HashCalculator(this, fullPath)
 
     interface ISourceEntry with
-        member _.Source = source
+        member _.Source = package
 
         member _.SourceRelativePath =
-            match source with
+            match package.Source with
             | Directory path ->
                 let sourcePath = basePath / path
                 Path.GetRelativePath(sourcePath.Value, fullPath.Value).Replace(Path.DirectorySeparatorChar, '/')
@@ -98,35 +98,40 @@ let private IncludesMetaCharacters(p: LocalPathPattern) =
 let private ExtractEntries(lifetime: Lifetime, baseDirectory: AbsolutePath, spec: PackageSpec) = task {
     do! Task.Yield()
 
-    match spec with
-    | Directory relativePath ->
-        let fullPath = baseDirectory / relativePath
-        let options = EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
-        return
-            Directory.EnumerateFileSystemEntries(fullPath.Value, "*", options)
-            |> Seq.map(fun path -> FileSourceEntry(baseDirectory, spec, AbsolutePath path) :> ISourceEntry)
-            |> Seq.toArray
-    | Zip relativePath ->
-        if IncludesMetaCharacters relativePath then
-            let matcher = Matcher().AddInclude relativePath.Value
-            let! entries =
-                matcher.GetResultsInFullPath baseDirectory.Value
-                |> Seq.map (fun matchedArchivePath -> task {
-                    let stream = File.OpenRead matchedArchivePath
-                    let archive = new ZipArchive(stream, ZipArchiveMode.Read)
-                    lifetime.AddDispose archive |> ignore
-                    return
-                        archive.Entries
-                        |> Seq.map(fun e ->
-                            ZipSourceEntry(spec, archive, AbsolutePath matchedArchivePath, e.FullName) :> ISourceEntry
-                        )
-                        |> Seq.toArray
-                })
-                |> Task.WhenAll
-            return entries |> Seq.concat |> Seq.toArray
-        else
-            let archivePath = baseDirectory / LocalPath relativePath.Value
-            return! ExtractZipFileEntries(lifetime, spec, archivePath)
+    let! entries = task {
+        match spec.Source with
+        | Directory relativePath ->
+            let fullPath = baseDirectory / relativePath
+            let options = EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
+            return
+                Directory.EnumerateFileSystemEntries(fullPath.Value, "*", options)
+                |> Seq.map(fun path -> FileSourceEntry(baseDirectory, spec, AbsolutePath path) :> ISourceEntry)
+                |> Seq.toArray
+        | Zip relativePath ->
+            if IncludesMetaCharacters relativePath then
+                let matcher = Matcher().AddInclude relativePath.Value
+                let! entries =
+                    matcher.GetResultsInFullPath baseDirectory.Value
+                    |> Seq.map (fun matchedArchivePath -> task {
+                        let stream = File.OpenRead matchedArchivePath
+                        let archive = new ZipArchive(stream, ZipArchiveMode.Read)
+                        lifetime.AddDispose archive |> ignore
+                        return
+                            archive.Entries
+                            |> Seq.map(fun e ->
+                                ZipSourceEntry(spec, archive, AbsolutePath matchedArchivePath, e.FullName) :> ISourceEntry
+                            )
+                            |> Seq.toArray
+                    })
+                    |> Task.WhenAll
+                return entries |> Seq.concat |> Seq.toArray
+            else
+                let archivePath = baseDirectory / LocalPath relativePath.Value
+                return! ExtractZipFileEntries(lifetime, spec, archivePath)
+    }
+
+    // TODO: apply ignores
+    return entries
 }
 
 let ReadEntries (lifetime: Lifetime)

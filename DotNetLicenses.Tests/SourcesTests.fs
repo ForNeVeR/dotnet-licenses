@@ -14,7 +14,6 @@ open DotNetLicenses
 open DotNetLicenses.Sources
 open DotNetLicenses.TestFramework
 open JetBrains.Lifetimes
-open TruePath
 open Xunit
 
 [<Fact>]
@@ -24,7 +23,7 @@ let ``Sources are enumerated for a file-system directory``(): Task = task {
     Directory.CreateDirectory (directory.Path / "subdirectory").Value |> ignore
     do! File.WriteAllTextAsync((directory.Path / "subdirectory" / "file.txt").Value, "content")
 
-    let spec = Directory <| LocalPath.op_Implicit directory.Path
+    let spec = PackageSpec.Directory directory.Path
     use ld = new LifetimeDefinition()
     let! entries = ReadEntries ld.Lifetime directory.Path [| spec |]
     Assert.Equivalent([|
@@ -36,7 +35,7 @@ let ``Sources are enumerated for a file-system directory``(): Task = task {
 [<Fact>]
 let ``SourceRelativePath is generated for a file set``(): unit =
     use directory = DisposableDirectory.Create()
-    let source = Directory <| LocalPath.op_Implicit directory.Path
+    let source = PackageSpec.Directory directory.Path
     let file = directory.Path / "foo" / "file.txt"
     let entry = FileSourceEntry(directory.Path, source, file) :> ISourceEntry
     Assert.Equal("foo/file.txt", entry.SourceRelativePath)
@@ -52,7 +51,7 @@ let ``SourceEntry calculates its hash correctly``(): Task = task {
     let expectedHash = calculateSha256 content
     let path = directory.Path / "file.txt"
     File.WriteAllBytes(path.Value, content)
-    let source = Directory <| LocalPath.op_Implicit directory.Path
+    let source = PackageSpec.Directory directory.Path
     let entry = FileSourceEntry(directory.Path, source, path) :> ISourceEntry
     let! actualHash = entry.CalculateHash()
     Assert.Equal(expectedHash, actualHash)
@@ -67,10 +66,14 @@ let ``SourceEntry reads contents from a ZIP archive``(): Task = task {
     ZipFiles.SingleFileArchive(archivePath, fileName, Encoding.UTF8.GetBytes content)
     use stream = File.OpenRead archivePath.Value
     use archive = new ZipArchive(stream)
-    let source = Zip <| LocalPathPattern archivePath.Value
+    let source = PackageSpec.Zip archivePath.Value
     let entry = ZipSourceEntry(source, archive, archivePath, fileName) :> ISourceEntry
     use! stream = entry.ReadContent()
     use reader = new StreamReader(stream)
     let! text = reader.ReadToEndAsync()
     Assert.Equal(content, text)
 }
+
+[<Fact>]
+let ``Ignore pattern works as expected``(): unit =
+    Assert.Fail()

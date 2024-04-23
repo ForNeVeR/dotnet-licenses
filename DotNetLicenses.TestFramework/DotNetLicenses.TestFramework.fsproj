@@ -9,6 +9,7 @@ SPDX-License-Identifier: MIT
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <IsPackable>false</IsPackable>
     </PropertyGroup>
 
     <ItemGroup>

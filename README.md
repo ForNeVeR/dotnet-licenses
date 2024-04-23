@@ -63,7 +63,9 @@ metadata_overrides = [# optional
 ]
 lock_file = "path/to/lock-file.toml" # required for generate-lock
 packaged_files = [# required for generate-lock
-    { type = "directory", path = "bin" },
+    { type = "directory", path = "bin", ignores = [
+        { type = "preset", name = "licenses" }
+    ] },
     { type = "zip", path = "bin/*.zip" }
 ]
 ```
@@ -92,9 +94,22 @@ The `lock_file` parameter (optional) is the path to the license lock file that w
 
 The `packaged_files` parameter (optional) describes the list of the files you want to check for their license contents. It is a list of the entries having the following structure:
 - `type` (required) should be either `directory` (to point to the root of the file hierarchy that will be processed recursively) or `zip`, to point to a zip archive that the tool will analyze,
-- `path` (required) is a path on disk; for zip archives, we support glob patterns.
+- `path` (required) is a path on disk; for zip archives, we support glob patterns,
+- `ignore` (optional) is a list of ignore specifications, see below. By default, it will be one preset named `licenses`.
 
 The `packaged_files` parameter is mandatory for the `generate-lock` command.
+
+### Ignore Item Specification
+Each ignore item specification is a record in form of:
+```
+{ type = "preset", name = "licenses" }
+```
+where
+- `type` is always `preset`,
+- `name` is the name of the preset to apply.
+
+Currently supported presets (all paths are glob patterns that are applied relatively to the package root):
+- `licenses`: ignores `LICENSES/*.txt`.
 
 Lock File
 ---------
