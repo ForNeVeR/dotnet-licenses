@@ -63,7 +63,7 @@ metadata_overrides = [# optional
 ]
 lock_file = "path/to/lock-file.toml" # required for generate-lock
 packaged_files = [# required for generate-lock
-    { type = "directory", path = "bin", ignores = [
+    { type = "directory", path = "bin", ignore = [
         { type = "preset", name = "licenses" }
     ] },
     { type = "zip", path = "bin/*.zip" }
