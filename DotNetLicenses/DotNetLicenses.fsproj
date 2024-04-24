@@ -32,6 +32,7 @@ SPDX-License-Identifier: MIT
         <Compile Include="AssemblyInfo.fs" />
         <Compile Include="CommandLine.fs" />
         <Compile Include="Data.fs" />
+        <Compile Include="Ignores.fs" />
         <Compile Include="WarningProcessor.fs" />
         <Compile Include="Configuration.fs" />
         <Compile Include="MsBuild.fs" />

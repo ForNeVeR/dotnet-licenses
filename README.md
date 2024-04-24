@@ -108,7 +108,7 @@ where
 - `type` is always `preset`,
 - `name` is the name of the preset to apply.
 
-Currently supported presets (all paths are glob patterns that are applied relatively to the package root):
+Currently supported presets (all paths are glob patterns that are applied relatively to the package root; case-insensitive):
 - `licenses`: ignores `LICENSES/*.txt`.
 
 Lock File

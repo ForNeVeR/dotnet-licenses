@@ -7,7 +7,9 @@ namespace DotNetLicenses
 open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
+open DotNetLicenses
 open DotNetLicenses.CommandLine
+open DotNetLicenses.Ignores
 open TruePath
 open Tomlyn
 open Tomlyn.Model
@@ -96,12 +98,17 @@ type Configuration =
         )
 
         let readIgnores t =
-            tryGetValue t "ignores"
-            |> Option.map (fun array ->
+            tryGetValue t "ignore"
+            |> Option.map (fun (array: TomlArray) ->
                 array
+                |> Seq.cast<TomlTable>
                 |> Seq.map (fun item ->
                     match getValue item "type" with
-                    | "preset" -> Preset(getValue item "name")
+                    | "preset" ->
+                        let name = getValue item "name"
+                        if not <| Map.containsKey name AllPresets then
+                            raise <| InvalidDataException $"Unknown ignore preset \"{name}\"."
+                        Preset name
                     | other -> failwithf $"Ignore pattern type not supported: {other}."
                 )
                 |> Seq.toArray
@@ -176,23 +183,6 @@ and Override = {
     Spdx: string
     Copyright: string
 }
-
-and PackageSpec =
-    {
-        Source: PackageSource
-        Ignores: IgnorePattern[]
-    }
-    static member Zip(pattern: string) = { Source = Zip <| LocalPathPattern pattern; Ignores = Array.empty }
-    static member Directory(path: string) = { Source = Directory <| LocalPath path; Ignores = Array.empty }
-    static member Directory(path: AbsolutePath) =
-        { Source = Directory <| LocalPath.op_Implicit path; Ignores = Array.empty }
-
-and PackageSource =
-    | Directory of path: LocalPath
-    | Zip of path: LocalPathPattern
-
-and IgnorePattern =
-    | Preset of name: string
 
 and AssignedMetadata = {
     Files: LocalPathPattern

@@ -17,6 +17,7 @@ SPDX-License-Identifier: MIT
         <Compile Include="NuGetMock.fs" />
         <Compile Include="DisposableDirectory.fs" />
         <Compile Include="ZipFiles.fs" />
+        <Compile Include="PackageSpecs.fs" />
     </ItemGroup>
 
     <ItemGroup>

@@ -15,12 +15,6 @@ open JetBrains.Lifetimes
 open TruePath
 open Microsoft.Extensions.FileSystemGlobbing
 
-type ISourceEntry =
-    abstract member Source: PackageSpec
-    abstract member SourceRelativePath: string
-    abstract member ReadContent: unit -> Task<Stream>
-    abstract member CalculateHash: unit -> Task<string>
-
 type private HashCalculator(entry: ISourceEntry, filePathToCheck: AbsolutePath) =
     let mutable hashCalculationCache = None
     member _.CalculateHash(): Task<string> =
@@ -104,7 +98,7 @@ let private ExtractEntries(lifetime: Lifetime, baseDirectory: AbsolutePath, spec
             let fullPath = baseDirectory / relativePath
             let options = EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
             return
-                Directory.EnumerateFileSystemEntries(fullPath.Value, "*", options)
+                Directory.EnumerateFiles(fullPath.Value, "*", options)
                 |> Seq.map(fun path -> FileSourceEntry(baseDirectory, spec, AbsolutePath path) :> ISourceEntry)
                 |> Seq.toArray
         | Zip relativePath ->
@@ -130,8 +124,7 @@ let private ExtractEntries(lifetime: Lifetime, baseDirectory: AbsolutePath, spec
                 return! ExtractZipFileEntries(lifetime, spec, archivePath)
     }
 
-    // TODO: apply ignores
-    return entries
+    return entries |> Ignores.Filter spec.Ignores
 }
 
 let ReadEntries (lifetime: Lifetime)

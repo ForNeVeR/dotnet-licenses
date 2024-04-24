@@ -9,6 +9,7 @@ open System.Text
 open System.Threading.Tasks
 open DotNetLicenses
 open DotNetLicenses.CommandLine
+open DotNetLicenses.TestFramework
 open TruePath
 open Xunit
 
@@ -40,8 +41,8 @@ packaged_files = [
             |]
             LockFile = Some <| LocalPath "foo.toml"
             PackagedFiles = [|
-                PackageSpec.Directory "files"
-                PackageSpec.Zip "files2/*.zip"
+                PackageSpecs.Directory "files"
+                PackageSpecs.Zip "files2/*.zip"
             |]
     }
 
@@ -130,13 +131,14 @@ packaged_files = [
     doTest content {
         Configuration.Empty with
             PackagedFiles = [|
-                { PackageSpec.Zip "files2/*.zip" with Ignores = [| Preset "licenses" |] }
+                { PackageSpecs.Zip "files2/*.zip" with Ignores = [| Preset "licenses" |] }
             |]
     }
 
 [<Fact>]
 let ``Configuration should throw on unknown ignore pattern``(): Task =
     let content = """
+metadata_sources = []
 packaged_files = [
     { type = "zip", path = "files2/*.zip", ignore = [
         { type = "preset", name = "unknown" }
@@ -146,7 +148,7 @@ packaged_files = [
     task {
         use input = new MemoryStream(Encoding.UTF8.GetBytes content)
         let! ex = Assert.ThrowsAsync<InvalidDataException>(fun () -> Configuration.Read(input, Some "<test>"))
-        Assert.Equal("Unknown ignore preset name \"unknown\".", ex.Message)
+        Assert.Equal("Unknown ignore preset \"unknown\".", ex.Message)
     }
 
 [<Fact>]
