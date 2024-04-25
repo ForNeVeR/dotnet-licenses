@@ -397,3 +397,33 @@ text
     let! actualContent = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
     Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
 }
+
+[<Fact>]
+fun ``Package cover spec works``(): unit =
+    let projectFile = failwithf "TODO: Deploy a project file."
+    let! outDir = failwith "TODO: Hard-code the project out dir"
+    let config = {
+        Configuration.Empty with
+            MetadataSources = [|
+                LicenseSource {
+                    Spdx = "MIT"
+                    Copyright = "Package cover spec works"
+                    PatternsCovered = [|
+                        MSBuildCoverage projectFile
+                    |]
+                }
+            |]
+            LockFile = Some <| LocalPath "lock.toml"
+            PackagedFiles = [|
+                PackageSpecs.Directory outDir
+            |]
+    }
+
+    let expectedLock = """"MyAssembly.dll" = [{spdx = ["MIT"], copyright = ["Package cover spec works"]}]"""
+
+    let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = outDir)
+    Assert.Empty wp.Messages
+    Assert.Empty wp.Codes
+
+    let! actualContent = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
+    Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
