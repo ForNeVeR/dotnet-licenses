@@ -152,6 +152,38 @@ packaged_files = [
     }
 
 [<Fact>]
+let ``Covered patterns are read correctly``(): Task =
+    let content = """
+metadata_sources = [
+    { type = "license", spdx = "MIT", copyright = "My Copyright", patterns_covered = [
+        { type = "nuget", include = "project2.csproj" }
+    ] },
+    { type = "reuse", root = ".", exclude = [".idea/"], patterns_covered = [
+        { type = "nuget", include = "project2.csproj" }
+    ] },
+]
+"""
+    doTest content {
+        Configuration.Empty with
+            MetadataSources = [|
+                {
+                    Spdx = "MIT"
+                    Copyright = "My Copyright"
+                    FilesCovered = Array.empty
+                    PatternsCovered = [|
+                        CoverPatternSpecs.NuGet "project2.csproj"
+                    |]
+                }
+                {
+                    ReuseSource.Of "." with
+                        PatternsCovered = [|
+                            CoverPatternSpecs.NuGet "project2.csproj"
+                        |]
+                }
+            |]
+    }
+
+[<Fact>]
 let ``GetOverrides works on duplicate package names (not versions)``(): Task = task {
     let content = """
 metadata_sources = []

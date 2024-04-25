@@ -10,7 +10,7 @@ open TruePath
 open Medallion.Shell
 
 [<CLIMutable>]
-type MsBuildOutput = {
+type MsBuildOutputRoot = {
     Items: MsBuildItems
 }
 and [<CLIMutable>] MsBuildItems = {
@@ -41,6 +41,10 @@ let GetPackageReferences(projectFilePath: AbsolutePath): Task<PackageReference[]
             } |> String.concat "\n"
         failwith message
 
-    let output = JsonSerializer.Deserialize<MsBuildOutput> result.StandardOutput
+    let output = JsonSerializer.Deserialize<MsBuildOutputRoot> result.StandardOutput
     return output.Items.PackageReference |> Array.map _.FromMsBuild()
+}
+
+let GetProjectGeneratedArtifacts(projectFilePath: AbsolutePath): Task<AbsolutePath> = task {
+    return failwith "TODO"
 }

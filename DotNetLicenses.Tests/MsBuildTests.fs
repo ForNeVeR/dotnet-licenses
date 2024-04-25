@@ -11,7 +11,7 @@ open DotNetLicenses.TestFramework
 open Xunit
 
 [<Fact>]
-let ``MSBuild should read the project references correctly``(): Task =
+let ``MSBuild reads the project references correctly``(): Task =
     DataFiles.Deploy("Test.csproj") (fun path -> task {
         let! references = GetPackageReferences path
         Assert.Equal<PackageReference>([|{
@@ -19,3 +19,7 @@ let ``MSBuild should read the project references correctly``(): Task =
             Version = "1.0.0"
         }|], references)
     })
+
+[<Fact>]
+let ``MSBuild reads the project-generated artifacts correctly``(): Task =
+    failwith "TODO"

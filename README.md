@@ -54,6 +54,8 @@ metadata_sources = [# required
         # You can also include lists into this field.
         "*.txt",
         "*.css"
+    ], patterns_covered = [
+        { type = "msbuild", include = "path/to/project2.csproj" }
     ] },
     { type = "reuse", root = ".", exclude = [".idea/"], files_covered = "README.md" },
 ]
@@ -85,6 +87,7 @@ Currently supported metadata sources types are:
   - `files_covered` (optional) — either a glob or an array of globs. This is optional, and files that are included into the current directory and covered by the REUSE specification are _automatically_ considered as covered in any case. So, this collection should only contain the generated/built files, and not the files that are copied as-is from the REUSE-covered set of files.
 
     Any file that's copied as-is is considered to be covered by the exact license according to its REUSE specification. Any additional file from `files_covered` is considered to be covered by the combination of all the licenses in the source (except the `exclude`d files).
+  - `patterns_covered` (optional) is a specification of the file patterns covered by a particular source. Currently supported patterns are listed below.
 
   Item with `type = "reuse"` should point to a set of licenses exactly covering the sources from which the covered packaged files are built.
 
@@ -98,6 +101,18 @@ The `packaged_files` parameter (optional) describes the list of the files you wa
 - `ignore` (optional) is a list of ignore specifications, see below. By default, it will be one preset named `licenses`.
 
 The `packaged_files` parameter is mandatory for the `generate-lock` command.
+
+### Cover Patterns Specification
+Each cover pattern specification (`patterns_covered`) is a record in form of:
+```
+{ type = "msbuild", include = "path/to/project.csproj" }
+```
+where
+- `type` is always `msbuild`,
+- `include` is the path to the project file to cover.
+
+This pattern will consider the following project outputs:
+- `$(TargetDir)\$(TargetFileName)`.
 
 ### Ignore Item Specification
 Each ignore item specification is a record in form of:
