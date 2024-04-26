@@ -224,11 +224,14 @@ let internal GenerateLockFile(
                 Spdx = Seq.toArray fe.LicenseIdentifiers
                 Copyright = Seq.toArray fe.CopyrightStatements
             })
+        let! coveragePatternSearchResults =
+            CoveragePattern.CollectCoveredFileLicense metadata entry
         return Seq.concat [|
             packageSearchResults
             licenseSearchResults
             reuseSearchResults
             reuseCombinedSearchResults
+            coveragePatternSearchResults
         |] |> Seq.toArray
     }
 

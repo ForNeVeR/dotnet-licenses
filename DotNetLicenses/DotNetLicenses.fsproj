@@ -42,6 +42,7 @@ SPDX-License-Identifier: MIT
         <Compile Include="Metadata.fs" />
         <Compile Include="LockFile.fs" />
         <Compile Include="Reuse.fs" />
+        <Compile Include="CoveragePattern.fs" />
         <Compile Include="Processor.fs" />
         <Compile Include="Program.fs"/>
     </ItemGroup>
