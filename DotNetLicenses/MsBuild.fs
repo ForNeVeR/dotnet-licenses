@@ -4,6 +4,7 @@
 
 module DotNetLicenses.MsBuild
 
+open System.Collections.Generic
 open System.Text.Json
 open System.Threading.Tasks
 open TruePath
@@ -28,23 +29,41 @@ and [<CLIMutable>] MsBuildPackageReference =
             Version = this.Version
         }
 
-let GetPackageReferences(projectFilePath: AbsolutePath): Task<PackageReference[]> = task {
-    let! result = Command.Run("dotnet", "build", "-getItem:PackageReference", projectFilePath.Value).Task
-    let stdOut = result.StandardOutput
-    let stdErr = result.StandardError
+[<CLIMutable>]
+type MultiPropertyMsBuildOutput = {
+    Properties: Dictionary<string, string>
+}
+
+let private ExecuteDotNetBuild(args: string seq): Task<string> = task {
+    let args = args |> Seq.cast<obj>
+    let! result = Command.Run("dotnet", arguments = args).Task
     if not result.Success then
         let message =
             seq {
                 $"Exit code: {result.ExitCode}"
-                if stdOut.Length > 0 then $"Standard output: {stdOut}"
-                if stdErr.Length > 0 then $"Standard error: {stdErr}"
+                if result.StandardOutput.Length > 0 then $"Standard output: {result.StandardOutput}"
+                if result.StandardError.Length > 0 then $"Standard error: {result.StandardError}"
             } |> String.concat "\n"
         failwith message
+    return result.StandardOutput
+}
 
-    let output = JsonSerializer.Deserialize<MsBuildOutputRoot> result.StandardOutput
+let private GetProperties(input: AbsolutePath, properties: string seq): Task<Dictionary<string, string>> = task {
+    let! result = ExecuteDotNetBuild [| "-getProperty:" + String.concat "," properties; input.Value |]
+    let output = JsonSerializer.Deserialize<MultiPropertyMsBuildOutput> result
+    return output.Properties
+}
+
+let GetPackageReferences(input: AbsolutePath): Task<PackageReference[]> = task {
+    let! result = ExecuteDotNetBuild [| "-getItem:PackageReference"; input.Value |]
+    let output = JsonSerializer.Deserialize<MsBuildOutputRoot> result
     return output.Items.PackageReference |> Array.map _.FromMsBuild()
 }
 
-let GetProjectGeneratedArtifacts(projectFilePath: AbsolutePath): Task<AbsolutePath> = task {
-    return failwith "TODO"
+let GetProjectGeneratedArtifacts(input: AbsolutePath): Task<AbsolutePath> = task {
+    let! properties = GetProperties(input, [| "TargetDir"; "TargetFileName" |])
+    let targetDir = LocalPath properties["TargetDir"]
+    let targetFileName = properties["TargetFileName"]
+    let basePath = input.Parent.Value
+    return basePath / targetDir / targetFileName
 }

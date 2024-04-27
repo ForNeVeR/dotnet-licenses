@@ -168,10 +168,10 @@ let ``Covered patterns are read correctly``(): Task =
     let content = """
 metadata_sources = [
     { type = "license", spdx = "MIT", copyright = "My Copyright", patterns_covered = [
-        { type = "nuget", include = "project2.csproj" }
+        { type = "msbuild", include = "project2.csproj" }
     ] },
-    { type = "reuse", root = ".", exclude = [".idea/"], patterns_covered = [
-        { type = "nuget", include = "project2.csproj" }
+    { type = "reuse", root = ".", patterns_covered = [
+        { type = "msbuild", include = "project2.csproj" }
     ] },
 ]
 """
