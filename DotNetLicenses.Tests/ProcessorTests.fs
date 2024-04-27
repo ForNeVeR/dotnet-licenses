@@ -110,7 +110,7 @@ let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj"
     let config = {
         Configuration.Empty with
             MetadataSources = [| NuGetSource.Of project |]
-            LockFile = Some(LocalPath <| Path.GetTempFileName())
+            LockFile = Some <| LocalPath(Path.GetTempFileName())
             PackagedFiles = [|
                 PackageSpecs.Directory directory.Path
             |]
@@ -235,7 +235,12 @@ let ``License metadata gets saved to the lock file``(): Task = task {
     let config = {
         Configuration.Empty with
             MetadataSources = [|
-                License { Spdx = "MIT"; Copyright = "Me"; FilesCovered = [| LocalPathPattern "*.txt" |] }
+                License {
+                    Spdx = "MIT"
+                    Copyright = "Me"
+                    FilesCovered = [| LocalPathPattern "*.txt" |]
+                    PatternsCovered = Array.empty
+                }
             |]
             LockFile = Some <| LocalPath.op_Implicit lockFile
             PackagedFiles = [| PackageSpecs.Directory directory.Path |]
@@ -384,6 +389,7 @@ text
                     Root = LocalPath.op_Implicit(directory.Path / "source")
                     Exclude = [| LocalPath.op_Implicit ccBy3File |]
                     FilesCovered = [| LocalPathPattern myCombinedFile.FileName |]
+                    PatternsCovered = Array.empty
                 }
             |]
             LockFile = Some <| LocalPath.op_Implicit lockFile
@@ -399,31 +405,34 @@ text
 }
 
 [<Fact>]
-fun ``Package cover spec works``(): unit =
-    let projectFile = failwithf "TODO: Deploy a project file."
-    let! outDir = failwith "TODO: Hard-code the project out dir"
-    let config = {
-        Configuration.Empty with
-            MetadataSources = [|
-                LicenseSource {
-                    Spdx = "MIT"
-                    Copyright = "Package cover spec works"
-                    PatternsCovered = [|
-                        MSBuildCoverage projectFile
-                    |]
-                }
-            |]
-            LockFile = Some <| LocalPath "lock.toml"
-            PackagedFiles = [|
-                PackageSpecs.Directory outDir
-            |]
-    }
+let ``Package cover spec works``(): Task =
+    DataFiles.Deploy "Test.csproj" (fun project -> task {
+        let! projectOutput = MsBuild.GetProjectGeneratedArtifacts project
+        let outDir = projectOutput.Parent.Value
+        let config = {
+            Configuration.Empty with
+                MetadataSources = [|
+                    License {
+                        Spdx = "MIT"
+                        Copyright = "Package cover spec works"
+                        FilesCovered = Array.empty
+                        PatternsCovered = [|
+                            MsBuildCoverage(LocalPath project)
+                        |]
+                    }
+                |]
+                LockFile = Some <| LocalPath "lock.toml"
+                PackagedFiles = [|
+                    PackageSpecs.Directory outDir
+                |]
+        }
 
-    let expectedLock = """"MyAssembly.dll" = [{spdx = ["MIT"], copyright = ["Package cover spec works"]}]"""
+        let expectedLock = """"MyAssembly.dll" = [{spdx = ["MIT"], copyright = ["Package cover spec works"]}]"""
 
-    let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = outDir)
-    Assert.Empty wp.Messages
-    Assert.Empty wp.Codes
+        let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = outDir)
+        Assert.Empty wp.Messages
+        Assert.Empty wp.Codes
 
-    let! actualContent = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
-    Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
+        let! actualContent = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
+        Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
+    })

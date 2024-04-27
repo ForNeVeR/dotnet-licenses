@@ -46,38 +46,6 @@ type Configuration =
             tryGetValue table key
             |> Option.defaultWith(fun () -> failwithf $"Key not found in table \"{table}\": \"{key}\".")
 
-        let readSources(array: TomlArray) =
-            let readItemOrArray key transform t =
-                let value: obj option = tryGetValue t key
-                match value with
-                | None -> Array.empty
-                | Some(:? string as s) -> [| transform s |]
-                | Some(:? TomlArray as a) -> a |> Seq.cast<string> |> Seq.map transform |> Seq.toArray
-                | Some other -> failwithf $"{key}'s type not supported: {other}."
-
-            let readFilesCovered = readItemOrArray "files_covered" LocalPathPattern
-
-            array
-            |> Seq.cast<TomlTable>
-            |> Seq.map(fun t ->
-                match getValue t "type" with
-                | "nuget" -> NuGet { Include = getValue t "include" |> LocalPath }
-                | "license" ->
-                    License {
-                        Spdx = getValue t "spdx"
-                        Copyright = getValue t "copyright"
-                        FilesCovered = readFilesCovered t
-                    }
-                | "reuse" ->
-                    Reuse {
-                        Root = getValue t "root" |> LocalPath
-                        Exclude = readItemOrArray "exclude" (fun x -> LocalPath x) t
-                        FilesCovered = readFilesCovered t
-                    }
-                | other -> failwithf $"Metadata source type not supported: {other}"
-            )
-            |> Seq.toArray
-
         let readOptArrayOfTablesUsing mapping input =
             input
             |> Option.map (fun array ->
@@ -87,6 +55,48 @@ type Configuration =
                 |> Seq.toArray
             )
             |> Option.defaultValue Array.empty
+
+        let readSources(array: TomlArray) =
+            let readItemOrArray key transform t =
+                let value: obj option = tryGetValue t key
+                match value with
+                | None -> Array.empty
+                | Some(:? string as s) -> [| transform s |]
+                | Some(:? TomlArray as a) -> a |> Seq.cast<string> |> Seq.map transform |> Seq.toArray
+                | Some other -> failwithf $"{key}'s type not supported: {other}."
+
+            let readPatternCovered(t: TomlTable) =
+                match getValue t "type" with
+                | "msbuild" -> MsBuildCoverage(LocalPath(getValue t "include" : string))
+                | other -> failwithf $"Unknown pattern type in files_covered: \"{other}\"."
+
+            let readFilesCovered = readItemOrArray "files_covered" LocalPathPattern
+            let readPatternsCovered t =
+                tryGetValue t "patterns_covered"
+                |> readOptArrayOfTablesUsing readPatternCovered
+
+            array
+            |> Seq.cast<TomlTable>
+            |> Seq.map(fun t ->
+                match getValue t "type" with
+                | "nuget" -> NuGet { Include = LocalPath(getValue t "include" : string) }
+                | "license" ->
+                    License {
+                        Spdx = getValue t "spdx"
+                        Copyright = getValue t "copyright"
+                        FilesCovered = readFilesCovered t
+                        PatternsCovered = readPatternsCovered t
+                    }
+                | "reuse" ->
+                    Reuse {
+                        Root = LocalPath(getValue t "root" : string)
+                        Exclude = readItemOrArray "exclude" (fun x -> LocalPath x) t
+                        FilesCovered = readFilesCovered t
+                        PatternsCovered = readPatternsCovered t
+                    }
+                | other -> failwithf $"Metadata source type not supported: {other}"
+            )
+            |> Seq.toArray
 
         let readOverrides = readOptArrayOfTablesUsing(fun t ->
             {
@@ -118,7 +128,7 @@ type Configuration =
         let readPackagedFiles = readOptArrayOfTablesUsing(fun t ->
             let source =
                 match getValue t "type" with
-                | "directory" -> Directory(getValue t "path" |> LocalPath)
+                | "directory" -> Directory(LocalPath(getValue t "path" : string))
                 | "zip" -> Zip(getValue t "path" |> LocalPathPattern)
                 | other -> failwithf $"Packaged file source type not supported: {other}"
             let ignores = readIgnores t
@@ -131,7 +141,7 @@ type Configuration =
 
         let sources = getValue table "metadata_sources"
         let overrides = tryGetValue table "metadata_overrides"
-        let lockFilePath = tryGetValue table "lock_file" |> Option.map LocalPath
+        let lockFilePath = tryGetValue table "lock_file" |> Option.map (fun (x: string) -> LocalPath x)
         let packagedFiles = tryGetValue table "packaged_files"
 
         return {
@@ -200,6 +210,7 @@ and LicenseSource = {
     Spdx: string
     Copyright: string
     FilesCovered: LocalPathPattern[]
+    PatternsCovered: CoverageSpec[]
 }
 
 and ReuseSource =
@@ -207,10 +218,15 @@ and ReuseSource =
         Root: LocalPath
         Exclude: LocalPath[]
         FilesCovered: LocalPathPattern[]
+        PatternsCovered: CoverageSpec[]
     }
     static member Of(path: LocalPath) = Reuse {
         Root = path
         Exclude = Array.empty
         FilesCovered = Array.empty
+        PatternsCovered = Array.empty
     }
     static member Of(relativePath: string) = ReuseSource.Of(LocalPath relativePath)
+
+and CoverageSpec =
+    | MsBuildCoverage of LocalPath

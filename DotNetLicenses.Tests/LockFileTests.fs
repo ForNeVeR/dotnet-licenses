@@ -29,7 +29,7 @@ let ``LockFile should be have expected format``(): Task =
 "y.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
 """
     task {
-        let lockFilePath = AbsolutePath <| Path.GetTempFileName()
+        let lockFilePath = AbsolutePath(Path.GetTempFileName())
         do! SaveLockFile(lockFilePath, data)
         let! content = File.ReadAllTextAsync lockFilePath.Value
         Assert.Equal(expectedContent.ReplaceLineEndings "\n", content.ReplaceLineEndings "\n")

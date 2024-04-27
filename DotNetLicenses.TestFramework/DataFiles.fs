@@ -14,10 +14,10 @@ let Get(name: string): AbsolutePath =
     let filePath = Path.Combine(Path.GetDirectoryName(currentAssemblyPath), "Data", name)
     if not (File.Exists filePath) then
         failwithf $"Data file \"{name}\" not found."
-    AbsolutePath <| Path.GetFullPath filePath
+    AbsolutePath(Path.GetFullPath filePath)
 
 let private CopyDataFile(path: AbsolutePath) =
-    let tempDir = AbsolutePath <| Path.GetTempFileName()
+    let tempDir = AbsolutePath(Path.GetTempFileName())
     File.Delete tempDir.Value
     Directory.CreateDirectory tempDir.Value |> ignore
     let tempPath = tempDir / path.FileName

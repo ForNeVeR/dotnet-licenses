@@ -16,7 +16,7 @@ type DisposableDirectory =
             Directory.Delete(this.Path.Value, true)
 
     static member Create() =
-        let path = AbsolutePath <| Path.GetTempFileName()
+        let path = AbsolutePath(Path.GetTempFileName())
         File.Delete path.Value
         Directory.CreateDirectory path.Value |> ignore
         { Path = path }

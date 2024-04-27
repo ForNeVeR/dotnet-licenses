@@ -9,7 +9,6 @@ open System.IO
 open System.Threading.Tasks
 open System.Xml
 open System.Xml.Serialization
-open DotNetLicenses.Sources
 open TruePath
 
 let mutable internal PackagesFolderPath: AbsolutePath =
@@ -17,7 +16,7 @@ let mutable internal PackagesFolderPath: AbsolutePath =
     |> Option.ofObj
     |> Option.map AbsolutePath
     |> Option.defaultWith(fun() ->
-        (AbsolutePath <| Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)) / ".nuget" / "packages"
+        AbsolutePath(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)) / ".nuget" / "packages"
     )
 
 let internal UnpackedPackagePath(packageReference: PackageReference): AbsolutePath =

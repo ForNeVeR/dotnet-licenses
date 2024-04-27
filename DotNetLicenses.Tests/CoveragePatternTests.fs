@@ -4,47 +4,50 @@
 
 module DotNetLicenses.Tests.CoveragePatternTests
 
+open System.IO
 open System.Threading.Tasks
 open DotNetLicenses
+open DotNetLicenses.LockFile
+open DotNetLicenses.Metadata
 open DotNetLicenses.TestFramework
+open TruePath
 open Xunit
 
 // REUSE-IgnoreStart
 [<Fact>]
 let ``Coverage pattern collector works``(): Task =
-    DataFiles.Deploy "Test.csproj" (fun project ->
-        let metadata = License {
+    DataFiles.Deploy "Test.csproj" (fun project -> task {
+        let metadata = MetadataItem.License {
             Spdx = "MIT"
             Copyright = "2024 Me"
             FilesCovered = Array.empty
-            PatternsCovered = MsBuildCoveragePattern <| LocalPath project
+            PatternsCovered = [| MsBuildCoverage(LocalPath project) |]
         }
 
         let! projectOutput = MsBuild.GetProjectGeneratedArtifacts project
         do! File.WriteAllTextAsync(projectOutput.Value, "test output")
         let packageSpec = {
-            Source = Directory projectOutput.Parent
+            Source = Directory <| LocalPath(projectOutput.Parent.Value)
             Ignores = Array.empty
         }
 
         let sourceEntry = {
             new ISourceEntry with
                 member _.Source = packageSpec
-                member _.SourceRelativePath = LocalPath projectOutput.FileName
-                member _.ReadContent = Task.FromResult <| File.OpenStream projectOutput.Value
-                member this.CalculateHash = task {
-                    use! stream = this.ReadContent()
-                    let! content = stream.ReadAllBytesAsync()
+                member _.SourceRelativePath = projectOutput.FileName
+                member _.ReadContent() = Task.FromResult <| File.OpenRead projectOutput.Value
+                member this.CalculateHash() = task {
+                    let! content = File.ReadAllBytesAsync projectOutput.Value
                     return Hashes.Sha256 content
                 }
         }
 
         let! result = CoveragePattern.CollectCoveredFileLicense [| metadata |] sourceEntry
-        Assert.Equal([| {
+        Assert.Equal<_>([| {
             SourceId = null
             SourceVersion = null
-            Spdx = "MIT"
-            Copyright = "2024 Me"
+            Spdx = [|"MIT"|]
+            Copyright = [|"2024 Me"|]
         } |], result)
-    )
+    })
 // REUSE-IgnoreEnd

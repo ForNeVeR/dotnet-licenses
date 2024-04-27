@@ -43,7 +43,7 @@ let ``SourceRelativePath is generated for a file set``(): unit =
 let ``SourceEntry calculates its hash correctly``(): Task = task {
     use directory = DisposableDirectory.Create()
     let content = "Hello"B
-    let expectedHash = calculateSha256 content
+    let expectedHash = Hashes.Sha256 content
     let path = directory.Path / "file.txt"
     File.WriteAllBytes(path.Value, content)
     let source = PackageSpecs.Directory directory.Path

@@ -85,11 +85,21 @@ metadata_sources = [
     doTest content {
         Configuration.Empty with
             MetadataSources = [|
-                License { Spdx = "MIT"; Copyright =  "Me"; FilesCovered = [| LocalPathPattern "**/*.txt" |] }
-                License { Spdx = "MIT"; Copyright =  "Me"; FilesCovered = [|
-                    LocalPathPattern "**/*.pdf"
-                    LocalPathPattern "**/*.pdb"
-                |] }
+                License {
+                    Spdx = "MIT"
+                    Copyright =  "Me"
+                    FilesCovered = [| LocalPathPattern "**/*.txt" |]
+                    PatternsCovered = Array.empty
+                }
+                License {
+                    Spdx = "MIT"
+                    Copyright =  "Me"
+                    FilesCovered = [|
+                        LocalPathPattern "**/*.pdf"
+                        LocalPathPattern "**/*.pdb"
+                    |]
+                    PatternsCovered = Array.empty
+                }
             |]
     }
 
@@ -110,11 +120,13 @@ metadata_sources = [
                     Root = LocalPath "path2"
                     Exclude = [|LocalPath "path2/exclude"|]
                     FilesCovered = [| LocalPathPattern "README.md" |]
+                    PatternsCovered = Array.empty
                 }
                 Reuse {
                     Root = LocalPath "path3"
                     Exclude = [|LocalPath "path3/exclude"|]
                     FilesCovered = [| LocalPathPattern "README.md" |]
+                    PatternsCovered = Array.empty
                 }
             |]
     }
@@ -166,19 +178,21 @@ metadata_sources = [
     doTest content {
         Configuration.Empty with
             MetadataSources = [|
-                {
+                License {
                     Spdx = "MIT"
                     Copyright = "My Copyright"
                     FilesCovered = Array.empty
                     PatternsCovered = [|
-                        CoverPatternSpecs.NuGet "project2.csproj"
+                        MsBuildCoverage(LocalPath "project2.csproj")
                     |]
                 }
-                {
-                    ReuseSource.Of "." with
-                        PatternsCovered = [|
-                            CoverPatternSpecs.NuGet "project2.csproj"
-                        |]
+                Reuse {
+                    Root = LocalPath "."
+                    Exclude = Array.empty
+                    FilesCovered = Array.empty
+                    PatternsCovered = [|
+                        MsBuildCoverage(LocalPath "project2.csproj")
+                    |]
                 }
             |]
     }

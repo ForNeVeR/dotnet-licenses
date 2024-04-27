@@ -254,7 +254,7 @@ let private RunSynchronously(task: Task<'a>) =
 
 let private ProcessConfig(configFilePath: string) =
     task {
-        let baseFolderPath = AbsolutePath <| Path.GetFullPath(Path.GetDirectoryName configFilePath)
+        let baseFolderPath = AbsolutePath(Path.GetFullPath(Path.GetDirectoryName configFilePath))
         let! config = Configuration.ReadFromFile configFilePath
         return baseFolderPath, config
     }
