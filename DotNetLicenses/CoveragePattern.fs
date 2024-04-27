@@ -8,6 +8,6 @@ open System.Threading.Tasks
 open DotNetLicenses.LockFile
 open DotNetLicenses.Metadata
 
-let CollectCoveredFileLicense(metadataSources: MetadataItem seq) (sourceEntry: ISourceEntry): Task<LockFileItem seq> = task {
+let CollectCoveredFileLicense(metadataItems: MetadataItem seq) (sourceEntry: ISourceEntry): Task<LockFileItem seq> = task {
     return failwith "TODO"
 }

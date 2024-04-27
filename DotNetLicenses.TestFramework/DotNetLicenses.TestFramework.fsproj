@@ -18,6 +18,7 @@ SPDX-License-Identifier: MIT
         <Compile Include="DisposableDirectory.fs" />
         <Compile Include="ZipFiles.fs" />
         <Compile Include="PackageSpecs.fs" />
+        <Compile Include="Hashes.fs" />
     </ItemGroup>
 
     <ItemGroup>

@@ -4,10 +4,8 @@
 
 module DotNetLicenses.Tests.SourcesTests
 
-open System
 open System.IO
 open System.IO.Compression
-open System.Security.Cryptography
 open System.Text
 open System.Threading.Tasks
 open DotNetLicenses
@@ -43,10 +41,6 @@ let ``SourceRelativePath is generated for a file set``(): unit =
 
 [<Fact>]
 let ``SourceEntry calculates its hash correctly``(): Task = task {
-    let calculateSha256(x: byte[]) =
-        use hash = SHA256.Create()
-        hash.ComputeHash x |> Convert.ToHexString
-
     use directory = DisposableDirectory.Create()
     let content = "Hello"B
     let expectedHash = calculateSha256 content

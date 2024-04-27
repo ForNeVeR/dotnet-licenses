@@ -4,17 +4,11 @@
 
 module DotNetLicenses.Tests.FileHashCacheTests
 
-open System
 open System.IO
-open System.Security.Cryptography
 open System.Threading.Tasks
 open DotNetLicenses
 open TruePath
 open Xunit
-
-let private CalculateSha256(bytes: byte[]) =
-    use sha256 = SHA256.Create()
-    sha256.ComputeHash(bytes) |> Convert.ToHexString
 
 [<Fact>]
 let ``FileHashCache calculates cache of a file on disk``(): Task = task {
