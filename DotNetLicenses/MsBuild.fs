@@ -8,6 +8,7 @@ open System.Collections.Generic
 open System.IO
 open System.Text.Json
 open System.Threading.Tasks
+open Microsoft.Build.Construction
 open TruePath
 open Medallion.Shell
 
@@ -85,7 +86,12 @@ let private GetItems (input: AbsolutePath)
 }
 
 let GetProjects(input: AbsolutePath): Task<AbsolutePath[]> = task {
-    return failwith "TODO"
+    match Path.GetExtension input.Value with
+    | ".sln" ->
+        do! Task.Yield()
+        let solution = SolutionFile.Parse(input.Value)
+        return solution.ProjectsInOrder |> Seq.map (fun p -> AbsolutePath p.AbsolutePath) |> Seq.toArray
+    | _ -> return [| input |] // assume it's a project file
 }
 
 let GetPackageReferences(input: AbsolutePath): Task<PackageReference[]> = task {
@@ -93,11 +99,11 @@ let GetPackageReferences(input: AbsolutePath): Task<PackageReference[]> = task {
     let! references =
         projects
         |> Seq.map(fun project -> task {
-            let! references = GetItems input None [| "PackageReference" |] _.PackageReference
+            let! references = GetItems project None [| "PackageReference" |] _.PackageReference
             return references |> Array.map _.FromMsBuild()
         })
         |> Task.WhenAll
-    return references |> Array.collect id |> Array.sortBy (fun x -> x.PackageId, x.Version)
+    return references |> Seq.collect id |> Seq.distinct |> Seq.sortBy (fun x -> x.PackageId, x.Version) |> Seq.toArray
 }
 
 let private Configuration = "Release"

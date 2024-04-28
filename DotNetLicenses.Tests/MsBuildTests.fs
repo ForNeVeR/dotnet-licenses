@@ -32,8 +32,8 @@ let ``MSBuild reads the project-generated artifacts correctly``(): Task =
                 project.Parent.Value / "obj" / "DotNetToolSettings.xml"
             |]
             FilePatterns = [|
-                LocalPathPattern "**/Test.pdb"
                 LocalPathPattern "**/Test.deps.json"
+                LocalPathPattern "**/Test.pdb"
             |]
         }, output)
     })
@@ -58,15 +58,15 @@ let ``MSBuild reads the solution-generated artifacts correctly``(): Task =
             FilesWithContent = [|
                 path / "bin" / "Release" / "net8.0" / "Test.dll"
                 path / "bin" / "Release" / "net8.0" / "Test.runtimeconfig.json"
-                path / "obj" / "DotNetToolSettings.xml"
                 path / "bin" / "Release" / "net8.0" / "Test2.dll"
                 path / "bin" / "Release" / "net8.0" / "Test2.runtimeconfig.json"
+                path / "obj" / "DotNetToolSettings.xml"
             |]
             FilePatterns = [|
-                LocalPathPattern "**/Test.pdb"
                 LocalPathPattern "**/Test.deps.json"
-                LocalPathPattern "**/Test2.pdb"
+                LocalPathPattern "**/Test.pdb"
                 LocalPathPattern "**/Test2.deps.json"
+                LocalPathPattern "**/Test2.pdb"
             |]
         }, output)
     })
