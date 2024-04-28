@@ -17,8 +17,7 @@ metadata_overrides = [
     { id = "GitignoreParserNet", version = "0.2.0.12", spdx = "Apache-2.0", copyright = [
         "Copyright (c) 2021 Gyuirgy",
         "Copyright 2014 codemix ltd."
-    ] },
-    { id = "Microsoft.NET.Test.Sdk", version = "17.9.0", spdx = "MIT", copyright = "Copyright (c) Microsoft Corporation" },
+    ] }
 ]
 lock_file = ".dotnet-licenses.lock.toml"
 packaged_files = [
