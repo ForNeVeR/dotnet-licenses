@@ -22,4 +22,7 @@ let ``MSBuild reads the project references correctly``(): Task =
 
 [<Fact>]
 let ``MSBuild reads the project-generated artifacts correctly``(): Task =
-    failwith "TODO"
+    DataFiles.Deploy("Test.csproj") (fun project -> task {
+        let! output = GetProjectGeneratedArtifacts project
+        Assert.Equal(project.Parent.Value / "bin" / "Release" / "net8.0" / "Test.dll", output)
+    })

@@ -407,8 +407,10 @@ text
 [<Fact>]
 let ``Package cover spec works``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
+        let baseDir = project.Parent.Value
         let! projectOutput = MsBuild.GetProjectGeneratedArtifacts project
         let outDir = projectOutput.Parent.Value
+        Directory.CreateDirectory outDir.Value |> ignore
         let config = {
             Configuration.Empty with
                 MetadataSources = [|
@@ -427,12 +429,14 @@ let ``Package cover spec works``(): Task =
                 |]
         }
 
-        let expectedLock = """"MyAssembly.dll" = [{spdx = ["MIT"], copyright = ["Package cover spec works"]}]"""
+        do! File.WriteAllTextAsync(projectOutput.Value, "Test file")
+        let expectedLock = """"Test.dll" = [{spdx = ["MIT"], copyright = ["Package cover spec works"]}]
+"""
 
-        let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = outDir)
+        let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = baseDir)
         Assert.Empty wp.Messages
         Assert.Empty wp.Codes
 
-        let! actualContent = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
+        let! actualContent = File.ReadAllTextAsync <| (baseDir / (Option.get config.LockFile)).Value
         Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
     })

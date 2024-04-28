@@ -9,6 +9,7 @@ open System.IO
 open System.Reflection
 open System.Threading.Tasks
 open DotNetLicenses.CommandLine
+open DotNetLicenses.CoveragePattern
 open DotNetLicenses.LockFile
 open DotNetLicenses.Metadata
 open DotNetLicenses.NuGet
@@ -183,6 +184,8 @@ let internal GenerateLockFile(
             ReuseFileEntry.CombineEntries(baseFolderPath, reuseEntries[r])
         )
 
+    let coverageCache = CoverageCache.Empty()
+
     let findLicensesForFile entry = task {
         let! packageEntries = nuGet.FindFile hashCache packages entry
         let packageSearchResults =
@@ -225,7 +228,7 @@ let internal GenerateLockFile(
                 Copyright = Seq.toArray fe.CopyrightStatements
             })
         let! coveragePatternSearchResults =
-            CoveragePattern.CollectCoveredFileLicense metadata entry
+            CollectCoveredFileLicense baseFolderPath coverageCache hashCache metadata entry
         return Seq.concat [|
             packageSearchResults
             licenseSearchResults

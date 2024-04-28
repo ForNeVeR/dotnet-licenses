@@ -35,7 +35,10 @@ type MultiPropertyMsBuildOutput = {
 }
 
 let private ExecuteDotNetBuild(args: string seq): Task<string> = task {
-    let args = args |> Seq.cast<obj>
+    let args = seq {
+        box "build"
+        yield! args |> Seq.cast<obj>
+    }
     let! result = Command.Run("dotnet", arguments = args).Task
     if not result.Success then
         let message =
@@ -48,8 +51,14 @@ let private ExecuteDotNetBuild(args: string seq): Task<string> = task {
     return result.StandardOutput
 }
 
-let private GetProperties(input: AbsolutePath, properties: string seq): Task<Dictionary<string, string>> = task {
-    let! result = ExecuteDotNetBuild [| "-getProperty:" + String.concat "," properties; input.Value |]
+let private GetProperties(input: AbsolutePath,
+                          configuration: string,
+                          properties: string seq): Task<Dictionary<string, string>> = task {
+    let! result = ExecuteDotNetBuild [|
+        "--configuration"; configuration
+        "-getProperty:" + String.concat "," properties
+        input.Value
+    |]
     let output = JsonSerializer.Deserialize<MultiPropertyMsBuildOutput> result
     return output.Properties
 }
@@ -60,8 +69,9 @@ let GetPackageReferences(input: AbsolutePath): Task<PackageReference[]> = task {
     return output.Items.PackageReference |> Array.map _.FromMsBuild()
 }
 
+let private Configuration = "Release"
 let GetProjectGeneratedArtifacts(input: AbsolutePath): Task<AbsolutePath> = task {
-    let! properties = GetProperties(input, [| "TargetDir"; "TargetFileName" |])
+    let! properties = GetProperties(input, Configuration, [| "TargetDir"; "TargetFileName" |])
     let targetDir = LocalPath properties["TargetDir"]
     let targetFileName = properties["TargetFileName"]
     let basePath = input.Parent.Value

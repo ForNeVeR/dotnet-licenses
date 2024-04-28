@@ -7,6 +7,7 @@ module DotNetLicenses.Tests.CoveragePatternTests
 open System.IO
 open System.Threading.Tasks
 open DotNetLicenses
+open DotNetLicenses.CoveragePattern
 open DotNetLicenses.LockFile
 open DotNetLicenses.Metadata
 open DotNetLicenses.TestFramework
@@ -25,6 +26,8 @@ let ``Coverage pattern collector works``(): Task =
         }
 
         let! projectOutput = MsBuild.GetProjectGeneratedArtifacts project
+        let baseDirectory = projectOutput.Parent.Value
+        Directory.CreateDirectory baseDirectory.Value |> ignore
         do! File.WriteAllTextAsync(projectOutput.Value, "test output")
         let packageSpec = {
             Source = Directory <| LocalPath(projectOutput.Parent.Value)
@@ -42,7 +45,9 @@ let ``Coverage pattern collector works``(): Task =
                 }
         }
 
-        let! result = CoveragePattern.CollectCoveredFileLicense [| metadata |] sourceEntry
+        let coverageCache = CoverageCache.Empty()
+        use hashCache = new FileHashCache()
+        let! result = CollectCoveredFileLicense baseDirectory coverageCache hashCache [| metadata |] sourceEntry
         Assert.Equal<_>([| {
             SourceId = null
             SourceVersion = null

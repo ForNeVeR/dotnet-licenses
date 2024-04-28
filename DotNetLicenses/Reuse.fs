@@ -8,7 +8,6 @@ open System
 open System.Collections.Immutable
 open System.IO
 open System.Threading.Tasks
-open DotNetLicenses.Sources
 open ReuseSpec
 open TruePath
 
@@ -30,6 +29,7 @@ let CollectLicenses (cache: FileHashCache)
                     (reuseEntries: ReuseFileEntry seq)
                     (sourceEntry: ISourceEntry): Task<ResizeArray<ReuseLicenseEntry>> = task {
     let! fileHash = sourceEntry.CalculateHash()
+    // TODO: Extract into a function ↓
     let result = ResizeArray()
     let similarEntries =
         reuseEntries
