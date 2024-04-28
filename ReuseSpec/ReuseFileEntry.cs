@@ -41,7 +41,7 @@ public record ReuseFileEntry(
 
     private static IEnumerable<string> FilterIgnoredBlocks(IEnumerable<string> input)
     {
-        var ignoring = false;  // TODO: Should we support nested ignore/unignore blocks?
+        var ignoring = false;  // TODO[#46]: Should we support nested ignore/unignore blocks?
         foreach (var line in input)
         {
             if (line.Contains("REUSE-IgnoreStart"))

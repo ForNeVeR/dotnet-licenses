@@ -55,7 +55,7 @@ public static class ReuseDirectory
         return allFiles
             .Where(file => !file.Value.StartsWith(gitDirectory.Value)
                            && file.FileName != "LICENSE.txt"
-                           && file.Parent?.FileName != "LICENSES") // TODO: Verify with the spec
+                           && file.Parent?.FileName != "LICENSES") // TODO[#46]: Verify with the spec
             .ToList();
     }
 
