@@ -85,8 +85,8 @@ let ``NuGet reads transitive package references correctly``(): Task =
         let! _ = MsBuild.ExecuteDotNet [| "restore"; project.Value |]
         let! references = ReadTransitiveProjectReferences project
         Assert.Equal<PackageReference>([|
-            { PackageId = "System.Configuration.ConfigurationManager"; Version = "8.0.0" }
-            { PackageId = "System.Diagnostics.EventLog"; Version = "8.0.0" }
-            { PackageId = "System.Security.Cryptography.ProtectedData"; Version = "8.0.0" }
+            { PackageId = "FSharp.Core"; Version = "8.0.200" }
+            { PackageId = "Generaptor"; Version = "1.2.0" }
+            { PackageId = "YamlDotNet";  Version = "15.1.1" }
         |], references)
     })
