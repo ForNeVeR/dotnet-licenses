@@ -52,7 +52,11 @@ public static class ReuseDirectory
         }
 
         var gitDirectory = directory / ".git";
-        return allFiles.Where(file => !file.Value.StartsWith(gitDirectory.Value)).ToList();
+        return allFiles
+            .Where(file => !file.Value.StartsWith(gitDirectory.Value)
+                           && file.FileName != "LICENSE.txt"
+                           && file.Parent?.FileName != "LICENSES") // TODO: Verify with the spec
+            .ToList();
     }
 
     private static async Task<List<DebianCopyrightFilesEntry>> ReadDep5File(AbsolutePath directory)
