@@ -12,8 +12,6 @@ open DotNetLicenses.TestFramework
 open TruePath
 open Xunit
 
-// REUSE-IgnoreStart
-
 type private Runner =
     static member RunFunction(func: _ * _ * _ * _ -> Task, config, ?baseDirectory: AbsolutePath) = task {
         let baseDirectory =
@@ -361,6 +359,7 @@ let ``Combined licenses from REUSE source work``(): Task = task {
     let myMitFile = directory.Path / "package" / "my-mit-file.txt"
     let myCombinedFile = directory.Path / "package" / "my-combined-file.txt"
 
+    // REUSE-IgnoreStart
     let mitFileContent = """SPDX-FileCopyrightText: 2024 Me
 SPDX-License-Identifier: MIT
 text
@@ -390,6 +389,8 @@ text
     """)
 
     do! File.WriteAllTextAsync((directory.Path / "source" / ".gitignore").Value, "/my-cc-by-3-file.txt")
+
+    // REUSE-IgnoreEnd
 
     let expectedLock = """# REUSE-IgnoreStart
 "my-combined-file.txt" = [{spdx = ["CC-BY-1.0", "CC-BY-4.0", "CC-0", "MIT"], copyright = ["2024 Me"]}]
@@ -461,5 +462,3 @@ let ``Package cover spec works``(): Task =
         let! actualContent = File.ReadAllTextAsync <| (baseDir / (Option.get config.LockFile)).Value
         Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
     })
-
-// REUSE-IgnoreEnd

@@ -9,10 +9,12 @@ SPDX-License-Identifier: MIT
         <Version>0.0.0</Version>
         <PackageLicenseExpression>MIT</PackageLicenseExpression>
         <!-- TODO[#5]: Automate this using reuse -->
+        <!-- REUSE-IgnoreStart -->
         <Copyright>
 © 2024 Friedrich von Never;
 © Microsoft Corporation. All rights reserved. <!-- This is from FSharp.Core -->
         </Copyright>
+        <!-- REUSE-IgnoreEnd -->
     </PropertyGroup>
 
     <PropertyGroup Label="Build">

@@ -11,6 +11,8 @@ open DotNetLicenses.NuGet
 open DotNetLicenses.TestFramework
 open Xunit
 
+// REUSE-IgnoreStart
+
 [<Fact>]
 let ``Get metadata from .nuspec works correctly``(): Task = task {
     let path = DataFiles.Get "Test1.nuspec"
@@ -50,3 +52,5 @@ let ``Overrides work as expected``(): Task = task {
     |], metadata.Items)
     Assert.Equivalent([| { PackageId = "FVNever.Package1"; Version = "0.0.0" } |], metadata.UsedOverrides)
 }
+
+// REUSE-IgnoreEnd

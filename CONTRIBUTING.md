@@ -2,6 +2,8 @@
 SPDX-FileCopyrightText: 2024 Friedrich von Never <friedrich@fornever.me>
 
 SPDX-License-Identifier: MIT
+
+REUSE-IgnoreStart
 -->
 
 Contributor Guide
@@ -76,6 +78,8 @@ If the automation asks you to update the copyright years in certain files, eithe
 ```console
 $ pwsh -File scripts/Test-LicenseHeaders.ps1 -AutoFix
 ```
+
+<!-- REUSE-IgnoreEnd -->
 
 [dotnet-sdk]: https://dotnet.microsoft.com/en-us/download
 [powershell]: https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell
