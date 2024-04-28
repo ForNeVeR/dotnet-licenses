@@ -12,6 +12,8 @@ open DotNetLicenses.TestFramework
 open TruePath
 open Xunit
 
+// REUSE-IgnoreStart
+
 type private Runner =
     static member RunFunction(func: _ * _ * _ * _ -> Task, config, ?baseDirectory: AbsolutePath) = task {
         let baseDirectory =
@@ -443,3 +445,5 @@ let ``Package cover spec works``(): Task =
         let! actualContent = File.ReadAllTextAsync <| (baseDir / (Option.get config.LockFile)).Value
         Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
     })
+
+// REUSE-IgnoreEnd

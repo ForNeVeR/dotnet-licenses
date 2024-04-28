@@ -7,18 +7,21 @@
 
 metadata_sources = [
     { type = "nuget", include = "DotNetLicenses.sln" },
-    { type = "license", spdx = "MIT", copyright = "2024 Friedrich von Never <friedrich@fornever.me>", patterns_covered = [
+    { type = "reuse", root = ".", patterns_covered = [
         { type = "nuget" },
         { type = "msbuild", include = "DotNetLicenses.sln" }
-    ] },
-    { type = "reuse", root = "." }
+    ] }
 ]
+
+# REUSE-IgnoreStart
 metadata_overrides = [
     { id = "GitignoreParserNet", version = "0.2.0.12", spdx = "Apache-2.0", copyright = [
         "Copyright (c) 2021 Gyuirgy",
         "Copyright 2014 codemix ltd."
     ] }
 ]
+# REUSE-IgnoreEnd
+
 lock_file = ".dotnet-licenses.lock.toml"
 packaged_files = [
     { type = "zip", path = "DotNetLicenses/bin/Release/FVNever.DotNetLicenses.0.0.0.nupkg" }

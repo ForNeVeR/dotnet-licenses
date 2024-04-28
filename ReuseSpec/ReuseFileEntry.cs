@@ -63,6 +63,8 @@ public record ReuseFileEntry(
         }
     }
 
+    // REUSE-IgnoreStart
+
     private static readonly Regex[] CopyrightPatterns = [
         new(@"SPDX-(?:File|Snippet)CopyrightText:\s*(.*)"),
         new(@"Copyright\s?(?:\([Cc]\))\s+(.*)"),
@@ -108,6 +110,8 @@ public record ReuseFileEntry(
 
         return new ReuseCombinedEntry([..licenses], [..copyrights]);
     }
+
+    // REUSE-IgnoreEnd
 }
 
 public record ReuseCombinedEntry(
