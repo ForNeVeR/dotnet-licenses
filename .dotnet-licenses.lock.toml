@@ -3,7 +3,7 @@
 "*.nuspec" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
 "CHANGELOG.md" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
 "package/services/metadata/core-properties/*.psmdcp" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
-"README.md" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>", "Microsoft Corporation. All rights reserved.\"] }"]}]
+"README.md" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
 "tools/net8.0/any/cs/FSharp.Core.resources.dll" = [{source_id = "FSharp.Core", source_version = "8.0.200", spdx = ["MIT"], copyright = ["© Microsoft Corporation. All rights reserved."]}]
 "tools/net8.0/any/de/FSharp.Core.resources.dll" = [{source_id = "FSharp.Core", source_version = "8.0.200", spdx = ["MIT"], copyright = ["© Microsoft Corporation. All rights reserved."]}]
 "tools/net8.0/any/DotNetLicenses.deps.json" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]

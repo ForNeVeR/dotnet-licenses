@@ -2,6 +2,8 @@
 SPDX-FileCopyrightText: 2024 Friedrich von Never <friedrich@fornever.me>
 
 SPDX-License-Identifier: MIT
+
+REUSE-IgnoreStart
 -->
 
 dotnet-licenses [![Status Zero][status-zero]][andivionian-status-classifier] [![NuGet package][nuget.badge]][nuget.page]
@@ -204,3 +206,4 @@ The package of this program bundles FSharp.Core, see its license (MIT) [on the N
 [reuse]: https://reuse.software/
 [semver]: https://semver.org/spec/v2.0.0.html
 [status-zero]: https://img.shields.io/badge/status-zero-lightgrey.svg
+<!-- REUSE-IgnoreEnd -->
