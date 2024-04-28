@@ -22,7 +22,7 @@ type CoverageCache =
     static member Empty(): CoverageCache = CoverageCache(ConcurrentDictionary())
     member this.Read(project: AbsolutePath) =
         let (CoverageCache map) = this
-        map.GetOrAdd(project, GetProjectGeneratedArtifacts)
+        map.GetOrAdd(project, GetGeneratedArtifacts)
 
 let private CollectLockFileItem (baseDir: AbsolutePath) = function
     | Package _ -> failwith "Function doesn't support packages."

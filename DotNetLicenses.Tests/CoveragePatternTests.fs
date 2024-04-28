@@ -25,7 +25,7 @@ let ``MSBuild coverage pattern collector works``(): Task =
             PatternsCovered = [| MsBuildCoverage(LocalPath project) |]
         }
 
-        let! projectOutputs = MsBuild.GetProjectGeneratedArtifacts project
+        let! projectOutputs = MsBuild.GetGeneratedArtifacts project
         let targetAssembly = projectOutputs.FilesWithContent |> Seq.head
         let baseDirectory = targetAssembly.Parent.Value
         Directory.CreateDirectory baseDirectory.Value |> ignore

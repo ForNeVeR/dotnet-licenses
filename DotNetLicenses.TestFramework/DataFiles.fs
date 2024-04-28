@@ -16,18 +16,27 @@ let Get(name: string): AbsolutePath =
         failwithf $"Data file \"{name}\" not found."
     AbsolutePath(Path.GetFullPath filePath)
 
-let private CopyDataFile(path: AbsolutePath) =
+let private CopyDataFiles(paths: AbsolutePath[]) =
     let tempDir = AbsolutePath(Path.GetTempFileName())
     File.Delete tempDir.Value
     Directory.CreateDirectory tempDir.Value |> ignore
-    let tempPath = tempDir / path.FileName
-    File.Copy(path.Value, tempPath.Value)
-    tempPath
+    for path in paths do
+        let tempPath = tempDir / path.FileName
+        File.Copy(path.Value, tempPath.Value)
+    tempDir
 
 let Deploy(name: string) (action: AbsolutePath -> Task): Task = task {
-    let path = CopyDataFile(Get name)
+    let path = CopyDataFiles [| Get name |]
     try
-        do! action path
+        do! action <| path / name
     finally
-        File.Delete path.Value
+        Directory.Delete(path.Value, true)
+}
+
+let DeployGroup(names: string[]) (action: AbsolutePath -> Task): Task = task {
+    let path = CopyDataFiles(names |> Array.map Get)
+    try
+        do! action <| path
+    finally
+        Directory.Delete(path.Value, true)
 }

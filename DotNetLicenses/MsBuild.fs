@@ -84,19 +84,35 @@ let private GetItems (input: AbsolutePath)
     return transformer output.Items
 }
 
+let GetProjects(input: AbsolutePath): Task<AbsolutePath[]> = task {
+    return failwith "TODO"
+}
+
 let GetPackageReferences(input: AbsolutePath): Task<PackageReference[]> = task {
-    let! references = GetItems input None [| "PackageReference" |] _.PackageReference
-    return references |> Array.map _.FromMsBuild()
+    let! projects = GetProjects input
+    let! references =
+        projects
+        |> Seq.map(fun project -> task {
+            let! references = GetItems input None [| "PackageReference" |] _.PackageReference
+            return references |> Array.map _.FromMsBuild()
+        })
+        |> Task.WhenAll
+    return references |> Array.collect id |> Array.sortBy (fun x -> x.PackageId, x.Version)
 }
 
 let private Configuration = "Release"
 
-type ProjectGeneratedArtifacts = {
-    FilesWithContent: AbsolutePath[]
-    FilePatterns: LocalPathPattern[]
-}
+type ProjectGeneratedArtifacts =
+    {
+        FilesWithContent: AbsolutePath[]
+        FilePatterns: LocalPathPattern[]
+    }
+    static member Merge(items: ProjectGeneratedArtifacts[]): ProjectGeneratedArtifacts = {
+        FilesWithContent = items |> Seq.collect _.FilesWithContent |> Seq.distinct |> Seq.sortBy _.Value |> Array.ofSeq
+        FilePatterns = items |> Seq.collect _.FilePatterns |> Seq.distinct |> Seq.sortBy _.Value |> Array.ofSeq
+    }
 
-let GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
+let private GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
     let! properties = GetProperties(input, Configuration, [|
         "BaseIntermediateOutputPath"
         "TargetName"
@@ -129,4 +145,13 @@ let GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArti
         FilesWithContent = artifacts
         FilePatterns = patterns
     }
+}
+
+let GetGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
+    let! projects = GetProjects input
+    let! artifacts =
+        projects
+        |> Seq.map GetProjectGeneratedArtifacts
+        |> Task.WhenAll
+    return artifacts |> ProjectGeneratedArtifacts.Merge
 }

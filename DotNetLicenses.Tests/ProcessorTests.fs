@@ -408,7 +408,7 @@ text
 let ``Package cover spec works``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let baseDir = project.Parent.Value
-        let! projectOutput = MsBuild.GetProjectGeneratedArtifacts project
+        let! projectOutput = MsBuild.GetGeneratedArtifacts project
         projectOutput.FilesWithContent
         |> Array.iter (fun p -> Directory.CreateDirectory p.Parent.Value.Value |> ignore)
 
