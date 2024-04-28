@@ -107,7 +107,9 @@ let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj"
     use directory = DisposableDirectory.Create()
     do! File.WriteAllTextAsync((directory.Path / "test.txt").Value, "Hello!")
 
-    let expectedLock = """"test.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+    let expectedLock = """# REUSE-IgnoreStart
+"test.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+# REUSE-IgnoreEnd
 """
     let config = {
         Configuration.Empty with
@@ -131,7 +133,9 @@ let ``Processor generates a lock file for a file tree``(): Task = task {
     use directory = DisposableDirectory.Create()
     let packagedFile = directory.Path / "my-file.txt"
     do! File.WriteAllTextAsync(packagedFile.Value, "Hello World!")
-    let expectedLock = """"my-file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+    let expectedLock = """# REUSE-IgnoreStart
+"my-file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+# REUSE-IgnoreEnd
 """
 
     do! DataFiles.Deploy "Test.csproj" (fun project -> task {
@@ -159,7 +163,9 @@ let ``Processor generates a lock file for a ZIP archive``(): Task = task {
     use directory = DisposableDirectory.Create()
     let archivePath = directory.Path / "file.zip"
     ZipFiles.SingleFileArchive(archivePath, "content/my-file.txt", "Hello World"B)
-    let expectedLock = """"content/my-file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+    let expectedLock = """# REUSE-IgnoreStart
+"content/my-file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+# REUSE-IgnoreEnd
 """
     do! DataFiles.Deploy "Test.csproj" (fun project -> task {
         let lockFile = directory.Path / "lock.toml"
@@ -230,7 +236,9 @@ let ``License metadata gets saved to the lock file``(): Task = task {
     let packagedFile = directory.Path / "my-file.txt"
     do! File.WriteAllTextAsync(packagedFile.Value, "")
 
-    let expectedLock = """"my-file.txt" = [{spdx = ["MIT"], copyright = ["Me"]}]
+    let expectedLock = """# REUSE-IgnoreStart
+"my-file.txt" = [{spdx = ["MIT"], copyright = ["Me"]}]
+# REUSE-IgnoreEnd
 """
 
     let lockFile = directory.Path / "lock.toml"
@@ -271,7 +279,9 @@ text
     do! File.WriteAllTextAsync(packagedFile.Value, fileContent)
     do! File.WriteAllTextAsync(sourceFile.Value, fileContent)
 
-    let expectedLock = """"my-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
+    let expectedLock = """# REUSE-IgnoreStart
+"my-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
+# REUSE-IgnoreEnd
 """
 
     let lockFile = directory.Path / "lock.toml"
@@ -315,7 +325,9 @@ Copyright: 2024 Me
 License: MIT
     """)
 
-    let expectedLock = """"my-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
+    let expectedLock = """# REUSE-IgnoreStart
+"my-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
+# REUSE-IgnoreEnd
 """
 
     let lockFile = directory.Path / "lock.toml"
@@ -379,8 +391,10 @@ text
 
     do! File.WriteAllTextAsync((directory.Path / "source" / ".gitignore").Value, "/my-cc-by-3-file.txt")
 
-    let expectedLock = """"my-combined-file.txt" = [{spdx = ["CC-BY-1.0", "CC-BY-4.0", "CC-0", "MIT"], copyright = ["2024 Me"]}]
+    let expectedLock = """# REUSE-IgnoreStart
+"my-combined-file.txt" = [{spdx = ["CC-BY-1.0", "CC-BY-4.0", "CC-0", "MIT"], copyright = ["2024 Me"]}]
 "my-mit-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
+# REUSE-IgnoreEnd
 """
 
     let lockFile = directory.Path / "lock.toml"
@@ -435,7 +449,9 @@ let ``Package cover spec works``(): Task =
         }
 
         do! File.WriteAllTextAsync(targetAssembly.Value, "Test file")
-        let expectedLock = """"Test.dll" = [{spdx = ["MIT"], copyright = ["Package cover spec works"]}]
+        let expectedLock = """# REUSE-IgnoreStart
+"Test.dll" = [{spdx = ["MIT"], copyright = ["Package cover spec works"]}]
+# REUSE-IgnoreEnd
 """
 
         let! wp = Runner.RunFunction(Processor.GenerateLockFile, config, baseDirectory = baseDir)

@@ -25,9 +25,11 @@ let ``LockFile should be have expected format``(): Task =
         LocalPathPattern "a.txt", item "a"
     |]
 
-    let expectedContent = """"a.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
+    let expectedContent = """# REUSE-IgnoreStart
+"a.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
 "x.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}, {source_id = "b", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
 "y.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
+# REUSE-IgnoreEnd
 """
     task {
         let lockFilePath = AbsolutePath(Path.GetTempFileName())

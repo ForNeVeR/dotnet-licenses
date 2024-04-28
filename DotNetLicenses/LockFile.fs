@@ -31,5 +31,5 @@ let SaveLockFile(path: AbsolutePath, items: LockFileEntry seq): Task =
             list.Add item
             dictionary.Add(pattern.Value, list)
 
-    let text = Toml.FromModel dictionary
+    let text = "# REUSE-IgnoreStart\n" + Toml.FromModel dictionary + "# REUSE-IgnoreEnd\n"
     File.WriteAllTextAsync(path.Value, text)
