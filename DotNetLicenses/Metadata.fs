@@ -20,7 +20,7 @@ let internal GetMetadata (source: PackageReference) (nuSpec: NuSpec): MetadataIt
     let metadata = nuSpec.Metadata
     let license = metadata.License
     if license.Type <> "expression" then
-        failwithf $"Unsupported license type: {license.Type}"
+        failwithf $"Unsupported license type for source {source.PackageId} v{source.Version}: {license.Type}"
     Package {|
         Source = source
         Spdx = metadata.License.Value
