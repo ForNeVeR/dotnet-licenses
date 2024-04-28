@@ -168,7 +168,8 @@ let ``Covered patterns are read correctly``(): Task =
     let content = """
 metadata_sources = [
     { type = "license", spdx = "MIT", copyright = "My Copyright", patterns_covered = [
-        { type = "msbuild", include = "project2.csproj" }
+        { type = "msbuild", include = "project2.csproj" },
+        { type = "nuget" },
     ] },
     { type = "reuse", root = ".", patterns_covered = [
         { type = "msbuild", include = "project2.csproj" }
@@ -184,6 +185,7 @@ metadata_sources = [
                     FilesCovered = Array.empty
                     PatternsCovered = [|
                         MsBuildCoverage(LocalPath "project2.csproj")
+                        NuGetCoverage
                     |]
                 }
                 Reuse {

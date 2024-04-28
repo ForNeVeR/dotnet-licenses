@@ -68,6 +68,7 @@ type Configuration =
             let readPatternCovered(t: TomlTable) =
                 match getValue t "type" with
                 | "msbuild" -> MsBuildCoverage(LocalPath(getValue t "include" : string))
+                | "nuget" -> NuGetCoverage
                 | other -> failwithf $"Unknown pattern type in files_covered: \"{other}\"."
 
             let readFilesCovered = readItemOrArray "files_covered" LocalPathPattern
@@ -230,3 +231,4 @@ and ReuseSource =
 
 and CoverageSpec =
     | MsBuildCoverage of LocalPath
+    | NuGetCoverage

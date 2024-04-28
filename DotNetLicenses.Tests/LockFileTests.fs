@@ -4,7 +4,6 @@
 
 module DotNetLicenses.Tests.LockFileTests
 
-open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
 open DotNetLicenses.LockFile
@@ -19,10 +18,12 @@ let ``LockFile should be have expected format``(): Task =
         Spdx = [|"MIT"|]
         Copyright = [|"none"|]
     }
-    let data = SortedDictionary<_, IReadOnlyList<_>>()
-    data.Add("x.txt", [| item "a"; item "b" |])
-    data.Add("y.txt", [| item "a" |])
-    data.Add("a.txt", [| item "a" |])
+    let data = [|
+        LocalPathPattern "x.txt", item "a"
+        LocalPathPattern "x.txt", item "b"
+        LocalPathPattern "y.txt", item "a"
+        LocalPathPattern "a.txt", item "a"
+    |]
 
     let expectedContent = """"a.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
 "x.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}, {source_id = "b", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]

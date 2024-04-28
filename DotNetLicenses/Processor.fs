@@ -186,7 +186,7 @@ let internal GenerateLockFile(
 
     let coverageCache = CoverageCache.Empty()
 
-    let findLicensesForFile entry = task {
+    let findLicensesForFile entry: Task<LockFileEntry[]> = task {
         let! packageEntries = nuGet.FindFile hashCache packages entry
         let packageSearchResults =
             packageEntries
@@ -194,7 +194,7 @@ let internal GenerateLockFile(
                 let metadata = packageMetadata[package]
                 match metadata with
                 | Package p ->
-                    {
+                    LocalPathPattern entry.SourceRelativePath, {
                         SourceId = package.PackageId
                         SourceVersion = package.Version
                         Spdx = [|p.Spdx|]
@@ -204,7 +204,7 @@ let internal GenerateLockFile(
             )
         let licenseSearchResults =
             findExplicitLicenses entry
-            |> Seq.map (fun license -> {
+            |> Seq.map (fun license -> LocalPathPattern entry.SourceRelativePath, {
                 SourceId = null
                 SourceVersion = null
                 Spdx = [|license.Spdx|]
@@ -213,7 +213,7 @@ let internal GenerateLockFile(
         let! reuseEntries = findReuseLicenses entry
         let reuseSearchResults =
             reuseEntries
-            |> Seq.map (fun license -> {
+            |> Seq.map (fun license -> LocalPathPattern entry.SourceRelativePath, {
                 SourceId = null
                 SourceVersion = null
                 Spdx = Seq.toArray license.SpdxExpressions
@@ -221,7 +221,7 @@ let internal GenerateLockFile(
             })
         let reuseCombinedSearchResults =
             findReuseCombinedLicenses entry
-            |> Seq.map(fun fe -> {
+            |> Seq.map(fun fe -> LocalPathPattern entry.SourceRelativePath, {
                 SourceId = null
                 SourceVersion = null
                 Spdx = Seq.toArray fe.LicenseIdentifiers
@@ -238,12 +238,12 @@ let internal GenerateLockFile(
         |] |> Seq.toArray
     }
 
-    let lockFileContent = SortedDictionary<_, IReadOnlyList<LockFileItem>>()
+    let lockFileContent = ResizeArray<LockFileEntry>()
     for entry in sourceEntries do
         let! resultEntries = findLicensesForFile entry
         match resultEntries.Length with
         | 0 -> wp.ProduceWarning(ExitCode.LicenseForFileNotFound, $"No license found for file \"{entry.SourceRelativePath}\".")
-        | 1 -> lockFileContent.Add(entry.SourceRelativePath, resultEntries)
+        | 1 -> lockFileContent.AddRange(resultEntries)
         | _ ->
             failwithf $"Several licenses found for one file: \"{entry.SourceRelativePath}\"."
             // TODO[#28]: If all the packages yield the same license, just let it be.

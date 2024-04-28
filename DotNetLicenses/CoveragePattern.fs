@@ -6,10 +6,10 @@ module DotNetLicenses.CoveragePattern
 
 open System
 open System.Collections.Concurrent
-open System.IO
 open System.Threading.Tasks
 open DotNetLicenses.LockFile
 open DotNetLicenses.Metadata
+open Microsoft.Extensions.FileSystemGlobbing
 open ReuseSpec
 open TruePath
 
@@ -45,12 +45,56 @@ let private CollectLockFileItem (baseDir: AbsolutePath) = function
 
 #nowarn "3511"
 
+let private NuGetCoverageGlob =
+    let glob(x: string) =
+        let matcher = Matcher()
+        matcher.AddIncludePatterns [| x |]
+        x, matcher
+    [|
+        glob "[Content_Types].xml"
+        glob "_rels/.rels"
+        glob "package/services/metadata/core-properties/*.psmdcp"
+    |] |> Map.ofSeq
+
 let CollectCoveredFileLicense (baseDirectory: AbsolutePath)
                               (coverageCache: CoverageCache)
                               (hashCache: FileHashCache)
                               (metadataItems: MetadataItem seq)
-                              (sourceEntry: ISourceEntry): Task<LockFileItem seq> = task {
-    let! projectOutputs =
+                              (sourceEntry: ISourceEntry): Task<ResizeArray<LocalPathPattern * LockFileItem>> = task {
+    let doesSpecCover spec =
+        match spec with
+        | MsBuildCoverage project ->
+            task {
+                let! projectOutput = coverageCache.Read(baseDirectory / project)
+                let! fileHash = sourceEntry.CalculateHash()
+                let! outputHash = hashCache.CalculateFileHash projectOutput
+                return fileHash.Equals(outputHash, StringComparison.OrdinalIgnoreCase)
+            }
+        | NuGetCoverage ->
+            Task.FromResult(
+                NuGetCoverageGlob.Values
+                |> Seq.exists _.Match(sourceEntry.SourceRelativePath).HasMatches
+            )
+
+    let getLockFileItem source spec =
+        match spec with
+        | MsBuildCoverage _ ->
+            task {
+                let! item = CollectLockFileItem baseDirectory source
+                return LocalPathPattern sourceEntry.SourceRelativePath, item
+            }
+        | NuGetCoverage -> task {
+            let pattern =
+                (
+                    NuGetCoverageGlob
+                    |> Seq.filter(_.Value.Match(sourceEntry.SourceRelativePath).HasMatches)
+                    |> Seq.head
+                ).Key
+            let! item = CollectLockFileItem baseDirectory source
+            return LocalPathPattern pattern, item
+        }
+
+    let patterns =
         metadataItems
         |> Seq.map(fun source ->
             source,
@@ -59,27 +103,14 @@ let CollectCoveredFileLicense (baseDirectory: AbsolutePath)
             | License source -> source.PatternsCovered
             | Reuse source -> source.PatternsCovered
         )
-        |> Seq.collect(fun (source, specs) ->
-            specs
-            |> Seq.map(fun (MsBuildCoverage input) -> task {
-                let project = baseDirectory / input
-                let! output = coverageCache.Read project
-                return source, output
-            })
-        )
-        |> Task.WhenAll
-
-    let similarEntries =
-        projectOutputs
-        |> Seq.filter(fun (_, e) -> e.FileName = Path.GetFileName sourceEntry.SourceRelativePath)
 
     let result = ResizeArray()
-    let! fileHash = sourceEntry.CalculateHash()
-    for source, entry in similarEntries do
-        let! reuseHash = hashCache.CalculateFileHash entry
-        if fileHash.Equals(reuseHash, StringComparison.OrdinalIgnoreCase) then
-            let! lockEntry = CollectLockFileItem baseDirectory source
-            result.Add lockEntry
+    for source, specs in patterns do
+        for spec in specs do
+            let! isCoveredBySpec = doesSpecCover spec
+            if isCoveredBySpec then
+                let! lockEntry = getLockFileItem source spec
+                result.Add lockEntry
 
-    return result :> LockFileItem seq
+    return result
 }

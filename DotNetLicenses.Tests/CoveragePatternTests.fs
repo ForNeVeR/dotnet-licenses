@@ -16,7 +16,7 @@ open Xunit
 
 // REUSE-IgnoreStart
 [<Fact>]
-let ``Coverage pattern collector works``(): Task =
+let ``MSBuild coverage pattern collector works``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let metadata = MetadataItem.License {
             Spdx = "MIT"
@@ -48,11 +48,65 @@ let ``Coverage pattern collector works``(): Task =
         let coverageCache = CoverageCache.Empty()
         use hashCache = new FileHashCache()
         let! result = CollectCoveredFileLicense baseDirectory coverageCache hashCache [| metadata |] sourceEntry
-        Assert.Equal<_>([| {
+        Assert.Equal<_>([| LocalPathPattern sourceEntry.SourceRelativePath, {
             SourceId = null
             SourceVersion = null
             Spdx = [|"MIT"|]
             Copyright = [|"2024 Me"|]
         } |], result)
     })
+
+[<Fact>]
+let ``NuGet coverage pattern collector works``(): Task = task {
+    use directory = DisposableDirectory.Create()
+    let files = [|
+        directory.Path / "[Content_Types].xml"
+        directory.Path / "_rels/.rels"
+        directory.Path / "package/services/metadata/core-properties/random.psmdcp"
+    |]
+    for file in files do
+        Directory.CreateDirectory file.Parent.Value.Value |> ignore
+        do! File.WriteAllTextAsync(file.Value, "test output")
+
+    let metadata = MetadataItem.License {
+        Spdx = "MIT"
+        Copyright = "2024 Me"
+        FilesCovered = Array.empty
+        PatternsCovered = [| NuGetCoverage |]
+    }
+    let packageSpec = {
+        Source = Directory <| LocalPath(directory.Path)
+        Ignores = Array.empty
+    }
+    let sourceEntries = files |> Seq.map (fun file -> {
+        new ISourceEntry with
+            member _.Source = packageSpec
+            member _.SourceRelativePath =
+                LocalPath(file)
+                    .RelativeTo(LocalPath directory.Path)
+                    .ToString().Replace(Path.DirectorySeparatorChar, '/')
+            member _.ReadContent() = Task.FromResult <| File.OpenRead file.Value
+            member this.CalculateHash() = task {
+                let! content = File.ReadAllBytesAsync file.Value
+                return Hashes.Sha256 content
+            }
+    })
+
+    let coverageCache = CoverageCache.Empty()
+    use hashCache = new FileHashCache()
+
+    for entry in sourceEntries do
+        let! result = CollectCoveredFileLicense directory.Path coverageCache hashCache [| metadata |] entry
+        let pattern =
+            if entry.SourceRelativePath.StartsWith("package/services/metadata/core-properties")
+            then "package/services/metadata/core-properties/*.psmdcp"
+            else entry.SourceRelativePath
+            |> LocalPathPattern
+        Assert.Equal<_>([| pattern, {
+            SourceId = null
+            SourceVersion = null
+            Spdx = [|"MIT"|]
+            Copyright = [|"2024 Me"|]
+        } |], result)
+}
 // REUSE-IgnoreEnd
