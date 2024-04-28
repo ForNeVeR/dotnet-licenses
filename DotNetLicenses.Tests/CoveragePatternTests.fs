@@ -25,22 +25,23 @@ let ``MSBuild coverage pattern collector works``(): Task =
             PatternsCovered = [| MsBuildCoverage(LocalPath project) |]
         }
 
-        let! projectOutput = MsBuild.GetProjectGeneratedArtifacts project
-        let baseDirectory = projectOutput.Parent.Value
+        let! projectOutputs = MsBuild.GetProjectGeneratedArtifacts project
+        let targetAssembly = projectOutputs.FilesWithContent |> Seq.head
+        let baseDirectory = targetAssembly.Parent.Value
         Directory.CreateDirectory baseDirectory.Value |> ignore
-        do! File.WriteAllTextAsync(projectOutput.Value, "test output")
+        do! File.WriteAllTextAsync(targetAssembly.Value, "test output")
         let packageSpec = {
-            Source = Directory <| LocalPath(projectOutput.Parent.Value)
+            Source = Directory <| LocalPath(targetAssembly.Parent.Value)
             Ignores = Array.empty
         }
 
         let sourceEntry = {
             new ISourceEntry with
                 member _.Source = packageSpec
-                member _.SourceRelativePath = projectOutput.FileName
-                member _.ReadContent() = Task.FromResult <| File.OpenRead projectOutput.Value
+                member _.SourceRelativePath = targetAssembly.FileName
+                member _.ReadContent() = Task.FromResult <| File.OpenRead targetAssembly.Value
                 member this.CalculateHash() = task {
-                    let! content = File.ReadAllBytesAsync projectOutput.Value
+                    let! content = File.ReadAllBytesAsync targetAssembly.Value
                     return Hashes.Sha256 content
                 }
         }

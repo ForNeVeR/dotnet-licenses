@@ -14,8 +14,12 @@ open Medallion.Shell
 type MsBuildOutputRoot = {
     Items: MsBuildItems
 }
+and [<CLIMutable>] MsBuildItem = {
+    Identity: string
+}
 and [<CLIMutable>] MsBuildItems = {
     PackageReference: MsBuildPackageReference[]
+    DebugSymbolsProjectOutputGroupOutput: MsBuildItem[]
 }
 and [<CLIMutable>] MsBuildPackageReference =
     {
@@ -63,17 +67,59 @@ let private GetProperties(input: AbsolutePath,
     return output.Properties
 }
 
-let GetPackageReferences(input: AbsolutePath): Task<PackageReference[]> = task {
-    let! result = ExecuteDotNetBuild [| "-getItem:PackageReference"; input.Value |]
+let private GetItems (input: AbsolutePath)
+                     (configuration: string option)
+                     (itemGroups: string seq)
+                     (transformer: MsBuildItems -> 'a): Task<'a> = task {
+    let! result = ExecuteDotNetBuild [|
+        match configuration with
+        | Some c -> "--configuration"; c
+        | None -> ()
+
+        "-getItem:" + String.concat "," itemGroups
+        input.Value
+    |]
     let output = JsonSerializer.Deserialize<MsBuildOutputRoot> result
-    return output.Items.PackageReference |> Array.map _.FromMsBuild()
+    return transformer output.Items
+}
+
+let GetPackageReferences(input: AbsolutePath): Task<PackageReference[]> = task {
+    let! references = GetItems input None [| "PackageReference" |] _.PackageReference
+    return references |> Array.map _.FromMsBuild()
 }
 
 let private Configuration = "Release"
-let GetProjectGeneratedArtifacts(input: AbsolutePath): Task<AbsolutePath> = task {
-    let! properties = GetProperties(input, Configuration, [| "TargetDir"; "TargetFileName" |])
+
+type ProjectGeneratedArtifacts = {
+    FilesWithContent: AbsolutePath[]
+    FilePatterns: LocalPathPattern[]
+}
+
+let GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
+    let! properties = GetProperties(input, Configuration, [|
+        "BaseIntermediateOutputPath"
+        "TargetName"
+        "TargetDir"; "TargetFileName"
+    |])
+
     let targetDir = LocalPath properties["TargetDir"]
     let targetFileName = properties["TargetFileName"]
     let basePath = input.Parent.Value
-    return basePath / targetDir / targetFileName
+    let target = basePath / targetDir / targetFileName
+    let objDir = basePath / properties["BaseIntermediateOutputPath"]
+    let targetName = properties["TargetName"]
+    let artifacts = [|
+        target
+        basePath / targetDir / $"{targetName}.runtimeconfig.json"
+        // dotnet tools:
+        objDir / "DotNetToolSettings.xml"
+    |]
+    let patterns = [|
+        LocalPathPattern $"**/{targetName}.pdb"
+        LocalPathPattern $"**/{targetName}.deps.json"
+    |]
+    return {
+        FilesWithContent = artifacts
+        FilePatterns = patterns
+    }
 }

@@ -6,21 +6,23 @@ module DotNetLicenses.CoveragePattern
 
 open System
 open System.Collections.Concurrent
+open System.IO
 open System.Threading.Tasks
 open DotNetLicenses.LockFile
 open DotNetLicenses.Metadata
+open DotNetLicenses.MsBuild
 open Microsoft.Extensions.FileSystemGlobbing
 open ReuseSpec
 open TruePath
 
 type CoverageCache =
     // Project path => Project output path
-    | CoverageCache of ConcurrentDictionary<AbsolutePath, Task<AbsolutePath>>
+    | CoverageCache of ConcurrentDictionary<AbsolutePath, Task<ProjectGeneratedArtifacts>>
 
     static member Empty(): CoverageCache = CoverageCache(ConcurrentDictionary())
     member this.Read(project: AbsolutePath) =
         let (CoverageCache map) = this
-        map.GetOrAdd(project, MsBuild.GetProjectGeneratedArtifacts)
+        map.GetOrAdd(project, GetProjectGeneratedArtifacts)
 
 let private CollectLockFileItem (baseDir: AbsolutePath) = function
     | Package _ -> failwith "Function doesn't support packages."
@@ -52,6 +54,7 @@ let private NuGetCoverageGlob =
         x, matcher
     [|
         glob "[Content_Types].xml"
+        glob "*.nuspec"
         glob "_rels/.rels"
         glob "package/services/metadata/core-properties/*.psmdcp"
     |] |> Map.ofSeq
@@ -65,10 +68,21 @@ let CollectCoveredFileLicense (baseDirectory: AbsolutePath)
         match spec with
         | MsBuildCoverage project ->
             task {
-                let! projectOutput = coverageCache.Read(baseDirectory / project)
+                let! projectOutputs = coverageCache.Read(baseDirectory / project)
+
+                let matcher = Matcher()
+                matcher.AddIncludePatterns(projectOutputs.FilePatterns |> Seq.map _.Value)
+                if matcher.Match(sourceEntry.SourceRelativePath).HasMatches then
+                    return true
+                else
+
                 let! fileHash = sourceEntry.CalculateHash()
-                let! outputHash = hashCache.CalculateFileHash projectOutput
-                return fileHash.Equals(outputHash, StringComparison.OrdinalIgnoreCase)
+                let! hashes =
+                    projectOutputs.FilesWithContent
+                    |> Seq.filter (fun p -> File.Exists(p.Value))
+                    |> Seq.map hashCache.CalculateFileHash
+                    |> Task.WhenAll
+                return hashes |> Seq.exists _.Equals(fileHash, StringComparison.OrdinalIgnoreCase)
             }
         | NuGetCoverage ->
             Task.FromResult(

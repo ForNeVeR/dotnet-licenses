@@ -8,6 +8,7 @@ open System.Threading.Tasks
 open DotNetLicenses
 open DotNetLicenses.MsBuild
 open DotNetLicenses.TestFramework
+open TruePath
 open Xunit
 
 [<Fact>]
@@ -24,5 +25,15 @@ let ``MSBuild reads the project references correctly``(): Task =
 let ``MSBuild reads the project-generated artifacts correctly``(): Task =
     DataFiles.Deploy("Test.csproj") (fun project -> task {
         let! output = GetProjectGeneratedArtifacts project
-        Assert.Equal(project.Parent.Value / "bin" / "Release" / "net8.0" / "Test.dll", output)
+        Assert.Equal({
+            FilesWithContent = [|
+                project.Parent.Value / "bin" / "Release" / "net8.0" / "Test.dll"
+                project.Parent.Value / "bin" / "Release" / "net8.0" / "Test.runtimeconfig.json"
+                project.Parent.Value / "obj" / "DotNetToolSettings.xml"
+            |]
+            FilePatterns = [|
+                LocalPathPattern "**/Test.pdb"
+                LocalPathPattern "**/Test.deps.json"
+            |]
+        }, output)
     })

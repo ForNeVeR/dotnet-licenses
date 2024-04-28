@@ -409,8 +409,11 @@ let ``Package cover spec works``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let baseDir = project.Parent.Value
         let! projectOutput = MsBuild.GetProjectGeneratedArtifacts project
-        let outDir = projectOutput.Parent.Value
-        Directory.CreateDirectory outDir.Value |> ignore
+        projectOutput.FilesWithContent
+        |> Array.iter (fun p -> Directory.CreateDirectory p.Parent.Value.Value |> ignore)
+
+        let targetAssembly = projectOutput.FilesWithContent |> Array.head
+        let outDir = targetAssembly.Parent.Value
         let config = {
             Configuration.Empty with
                 MetadataSources = [|
@@ -429,7 +432,7 @@ let ``Package cover spec works``(): Task =
                 |]
         }
 
-        do! File.WriteAllTextAsync(projectOutput.Value, "Test file")
+        do! File.WriteAllTextAsync(targetAssembly.Value, "Test file")
         let expectedLock = """"Test.dll" = [{spdx = ["MIT"], copyright = ["Package cover spec works"]}]
 """
 

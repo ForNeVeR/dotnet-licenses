@@ -7,15 +7,10 @@
 
 metadata_sources = [
     { type = "nuget", include = "DotNetLicenses/DotNetLicenses.fsproj" },
-    { type = "license", spdx = "MIT", copyright = "2024 Friedrich von Never <friedrich@fornever.me>", files_covered = [
-        # TODO[#39]: These should come from a NuGet pattern:
-        "_rels/.rels",
-        "FVNever.DotNetLicenses.nuspec",
-        "tools/net8.0/any/DotnetToolSettings.xml",
-        "tools/net8.0/any/DotNetLicenses.*",
-        "[Content_Types].xml",
-        "package/services/metadata/core-properties/*.psmdcp",
-    ]},
+    { type = "license", spdx = "MIT", copyright = "2024 Friedrich von Never <friedrich@fornever.me>", patterns_covered = [
+        { type = "nuget" },
+        { type = "msbuild", include = "DotNetLicenses/DotNetLicenses.fsproj" }
+    ] },
     { type = "reuse", root = "." }
 ]
 lock_file = ".dotnet-licenses.lock.toml"
