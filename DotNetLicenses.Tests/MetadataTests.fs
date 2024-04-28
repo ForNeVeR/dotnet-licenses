@@ -20,7 +20,7 @@ let ``Get metadata from .nuspec works correctly``(): Task = task {
         Version = "1.0.0"
     }
     let metadata = GetMetadata reference nuSpec
-    Assert.Equal(Package {|
+    Assert.Equal(Some <| Package {|
         Source = reference
         Spdx = [|"MIT"|]
         Copyrights = [|"© 2024 Friedrich von Never"|]

@@ -15,14 +15,22 @@ type MetadataItem =
     | License of LicenseSource
     | Reuse of ReuseSource
 
-let internal GetMetadata (source: PackageReference) (nuSpec: NuSpec): MetadataItem =
+let internal GetMetadata (source: PackageReference) (nuSpec: NuSpec): MetadataItem option =
     let metadata = nuSpec.Metadata
     let license = metadata.License
-    if license.Type <> "expression" then
-        failwithf $"Unsupported license type for source {source.PackageId} v{source.Version}: {license.Type}"
-    Package {|
+    if isNull <| box license then
+        None
+    else
+
+    let spdx =
+        match license.Type with
+        | "expression" -> metadata.License.Value
+        | "file" -> $"<No SPDX Expression; see https://www.nuget.org/packages/{source.PackageId}/{source.Version}/License>"
+            // TODO: ↑ Support the files properly?
+        | _ -> failwithf $"Unsupported license type for source {source.PackageId} v{source.Version}: {license.Type}"
+    Some <| Package {|
         Source = source
-        Spdx = [|metadata.License.Value|]
+        Spdx = [|spdx|]
         Copyrights = [|metadata.Copyright|]
     |}
 
@@ -45,18 +53,18 @@ type MetadataReader(nuGet: INuGetReader) =
                 match overrides.TryGetValue reference with
                 | true, metaOverride ->
                     usedOverrides <- usedOverrides |> Set.add reference
-                    Task.FromResult <| Package {|
+                    Task.FromResult(Some <| Package {|
                         Source = reference
                         Spdx = metaOverride.SpdxExpressions
                         Copyrights = metaOverride.Copyrights
-                    |}
+                    |})
                 | false, _ ->
                     task {
                         let! nuSpec = nuGet.ReadNuSpec reference
                         return GetMetadata reference nuSpec
                     }
 
-            result.Add metadata
+            metadata |> Option.iter result.Add
 
         return {
             Items = result |> Seq.distinct |> ImmutableArray.ToImmutableArray
