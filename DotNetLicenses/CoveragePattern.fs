@@ -43,6 +43,8 @@ let private CollectLockFileItem (baseDir: AbsolutePath) = function
         }
     }
 
+#nowarn "3511"
+
 let CollectCoveredFileLicense (baseDirectory: AbsolutePath)
                               (coverageCache: CoverageCache)
                               (hashCache: FileHashCache)
