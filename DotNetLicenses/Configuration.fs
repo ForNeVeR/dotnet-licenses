@@ -56,15 +56,15 @@ type Configuration =
             )
             |> Option.defaultValue Array.empty
 
-        let readSources(array: TomlArray) =
-            let readItemOrArray key transform t =
-                let value: obj option = tryGetValue t key
-                match value with
-                | None -> Array.empty
-                | Some(:? string as s) -> [| transform s |]
-                | Some(:? TomlArray as a) -> a |> Seq.cast<string> |> Seq.map transform |> Seq.toArray
-                | Some other -> failwithf $"{key}'s type not supported: {other}."
+        let readItemOrArray key transform t =
+            let value: obj option = tryGetValue t key
+            match value with
+            | None -> Array.empty
+            | Some(:? string as s) -> [| transform s |]
+            | Some(:? TomlArray as a) -> a |> Seq.cast<string> |> Seq.map transform |> Seq.toArray
+            | Some other -> failwithf $"{key}'s type not supported: {other}."
 
+        let readSources(array: TomlArray) =
             let readPatternCovered(t: TomlTable) =
                 match getValue t "type" with
                 | "msbuild" -> MsBuildCoverage(LocalPath(getValue t "include" : string))
@@ -103,8 +103,8 @@ type Configuration =
             {
                 Id = getValue t "id"
                 Version = getValue t "version"
-                Spdx = getValue t "spdx"
-                Copyright = getValue t "copyright"
+                Spdx = readItemOrArray "spdx" id t
+                Copyright = readItemOrArray "copyright" id t
             }
         )
 
@@ -166,8 +166,8 @@ type Configuration =
             Version = o.Version
         }
         let metadataOverride(o: Override) = {
-            SpdxExpression = o.Spdx
-            Copyright = o.Copyright
+            SpdxExpressions = o.Spdx
+            Copyrights = o.Copyright
         }
 
         let map = Dictionary()
@@ -191,8 +191,8 @@ and MetadataSource =
 and Override = {
     Id: string
     Version: string
-    Spdx: string
-    Copyright: string
+    Spdx: string[]
+    Copyright: string[]
 }
 
 and AssignedMetadata = {

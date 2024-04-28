@@ -14,8 +14,8 @@ type PackageReference = {
 }
 
 type MetadataOverride = {
-    SpdxExpression: string
-    Copyright: string
+    SpdxExpressions: string[]
+    Copyrights: string[]
 }
 
 type IgnorePattern =

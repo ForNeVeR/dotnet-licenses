@@ -12,7 +12,7 @@ open DotNetLicenses.NuGet
 open TruePath
 
 type MetadataItem =
-    | Package of {| Source: PackageReference; Spdx: string; Copyright: string |}
+    | Package of {| Source: PackageReference; Spdx: string[]; Copyrights: string[] |}
     | License of LicenseSource
     | Reuse of ReuseSource
 
@@ -23,8 +23,8 @@ let internal GetMetadata (source: PackageReference) (nuSpec: NuSpec): MetadataIt
         failwithf $"Unsupported license type for source {source.PackageId} v{source.Version}: {license.Type}"
     Package {|
         Source = source
-        Spdx = metadata.License.Value
-        Copyright = metadata.Copyright
+        Spdx = [|metadata.License.Value|]
+        Copyrights = [|metadata.Copyright|]
     |}
 
 type MetadataReadResult = {
@@ -48,8 +48,8 @@ type MetadataReader(nuGet: INuGetReader) =
                     usedOverrides <- usedOverrides |> Set.add reference
                     Task.FromResult <| Package {|
                         Source = reference
-                        Spdx = metaOverride.SpdxExpression
-                        Copyright = metaOverride.Copyright
+                        Spdx = metaOverride.SpdxExpressions
+                        Copyrights = metaOverride.Copyrights
                     |}
                 | false, _ ->
                     task {

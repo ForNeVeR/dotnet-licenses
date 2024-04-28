@@ -52,7 +52,7 @@ let ``Metadata overrides are read correctly``(): Task =
 metadata_sources = [{ type = "nuget", include = "File.csproj" }]
 metadata_overrides = [
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "" },
-    { id = "Package1", version = "2.0.0", spdx = "MIT", copyright = "Copyright1" }
+    { id = "Package1", version = "2.0.0", spdx = ["MIT"], copyright = ["Copyright1"] }
 ]
 """
     doTest content {
@@ -62,14 +62,14 @@ metadata_overrides = [
                 {
                     Id = "Package1"
                     Version = "1.0.0"
-                    Spdx = "MIT"
-                    Copyright = ""
+                    Spdx = [|"MIT"|]
+                    Copyright = [|""|]
                 }
                 {
                     Id = "Package1"
                     Version = "2.0.0"
-                    Spdx = "MIT"
-                    Copyright = "Copyright1"
+                    Spdx = [|"MIT"|]
+                    Copyright = [|"Copyright1"|]
                 }
             |]
     }
@@ -213,8 +213,8 @@ metadata_overrides = [
     let wp = WarningProcessor()
     let overrides = configuration.GetMetadataOverrides wp
     Assert.Equivalent(Map.ofArray [|
-        { PackageId = "Package1"; Version = "1.0.0" }, { SpdxExpression = "MIT"; Copyright = "" }
-        { PackageId = "Package2"; Version = "1.0.0" }, { SpdxExpression = "MIT"; Copyright = "Copyright1" }
+        { PackageId = "Package1"; Version = "1.0.0" }, { SpdxExpressions = [|"MIT"|]; Copyrights = [|""|] }
+        { PackageId = "Package2"; Version = "1.0.0" }, { SpdxExpressions = [|"MIT"|]; Copyrights = [|"Copyright1"|] }
     |], overrides)
     Assert.Equivalent(WarningProcessor(), wp)
 }
@@ -239,6 +239,6 @@ metadata_overrides = [
         wp.Messages
     )
     Assert.Equivalent(Map.ofArray [|
-        { PackageId = "Package1"; Version = "1.0.0" }, { SpdxExpression = "MIT"; Copyright = "Copyright1" }
+        { PackageId = "Package1"; Version = "1.0.0" }, { SpdxExpressions = [|"MIT"|]; Copyrights = [|"Copyright1"|] }
     |], result)
 }

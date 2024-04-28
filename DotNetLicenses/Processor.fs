@@ -81,7 +81,9 @@ let internal PrintPackages(
     for item in metadata do
         match item with
         | Package package ->
-            printfn $"- {package.Source.PackageId} {package.Source.Version}: {package.Spdx}\n  {package.Copyright}"
+            let spdx = package.Spdx |> String.concat ", "
+            let copyrights = package.Copyrights |> String.concat "\n  "
+            printfn $"- {package.Source.PackageId} {package.Source.Version}: {spdx}\n  {copyrights}"
         | _ -> ()
 }
 
@@ -197,8 +199,8 @@ let internal GenerateLockFile(
                     LocalPathPattern entry.SourceRelativePath, {
                         SourceId = package.PackageId
                         SourceVersion = package.Version
-                        Spdx = [|p.Spdx|]
-                        Copyright = [|p.Copyright|]
+                        Spdx = p.Spdx
+                        Copyright = p.Copyrights
                     }
                 | _ -> failwithf $"Unexpected metadata type in object {metadata}."
             )

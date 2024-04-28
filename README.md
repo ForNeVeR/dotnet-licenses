@@ -52,7 +52,7 @@ The configuration file format is TOML. The format:
 metadata_sources = [# required
     { type = "nuget", include = "path/to/project1.sln/csproj" },
     { type = "license", spdx = "MIT", copyright = "My Copyright", files_covered = "*" },
-    { type = "license", spdx = "MIT", copyright = "My Other Copyright", files_covered = [
+    { type = "license", spdx = ["MIT"], copyright = ["My Other Copyright"], files_covered = [
         # You can also include lists into this field.
         "*.txt",
         "*.css"
@@ -81,7 +81,7 @@ The `metadata_sources` parameter (required) is a list of paths to the projects t
 
 Currently supported metadata sources types are:
 - `type = "nuget", include = "<path/to/project/or/solution>"` to extract metadata from NuGet packages used by the designated project or all projects in solution,
-- `type = "license"` to provide metadata for the licenses that are not covered by NuGet packages. The `id` attribute is mandatory and should be unique across all metadata sources. The `spdx` and `copyright` attributes are mandatory. `files_covered` is also mandatory, and it should be a glob mask or a path, applied to the base directory of each declared package, to mark the files covered by the license.
+- `type = "license"` to provide metadata for the licenses that are not covered by NuGet packages. The `id` attribute is mandatory and should be unique across all metadata sources. The `spdx` and `copyright` attributes are mandatory, and may be either text values or arrays. `files_covered` (optional) may be a glob mask or a path, applied to the base directory of each declared package, to mark the files covered by the license.
 
   `files_covered` may be a single glob or a list of globs, applied relative to the package root of the containing package.
 

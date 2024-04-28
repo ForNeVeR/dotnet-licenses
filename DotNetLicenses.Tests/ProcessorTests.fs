@@ -73,8 +73,8 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
                 MetadataOverrides = [|{
                     Id = "NonExistent"
                     Version = ""
-                    Spdx = ""
-                    Copyright = ""
+                    Spdx = [|""|]
+                    Copyright = [|""|]
                 }|]
                 LockFile = Some <| LocalPath "lock.toml"
         }
