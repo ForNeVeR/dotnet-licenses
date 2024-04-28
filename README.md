@@ -79,22 +79,24 @@ Any file paths in the configuration file may be either absolute or relative. Rel
 
 The `metadata_sources` parameter (required) is a list of paths to the projects to analyze.
 
-Currently supported metadata sources types are:
-- `type = "nuget", include = "<path/to/project/or/solution>"` to extract metadata from NuGet packages used by the designated project or all projects in solution,
-- `type = "license"` to provide metadata for the licenses that are not covered by NuGet packages. The `id` attribute is mandatory and should be unique across all metadata sources. The `spdx` and `copyright` attributes are mandatory, and may be either text values or arrays. `files_covered` (optional) may be a glob mask or a path, applied to the base directory of each declared package, to mark the files covered by the license.
+Currently supported metadata sources types are listed below.
+1. `type = "nuget", include = "<path/to/project/or/solution>"` to extract metadata from NuGet packages used by the designated project or all projects in solution.
 
-  `files_covered` may be a single glob or a list of globs, applied relative to the package root of the containing package.
+   Note that the project must be restored for this to work with transitive dependencies.
+2. `type = "license"` to provide metadata for the licenses that are not covered by NuGet packages. The `id` attribute is mandatory and should be unique across all metadata sources. The `spdx` and `copyright` attributes are mandatory, and may be either text values or arrays. `files_covered` (optional) may be a glob mask or a path, applied to the base directory of each declared package, to mark the files covered by the license.
 
-  `patterns_covered` (optional) is a specification of the file patterns covered by a particular source. The supported patterns are listed below, in the **Coverage Patterns Specification** section.
-- `type = "reuse"` to provide licenses read according to [the REUSE specification v 3.0][reuse.spec]. Attributes:
-  - `root` (required) is the root directory of the REUSE-compliant project,
-  - `excludes` (optional) is a list of paths to exclude from the analysis. For example, you may want to ignore the IDE-generated files or test resources if they have different license. Any path is excluded as a subtree.
-  - `files_covered` (optional) — either a glob or an array of globs. This is optional, and files that are included into the current directory and covered by the REUSE specification are _automatically_ considered as covered in any case. So, this collection should only contain the generated/built files, and not the files that are copied as-is from the REUSE-covered set of files.
+   `files_covered` may be a single glob or a list of globs, applied relative to the package root of the containing package.
 
-    Any file that's copied as-is is considered to be covered by the exact license according to its REUSE specification. Any additional file from `files_covered` is considered to be covered by the combination of all the licenses in the source (except the `exclude`d files).
-  - `patterns_covered` (optional) is a specification of the file patterns covered by a particular source. Currently supported patterns are listed below, in the **Coverage Patterns Specification** section.
+   `patterns_covered` (optional) is a specification of the file patterns covered by a particular source. The supported patterns are listed below, in the **Coverage Patterns Specification** section.
+3. `type = "reuse"` to provide licenses read according to [the REUSE specification v 3.0][reuse.spec]. Attributes:
+   - `root` (required) is the root directory of the REUSE-compliant project,
+   - `excludes` (optional) is a list of paths to exclude from the analysis. For example, you may want to ignore the IDE-generated files or test resources if they have different license. Any path is excluded as a subtree.
+   - `files_covered` (optional) — either a glob or an array of globs. This is optional, and files that are included into the current directory and covered by the REUSE specification are _automatically_ considered as covered in any case. So, this collection should only contain the generated/built files, and not the files that are copied as-is from the REUSE-covered set of files.
 
-  Item with `type = "reuse"` should point to a set of licenses exactly covering the sources from which the covered packaged files are built.
+     Any file that's copied as-is is considered to be covered by the exact license according to its REUSE specification. Any additional file from `files_covered` is considered to be covered by the combination of all the licenses in the source (except the `exclude`d files).
+   - `patterns_covered` (optional) is a specification of the file patterns covered by a particular source. Currently supported patterns are listed below, in the **Coverage Patterns Specification** section.
+
+   Item with `type = "reuse"` should point to a set of licenses exactly covering the sources from which the covered packaged files are built.
 
 The `metadata_overrides` parameter (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
 

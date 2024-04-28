@@ -40,11 +40,8 @@ type MultiPropertyMsBuildOutput = {
     Properties: Dictionary<string, string>
 }
 
-let private ExecuteDotNetBuild(args: string seq): Task<string> = task {
-    let args = seq {
-        box "build"
-        yield! args |> Seq.cast<obj>
-    }
+let internal ExecuteDotNet(args: string seq): Task<string> = task {
+    let args = args |> Seq.cast<obj>
     let! result = Command.Run("dotnet", arguments = args).Task
     if not result.Success then
         let message =
@@ -57,16 +54,28 @@ let private ExecuteDotNetBuild(args: string seq): Task<string> = task {
     return result.StandardOutput
 }
 
-let private GetProperties(input: AbsolutePath,
+let private ExecuteDotNetBuild(args: string seq): Task<string> =
+    ExecuteDotNet (seq {
+        "build"
+        yield! args
+    })
+
+let internal GetProperties(input: AbsolutePath,
                           configuration: string,
-                          properties: string seq): Task<Dictionary<string, string>> = task {
+                          properties: string[]): Task<Dictionary<string, string>> = task {
     let! result = ExecuteDotNetBuild [|
         "--configuration"; configuration
         "-getProperty:" + String.concat "," properties
         input.Value
     |]
-    let output = JsonSerializer.Deserialize<MultiPropertyMsBuildOutput> result
-    return output.Properties
+
+    if properties.Length = 1 then
+        let dict = Dictionary()
+        dict[Array.exactlyOne properties] <- result.TrimEnd [| '\r'; '\n' |]
+        return dict
+    else
+        let output = JsonSerializer.Deserialize<MultiPropertyMsBuildOutput> result
+        return output.Properties
 }
 
 let private GetItems (input: AbsolutePath)
@@ -99,7 +108,9 @@ let GetProjects(input: AbsolutePath): Task<AbsolutePath[]> = task {
     | _ -> return [| input |] // assume it's a project file
 }
 
-let GetPackageReferences(input: AbsolutePath): Task<PackageReference[]> = task {
+let internal DefaultConfiguration = "Release"
+
+let internal GetDirectPackageReferences(input: AbsolutePath): Task<PackageReference[]> = task {
     let! projects = GetProjects input
     let! references =
         projects
@@ -110,8 +121,6 @@ let GetPackageReferences(input: AbsolutePath): Task<PackageReference[]> = task {
         |> Task.WhenAll
     return references |> Seq.collect id |> Seq.distinct |> Seq.sortBy (fun x -> x.PackageId, x.Version) |> Seq.toArray
 }
-
-let private Configuration = "Release"
 
 type ProjectGeneratedArtifacts =
     {
@@ -124,7 +133,7 @@ type ProjectGeneratedArtifacts =
     }
 
 let private GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
-    let! properties = GetProperties(input, Configuration, [|
+    let! properties = GetProperties(input, DefaultConfiguration, [|
         "BaseIntermediateOutputPath"
         "TargetName"
         "TargetDir"; "TargetFileName"

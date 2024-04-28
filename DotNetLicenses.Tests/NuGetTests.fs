@@ -78,3 +78,15 @@ let ``Package file searcher works correctly``(): Task = task {
         Assert.False(contains, "File should not be considered as part of the package after change.")
     }
 }
+
+[<Fact>]
+let ``NuGet reads transitive package references correctly``(): Task =
+    DataFiles.Deploy "TestWithTransitiveRef.csproj" (fun project -> task {
+        let! _ = MsBuild.ExecuteDotNet [| "restore"; project.Value |]
+        let! references = ReadTransitiveProjectReferences project
+        Assert.Equal<PackageReference>([|
+            { PackageId = "System.Configuration.ConfigurationManager"; Version = "8.0.0" }
+            { PackageId = "System.Diagnostics.EventLog"; Version = "8.0.0" }
+            { PackageId = "System.Security.Cryptography.ProtectedData"; Version = "8.0.0" }
+        |], references)
+    })

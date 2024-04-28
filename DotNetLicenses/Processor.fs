@@ -5,6 +5,7 @@
 module DotNetLicenses.Processor
 
 open System.Collections.Generic
+open System.Collections.Immutable
 open System.IO
 open System.Reflection
 open System.Threading.Tasks
@@ -46,12 +47,12 @@ let private GetMetadata (projectMetadataReader: MetadataReader) (baseFolderPath:
         projectMetadataReader.ReadFromProject(projectPath, overrides)
     | MetadataSource.License source ->
         Task.FromResult {
-            Items = [| License source |].AsReadOnly()
+            Items = ImmutableArray.Create(License source)
             UsedOverrides = Set.empty
         }
     | MetadataSource.Reuse source ->
         Task.FromResult {
-            Items = [| Reuse source |].AsReadOnly()
+            Items = ImmutableArray.Create(Reuse source)
             UsedOverrides = Set.empty
         }
 

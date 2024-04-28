@@ -5,9 +5,8 @@
 module DotNetLicenses.Metadata
 
 open System.Collections.Generic
-open System.Collections.ObjectModel
+open System.Collections.Immutable
 open System.Threading.Tasks
-open DotNetLicenses.MsBuild
 open DotNetLicenses.NuGet
 open TruePath
 
@@ -28,7 +27,7 @@ let internal GetMetadata (source: PackageReference) (nuSpec: NuSpec): MetadataIt
     |}
 
 type MetadataReadResult = {
-    Items: ReadOnlyCollection<MetadataItem>
+    Items: ImmutableArray<MetadataItem>
     UsedOverrides: Set<PackageReference>
 }
 
@@ -39,7 +38,7 @@ type MetadataReader(nuGet: INuGetReader) =
     ): Task<MetadataReadResult> = task {
         let mutable usedOverrides = Set.empty
 
-        let! packageReferences = GetPackageReferences projectFilePath
+        let! packageReferences = ReadTransitiveProjectReferences projectFilePath
         let result = ResizeArray(packageReferences.Length)
         for reference in packageReferences do
             let! metadata =
@@ -60,7 +59,7 @@ type MetadataReader(nuGet: INuGetReader) =
             result.Add metadata
 
         return {
-            Items = result.AsReadOnly()
+            Items = result |> Seq.distinct |> ImmutableArray.ToImmutableArray
             UsedOverrides = usedOverrides
         }
     }

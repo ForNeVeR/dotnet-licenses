@@ -14,7 +14,7 @@ open Xunit
 [<Fact>]
 let ``MSBuild reads the project references correctly``(): Task =
     DataFiles.Deploy("Test.csproj") (fun path -> task {
-        let! references = GetPackageReferences path
+        let! references = NuGet.ReadTransitiveProjectReferences path
         Assert.Equal<PackageReference>([|{
             PackageId = "FVNever.DotNetLicenses"
             Version = "1.0.0"
@@ -42,7 +42,7 @@ let ``MSBuild reads the project-generated artifacts correctly``(): Task =
 let ``MSBuild deduplicates the project references across solution``(): Task =
     DataFiles.DeployGroup [|"Test.csproj"; "Test2.csproj"; "Test.sln"|] (fun path -> task {
         let solution = path / "Test.sln"
-        let! references = GetPackageReferences solution
+        let! references = NuGet.ReadTransitiveProjectReferences solution
         Assert.Equal<PackageReference>([|{
             PackageId = "FVNever.DotNetLicenses"
             Version = "1.0.0"

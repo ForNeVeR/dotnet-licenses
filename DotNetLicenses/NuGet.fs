@@ -5,7 +5,9 @@
 module DotNetLicenses.NuGet
 
 open System
+open System.Collections.Generic
 open System.IO
+open System.Text.Json
 open System.Threading.Tasks
 open System.Xml
 open System.Xml.Serialization
@@ -103,3 +105,55 @@ type NuGetReader() =
                 |> Task.WhenAll
             return checkResults |> Seq.filter fst |> Seq.map snd |> Seq.toArray
         }
+
+[<CLIMutable>]
+type ProjectAssetsJson = {
+    Version: int
+    Libraries: Dictionary<string, LibraryAsset>
+}
+and [<CLIMutable>] LibraryAsset = {
+    Type: string
+}
+
+let private SerializerOptions = JsonSerializerOptions(JsonSerializerDefaults.Web)
+
+let private ReadProjectAssetsJson(file: AbsolutePath): Task<ProjectAssetsJson> = task {
+    use stream = File.OpenRead file.Value
+    return! JsonSerializer.DeserializeAsync<ProjectAssetsJson>(stream, SerializerOptions)
+}
+
+let private ReadProjectReferences(project: AbsolutePath): Task<PackageReference[]> = task {
+    let! properties = MsBuild.GetProperties(project, MsBuild.DefaultConfiguration, [| "BaseIntermediateOutputPath" |])
+    let objDir = LocalPath properties["BaseIntermediateOutputPath"]
+    let projectAssetsJson = project.Parent.Value / objDir / "project.assets.json"
+    if File.Exists projectAssetsJson.Value then
+        let! assets = ReadProjectAssetsJson projectAssetsJson
+        let references =
+            assets.Libraries
+            |> Seq.filter(fun e -> e.Value.Type = "package")
+            |> Seq.map(fun e ->
+                let entryName = e.Key
+                match entryName.Split('/') with
+                | [| packageId; version |] ->
+                    { PackageId = packageId; Version = version }
+                | _ -> failwithf $"Cannot read package reference in file \"{project}\": \"{entryName}\"."
+            )
+            |> Seq.toArray
+        return references
+    else
+        return! MsBuild.GetDirectPackageReferences project
+}
+
+let ReadTransitiveProjectReferences(projectOrSolution: AbsolutePath): Task<PackageReference[]> = task {
+    let! projects = MsBuild.GetProjects projectOrSolution
+    let! assetReferences =
+        projects
+        |> Seq.map ReadProjectReferences
+        |> Task.WhenAll
+    let allReferences =
+        Seq.concat assetReferences
+        |> Seq.distinct
+        |> Seq.sortBy(fun r -> r.PackageId, r.Version)
+        |> Seq.toArray
+    return allReferences
+}
