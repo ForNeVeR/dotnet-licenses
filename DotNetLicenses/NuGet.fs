@@ -124,7 +124,7 @@ let private ReadProjectAssetsJson(file: AbsolutePath): Task<ProjectAssetsJson> =
 
 let private ReadProjectReferences(project: AbsolutePath): Task<PackageReference[]> = task {
     let! properties = MsBuild.GetProperties(project, MsBuild.DefaultConfiguration, [| "BaseIntermediateOutputPath" |])
-    let objDir = LocalPath properties["BaseIntermediateOutputPath"]
+    let objDir = LocalPath(properties["BaseIntermediateOutputPath"].Replace('\\', Path.DirectorySeparatorChar))
     let projectAssetsJson = project.Parent.Value / objDir / "project.assets.json"
     if File.Exists projectAssetsJson.Value then
         let! assets = ReadProjectAssetsJson projectAssetsJson
