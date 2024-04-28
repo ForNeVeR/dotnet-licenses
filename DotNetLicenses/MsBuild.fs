@@ -90,7 +90,12 @@ let GetProjects(input: AbsolutePath): Task<AbsolutePath[]> = task {
     | ".sln" ->
         do! Task.Yield()
         let solution = SolutionFile.Parse(input.Value)
-        return solution.ProjectsInOrder |> Seq.map (fun p -> AbsolutePath p.AbsolutePath) |> Seq.toArray
+        let projectPaths =
+            solution.ProjectsInOrder
+            |> Seq.filter (fun p -> p.ProjectType <> SolutionProjectType.SolutionFolder)
+            |> Seq.map (fun p -> AbsolutePath p.AbsolutePath)
+            |> Seq.toArray
+        return projectPaths
     | _ -> return [| input |] // assume it's a project file
 }
 
