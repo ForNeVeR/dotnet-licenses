@@ -6,12 +6,19 @@
 # Note that these are not necessarily all the licenses used by the project; only those related to the packaged files.
 
 metadata_sources = [
-    { type = "nuget", include = "DotNetLicenses/DotNetLicenses.fsproj" },
+    { type = "nuget", include = "DotNetLicenses.sln" },
     { type = "license", spdx = "MIT", copyright = "2024 Friedrich von Never <friedrich@fornever.me>", patterns_covered = [
         { type = "nuget" },
-        { type = "msbuild", include = "DotNetLicenses/DotNetLicenses.fsproj" }
+        { type = "msbuild", include = "DotNetLicenses.sln" }
     ] },
     { type = "reuse", root = "." }
+]
+metadata_overrides = [
+    { id = "GitignoreParserNet", version = "0.2.0.12", spdx = "Apache-2.0", copyright = [
+        "Copyright (c) 2021 Gyuirgy",
+        "Copyright 2014 codemix ltd."
+    ] },
+    { id = "Microsoft.NET.Test.Sdk", version = "17.9.0", spdx = "MIT", copyright = "Copyright (c) Microsoft Corporation" },
 ]
 lock_file = ".dotnet-licenses.lock.toml"
 packaged_files = [
