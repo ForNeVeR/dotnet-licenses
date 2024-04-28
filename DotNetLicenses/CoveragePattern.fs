@@ -71,7 +71,6 @@ let CollectCoveredFileLicense (baseDirectory: AbsolutePath)
         projectOutputs
         |> Seq.filter(fun (_, e) -> e.FileName = Path.GetFileName sourceEntry.SourceRelativePath)
 
-    // TODO: Extract into a function ↓
     let result = ResizeArray()
     let! fileHash = sourceEntry.CalculateHash()
     for source, entry in similarEntries do

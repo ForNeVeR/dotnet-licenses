@@ -29,7 +29,6 @@ let CollectLicenses (cache: FileHashCache)
                     (reuseEntries: ReuseFileEntry seq)
                     (sourceEntry: ISourceEntry): Task<ResizeArray<ReuseLicenseEntry>> = task {
     let! fileHash = sourceEntry.CalculateHash()
-    // TODO: Extract into a function ↓
     let result = ResizeArray()
     let similarEntries =
         reuseEntries
