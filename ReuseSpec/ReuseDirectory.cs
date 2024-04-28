@@ -34,22 +34,25 @@ public static class ReuseDirectory
     {
         await Task.Yield();
 
+        IEnumerable<AbsolutePath> allFiles;
+
         var gitIgnorePath = directory / ".gitignore";
         if (!File.Exists(gitIgnorePath.Value))
         {
-            return Directory.EnumerateFiles(directory.Value, "*", SearchOption.AllDirectories)
-                .Select(x => new AbsolutePath(x))
-                .ToList();
+            allFiles = Directory.EnumerateFiles(directory.Value, "*", SearchOption.AllDirectories)
+                .Select(x => new AbsolutePath(x));
+        }
+        else // TODO[#46]: Support nested .gitignore files on parent/child levels
+        {
+            var (accepted, _) = GitignoreParser.Parse(gitIgnorePath.Value, Encoding.UTF8);
+            allFiles = accepted
+                .Where(x => !x.EndsWith("/"))
+                .Select(x => directory / x)
+                .Where(x => File.Exists(x.Value));
         }
 
-        // TODO[#46]: Support nested .gitignore files on parent/child levels
-
-        var (accepted, _) = GitignoreParser.Parse(gitIgnorePath.Value, Encoding.UTF8);
-        return accepted
-            .Where(x => !x.EndsWith("/"))
-            .Select(x => directory / x)
-            .Where(x => File.Exists(x.Value))
-            .ToList();
+        var gitDirectory = directory / ".git";
+        return allFiles.Where(file => !file.Value.StartsWith(gitDirectory.Value)).ToList();
     }
 
     private static async Task<List<DebianCopyrightFilesEntry>> ReadDep5File(AbsolutePath directory)
