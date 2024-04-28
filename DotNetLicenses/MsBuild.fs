@@ -5,6 +5,7 @@
 module DotNetLicenses.MsBuild
 
 open System.Collections.Generic
+open System.IO
 open System.Text.Json
 open System.Threading.Tasks
 open TruePath
@@ -101,6 +102,12 @@ let GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArti
         "TargetName"
         "TargetDir"; "TargetFileName"
     |])
+    let properties =
+        properties
+        |> Seq.map(fun kv -> kv.Key, kv.Value)
+        |> Map.ofSeq
+        // Replace MSBuild's path separator with the platform's path separator
+        |> Map.map(fun _ v -> v.Replace('\\', Path.DirectorySeparatorChar))
 
     let targetDir = LocalPath properties["TargetDir"]
     let targetFileName = properties["TargetFileName"]
