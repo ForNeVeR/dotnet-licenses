@@ -83,6 +83,8 @@ let ``Package file searcher works correctly``(): Task = task {
 let ``NuGet reads transitive package references correctly``(): Task =
     DataFiles.Deploy "TestWithTransitiveRef.csproj" (fun project -> task {
         let! _ = MsBuild.ExecuteDotNet [| "restore"; project.Value |]
+        let projectAssetsJson = project.Parent.Value / "obj/project.assets.json"
+        Assert.True <| File.Exists projectAssetsJson.Value
         let! references = ReadTransitiveProjectReferences project
         Assert.Equal<PackageReference>([|
             { PackageId = "FSharp.Core"; Version = "8.0.200" }
