@@ -26,7 +26,7 @@ let internal GetMetadata (source: PackageReference) (nuSpec: NuSpec): MetadataIt
         match license.Type with
         | "expression" -> metadata.License.Value
         | "file" -> $"<No SPDX Expression; see https://www.nuget.org/packages/{source.PackageId}/{source.Version}/License>"
-            // TODO: ↑ Support the files properly?
+            // TODO[#57]: ↑ Support the files properly?
         | _ -> failwithf $"Unsupported license type for source {source.PackageId} v{source.Version}: {license.Type}"
     Some <| Package {|
         Source = source
