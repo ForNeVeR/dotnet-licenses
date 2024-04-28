@@ -270,10 +270,12 @@ let ``Basic REUSE specification works``(): Task = task {
     let sourceFile = directory.Path / "source" / "my-file.txt"
     let packagedFile = directory.Path / "package" / "my-file.txt"
 
+    // REUSE-IgnoreStart
     let fileContent = """SPDX-FileCopyrightText: 2024 Me
 SPDX-License-Identifier: MIT
 text
 """
+    // REUSE-IgnoreEnd
     do! File.WriteAllTextAsync(packagedFile.Value, fileContent)
     do! File.WriteAllTextAsync(sourceFile.Value, fileContent)
 

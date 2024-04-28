@@ -13,6 +13,8 @@ open DotNetLicenses.TestFramework
 open TruePath
 open Xunit
 
+// REUSE-IgnoreStart
+
 [<Fact>]
 let ``NuSpec file path should be determined correctly``(): unit =
     let nuGetPackagesRootPath = PackagesFolderPath
@@ -92,3 +94,5 @@ let ``NuGet reads transitive package references correctly``(): Task =
             { PackageId = "YamlDotNet";  Version = "15.1.1" }
         |], references)
     })
+
+// REUSE-IgnoreEnd

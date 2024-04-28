@@ -15,6 +15,8 @@ param (
     [switch] $Autofix
 )
 
+# REUSE-IgnoreStart
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -102,3 +104,5 @@ try {
 } finally {
     Pop-Location
 }
+
+# REUSE-IgnoreEnd
