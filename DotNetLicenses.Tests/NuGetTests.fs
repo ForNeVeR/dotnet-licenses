@@ -4,6 +4,7 @@
 
 module DotNetLicenses.Tests.NuGetTests
 
+open System
 open System.IO
 open System.Threading.Tasks
 open DotNetLicenses
@@ -74,6 +75,13 @@ let ``Package file searcher works correctly``(): Task = task {
         let! contains = ContainsFile cache (package, fileEntry)
         Assert.True(contains, "File should be considered as part of the package while it is unchanged.")
 
+        // Sadly, the file system time storage precision is not enough for the test to work without this in some
+        // cases. This check is only the best effort anyway, and we can't really suggest to rely on it in production,
+        // so it should work for us.
+        //
+        // This should make the previous file write time distinct enough from this write, for the file's change
+        // timestamp to differ between the write operations.
+        do! Task.Delay(TimeSpan.FromMilliseconds 1.0)
         File.WriteAllBytes((projectDir.Path / fileRelativePath).Value, "Hello2"B)
 
         let! contains = ContainsFile cache (package, fileEntry)
