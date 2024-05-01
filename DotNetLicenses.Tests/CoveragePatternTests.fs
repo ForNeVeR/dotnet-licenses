@@ -99,7 +99,7 @@ let ``NuGet coverage pattern collector works``(): Task = task {
     for entry in sourceEntries do
         let! result = CollectCoveredFileLicense directory.Path coverageCache hashCache [| metadata |] entry
         let pattern =
-            if entry.SourceRelativePath.StartsWith("package/services/metadata/core-properties")
+            if entry.SourceRelativePath.StartsWith("package/services/metadata/core-properties/")
             then "package/services/metadata/core-properties/*.psmdcp"
             else entry.SourceRelativePath
             |> LocalPathPattern
