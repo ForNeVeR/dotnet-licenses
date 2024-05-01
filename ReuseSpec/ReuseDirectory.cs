@@ -44,6 +44,7 @@ public static class ReuseDirectory
         }
         else // TODO[#46]: Support nested .gitignore files on parent/child levels
         {
+            // TODO[#46]: Currently, this could filter out files that are in .gitignore but are explicitly added.
             var (accepted, _) = GitignoreParser.Parse(gitIgnorePath.Value, Encoding.UTF8);
             allFiles = accepted
                 .Where(x => !x.EndsWith("/"))
