@@ -13,15 +13,6 @@ metadata_sources = [
     ] }
 ]
 
-# REUSE-IgnoreStart
-metadata_overrides = [
-    { id = "GitignoreParserNet", version = "0.2.0.12", spdx = "Apache-2.0", copyright = [
-        "Copyright (c) 2021 Gyuirgy",
-        "Copyright 2014 codemix ltd."
-    ] }
-]
-# REUSE-IgnoreEnd
-
 lock_file = ".dotnet-licenses.lock.toml"
 packaged_files = [
     { type = "zip", path = "DotNetLicenses/bin/Release/FVNever.DotNetLicenses.0.0.0.nupkg" }
