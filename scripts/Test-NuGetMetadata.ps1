@@ -23,10 +23,49 @@ $packagingGroup = $directoryBuildProps.Project.PropertyGroup `
 $packageLicenseExpression = $packagingGroup.PackageLicenseExpression
 $copyrightStatements = $packagingGroup.Copyright
 
+# TODO: This should be performed using the tooling provided by dotnet-authors in the future.
+function normalizeCopyrights($copyrights) {
+    $normalized = @()
+    foreach ($copyright in $copyrights) {
+        if ($copyright -eq '© 2024 Friedrich von Never') {
+            $normalized += '2024 Friedrich von Never <friedrich@fornever.me>'
+        } else {
+            $normalized += $copyright
+        }
+    }
+    return $normalized
+}
+
 function readLockFile($path) {
-    @{
-        Licenses = @('MIT', 'Apache-2.0')
-        Copyrights = @('2024 Friedrich von Never <friedrich@fornever.me>', '2024 Friedrich von Never <friedrich@fornever.me>')
+    Add-Type -LiteralPath "$SourceRoot/DotNetLicenses/bin/Release/net8.0/Tomlyn.dll"
+    $content = Get-Content -Raw -LiteralPath $path
+    $toml = [Tomlyn.Toml]::ToModel($content)
+
+    $allLicenses = @()
+    $allCopyrights = @()
+
+    foreach ($item in $toml.Values) {
+        $spdx = $null
+        $copyright = $null
+        $null = $item.TryGetValue('spdx', [ref]$spdx)
+        $null = $item.TryGetValue('copyright', [ref]$copyright)
+
+        if ($spdx -ne $null) {
+            $allLicenses += $spdx
+        }
+        if ($copyright -ne $null) {
+            $allCopyrights += $copyright
+        }
+    }
+
+    $allCopyrights = normalizeCopyrights $allCopyrights
+
+    [array] $allLicenses = $allLicenses | Select-Object -Unique
+    [array] $allCopyrights = $allCopyrights | Select-Object -Unique
+
+    [pscustomobject] @{
+        Licenses = $allLicenses
+        Copyrights = $allCopyrights
     }
 }
 
