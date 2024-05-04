@@ -88,16 +88,23 @@ let internal PrintMetadata(
             let copyrights = package.Copyrights |> String.concat "\n  "
             printfn $"- Package {package.Source.PackageId} {package.Source.Version}: {spdx}\n  {copyrights}"
 
-        | License licenseSource ->
-            printfn $"- Manually defined license: {licenseSource.Spdx}\n  {licenseSource.Copyright}"
-            for pattern in licenseSource.FilesCovered do
+        | License license ->
+            printfn $"- Manually defined license: {license.Spdx}\n  {license.Copyright}"
+            for pattern in license.FilesCovered do
                 printfn $"  - {pattern}"
-        | Reuse reuseSource ->
-            printfn $"- REUSE-covered files from root directory \"{reuseSource.Root}\":"
-            for pattern in reuseSource.Exclude do
+        | Reuse reuse ->
+            printfn $"- REUSE-covered files from root directory \"{reuse.Root}\":"
+            for pattern in reuse.Exclude do
                 printfn $"  - Excluded pattern: \"{pattern}\""
-            for pattern in reuseSource.FilesCovered do
+            for pattern in reuse.FilesCovered do
                 printfn $"  - Covered pattern: \"{pattern}\""
+            let root = baseFolderPath / reuse.Root
+            let excludes = reuse.Exclude |> Seq.map (fun e -> baseFolderPath / e)
+            let! entries = ReadReuseDirectory(root, excludes)
+            for entry in entries do
+                let licenses = entry.LicenseIdentifiers |> String.concat ", "
+                let copyrights = entry.CopyrightStatements |> String.concat ("\n    ")
+                printfn $"  - {entry.Path}: {licenses}\n    {copyrights}"
 }
 
 let private IsCoveredByPattern (path: LocalPath) (pattern: LocalPathPattern) =
