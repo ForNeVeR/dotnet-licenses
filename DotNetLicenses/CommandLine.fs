@@ -10,7 +10,7 @@ open TruePath
 [<RequireQualifiedAccess>]
 type Command =
     | GenerateLock of configFile: AbsolutePath
-    | PrintPackages of configFile: AbsolutePath
+    | PrintMetadata of configFile: AbsolutePath
     | Verify of configFile: AbsolutePath
     | DownloadLicenses of configFile: AbsolutePath
     | PrintHelp
@@ -42,8 +42,8 @@ let Parse(args: string[]): struct(Command * ExitCode) =
     match args with
     | [| "--help" |] -> Command.PrintHelp, ExitCode.Success
     | [| "--version" |] -> Command.PrintVersion, ExitCode.Success
-    | [| path |] -> Command.PrintPackages(resolvePath path), ExitCode.Success
-    | [| "print-packages"; path |] -> Command.PrintPackages(resolvePath path), ExitCode.Success
+    | [| path |] -> Command.PrintMetadata(resolvePath path), ExitCode.Success
+    | [| "print-metadata"; path |] -> Command.PrintMetadata(resolvePath path), ExitCode.Success
     | [| "generate-lock"; path |] -> Command.GenerateLock(resolvePath path), ExitCode.Success
     | [| "verify"; path |] -> Command.Verify(resolvePath path), ExitCode.Success
     | [| "download-licenses"; path |] -> Command.DownloadLicenses(resolvePath path), ExitCode.Success

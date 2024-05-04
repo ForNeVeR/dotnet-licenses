@@ -34,7 +34,7 @@ Usage
 After installation, the tool will be available in shell as `dotnet licenses`.
 
 The following arguments are supported:
-- `[print-packages] <config-file-path>` — prints the list of the packages used by the configured projects;
+- `[print-metadata] <config-file-path>` — prints the list of the metadata provided by the configured sources;
 - `generate-lock <config-file-path>` — generates the license lock file based on the configuration;
 - `verify <config-file-path>` — verifies the license lock file against the package contents;
 - `download-licenses <config-file-path>` — downloads the licenses of the entries specified in the lock file.

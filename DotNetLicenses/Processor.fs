@@ -74,7 +74,7 @@ let private CollectMetadata (config: Configuration) (baseFolderPath: AbsolutePat
     return metadataList
 }
 
-let internal PrintPackages(
+let internal PrintMetadata(
     config: Configuration,
     baseFolderPath: AbsolutePath,
     nuGet: INuGetReader,
@@ -86,8 +86,18 @@ let internal PrintPackages(
         | Package package ->
             let spdx = package.Spdx |> String.concat ", "
             let copyrights = package.Copyrights |> String.concat "\n  "
-            printfn $"- {package.Source.PackageId} {package.Source.Version}: {spdx}\n  {copyrights}"
-        | _ -> ()
+            printfn $"- Package {package.Source.PackageId} {package.Source.Version}: {spdx}\n  {copyrights}"
+
+        | License licenseSource ->
+            printfn $"- Manually defined license: {licenseSource.Spdx}\n  {licenseSource.Copyright}"
+            for pattern in licenseSource.FilesCovered do
+                printfn $"  - {pattern}"
+        | Reuse reuseSource ->
+            printfn $"- REUSE-covered files from root directory \"{reuseSource.Root}\":"
+            for pattern in reuseSource.Exclude do
+                printfn $"  - Excluded pattern: \"{pattern}\""
+            for pattern in reuseSource.FilesCovered do
+                printfn $"  - Covered pattern: \"{pattern}\""
 }
 
 let private IsCoveredByPattern (path: LocalPath) (pattern: LocalPathPattern) =
@@ -360,17 +370,17 @@ let Process: Command -> int =
         printfn """Supported arguments:
 - --version - Print the program version.
 - --help - Print this help message.
-- [print-packages] <config-file-path> - Print the licenses used by the projects designated by the configuration.
+- [print-metadata] <config-file-path> - Print the list of the metadata provided by the configured sources.
 - generate-lock <config-file-path> - Generate a license lock file and place it accordingly to the configuration.
 - verify <config-file-path> - Verify the lock file against the configuration.
 - download-licenses <config-file-path> - Download the licenses for the entries in the lock file.
     """
         0
-    | Command.PrintPackages configFilePath ->
+    | Command.PrintMetadata configFilePath ->
         task {
             let! baseFolderPath, config = ProcessConfig configFilePath
             let wp = WarningProcessor()
-            do! PrintPackages(config, baseFolderPath, NuGetReader(), wp)
+            do! PrintMetadata(config, baseFolderPath, NuGetReader(), wp)
             return ProcessWarnings wp
         }
         |> RunSynchronously
