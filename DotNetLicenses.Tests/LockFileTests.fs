@@ -15,10 +15,11 @@ open Xunit
 [<Fact>]
 let ``LockFile should be have expected format``(): Task =
     let item id = {
-        SourceId = id
-        SourceVersion = "1.0.0"
+        LockFileItem.SourceId = Some id
+        SourceVersion = Some "1.0.0"
         Spdx = [|"MIT"|]
         Copyright = [|"none"|]
+        IsIgnored = false
     }
     let data = [|
         LocalPathPattern "x.txt", item "a"
@@ -55,18 +56,42 @@ let ``LockFile is read correctly``(): Task = task {
     let expected = Dictionary()
     expected.Add(
         LocalPathPattern "a.txt",
-        [|{SourceId = "a"; SourceVersion = "1.0.0"; Spdx = [|"MIT"|]; Copyright = [|"none"|]}|]
+        [|{
+            LockFileItem.SourceId = Some "a"
+            SourceVersion = Some "1.0.0"
+            Spdx = [|"MIT"|]
+            Copyright = [|"none"|]
+            IsIgnored = false
+        }|]
     )
     expected.Add(
         LocalPathPattern "x.txt",
         [|
-            {SourceId = "a"; SourceVersion = "1.0.0"; Spdx = [|"MIT"|]; Copyright = [|"none"|]};
-            {SourceId = "b"; SourceVersion = "1.0.0"; Spdx = [|"MIT"|]; Copyright = [|"none"|]}
+            {
+                LockFileItem.SourceId = Some "a"
+                SourceVersion = Some "1.0.0"
+                Spdx = [|"MIT"|]
+                Copyright = [|"none"|]
+                IsIgnored = false
+            };
+            {
+                LockFileItem.SourceId = Some "b"
+                SourceVersion = Some "1.0.0"
+                Spdx = [|"MIT"|]
+                Copyright = [|"none"|]
+                IsIgnored = false
+            }
         |]
     )
     expected.Add(
         LocalPathPattern "y.txt",
-        [|{SourceId = "a"; SourceVersion = "1.0.0"; Spdx = [|"MIT"|]; Copyright = [|"none"|]}|]
+        [|{
+            LockFileItem.SourceId = Some "a"
+            SourceVersion = Some "1.0.0"
+            Spdx = [|"MIT"|]
+            Copyright = [|"none"|]
+            IsIgnored = false
+        }|]
     )
     Assert.Equivalent(expected, data)
 }

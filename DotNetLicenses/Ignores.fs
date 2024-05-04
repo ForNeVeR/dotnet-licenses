@@ -4,6 +4,7 @@
 
 module DotNetLicenses.Ignores
 
+open System.Collections.Immutable
 open Microsoft.Extensions.FileSystemGlobbing
 open TruePath
 
@@ -17,7 +18,7 @@ let AllPresets = Map.ofArray [|
     "licenses", LocalPathPattern "LICENSES/*.txt"
 |]
 
-let Filter(patterns: IgnorePattern seq) (items: ISourceEntry seq): ISourceEntry seq =
+let Filter(patterns: IgnorePattern seq) (items: ISourceEntry seq): PackagedEntries =
     let getFilter = function
         | Preset name -> Map.find name AllPresets
 
@@ -26,9 +27,18 @@ let Filter(patterns: IgnorePattern seq) (items: ISourceEntry seq): ISourceEntry 
         |> Seq.groupBy _.SourceRelativePath
 
     let patterns = patterns |> Seq.map getFilter
-    let matcher = Matcher()
-    matcher.AddIncludePatterns(patterns |> Seq.map _.Value)
+    let ignoreMatcher = Matcher()
+    ignoreMatcher.AddIncludePatterns(patterns |> Seq.map _.Value)
 
-    itemsByPath
-    |> Seq.filter(fun (path, _) -> not (matcher.Match(path).HasMatches))
-    |> Seq.collect snd
+    let sourceEntries = ResizeArray()
+    let ignoredEntries = ResizeArray()
+    for path, item in itemsByPath do
+        if ignoreMatcher.Match(path).HasMatches then
+            ignoredEntries.AddRange item
+        else
+            sourceEntries.AddRange item
+
+    {
+        SourceEntries = ImmutableArray.ToImmutableArray sourceEntries
+        IgnoredEntries = ImmutableArray.ToImmutableArray ignoredEntries
+    }

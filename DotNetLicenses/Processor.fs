@@ -163,7 +163,7 @@ let internal GenerateLockFile(
 
     use ld = new LifetimeDefinition()
 
-    let! sourceEntries = ReadEntries ld.Lifetime baseFolderPath packagedFiles
+    let! packagedEntries = ReadEntries ld.Lifetime baseFolderPath packagedFiles
 
     let findExplicitLicenses(entry: ISourceEntry) =
         licenses
@@ -197,37 +197,41 @@ let internal GenerateLockFile(
                 match metadata with
                 | Package p ->
                     LocalPathPattern entry.SourceRelativePath, {
-                        SourceId = package.PackageId
-                        SourceVersion = package.Version
+                        LockFileItem.SourceId = Some package.PackageId
+                        SourceVersion = Some package.Version
                         Spdx = p.Spdx
                         Copyright = p.Copyrights
+                        IsIgnored = false
                     }
                 | _ -> failwithf $"Unexpected metadata type in object {metadata}."
             )
         let licenseSearchResults =
             findExplicitLicenses entry
             |> Seq.map (fun license -> LocalPathPattern entry.SourceRelativePath, {
-                SourceId = null
-                SourceVersion = null
+                LockFileItem.SourceId = None
+                SourceVersion = None
                 Spdx = [|license.Spdx|]
                 Copyright = [|license.Copyright|]
+                IsIgnored = false
             })
         let! reuseEntries = findReuseLicenses entry
         let reuseSearchResults =
             reuseEntries
             |> Seq.map (fun license -> LocalPathPattern entry.SourceRelativePath, {
-                SourceId = null
-                SourceVersion = null
+                LockFileItem.SourceId = None
+                SourceVersion = None
                 Spdx = Seq.toArray license.SpdxExpressions
                 Copyright = Seq.toArray license.CopyrightStatements
+                IsIgnored = false
             })
         let reuseCombinedSearchResults =
             findReuseCombinedLicenses entry
             |> Seq.map(fun fe -> LocalPathPattern entry.SourceRelativePath, {
-                SourceId = null
-                SourceVersion = null
+                LockFileItem.SourceId = None
+                SourceVersion = None
                 Spdx = Seq.toArray fe.LicenseIdentifiers
                 Copyright = Seq.toArray fe.CopyrightStatements
+                IsIgnored = false
             })
         let! coveragePatternSearchResults =
             CollectCoveredFileLicense baseFolderPath coverageCache hashCache metadata entry
@@ -241,7 +245,7 @@ let internal GenerateLockFile(
     }
 
     let lockFileContent = ResizeArray<LockFileEntry>()
-    for entry in sourceEntries do
+    for entry in packagedEntries.SourceEntries do
         let! resultEntries = findLicensesForFile entry
         match resultEntries.Length with
         | 0 -> wp.ProduceWarning(ExitCode.LicenseForFileNotFound, $"No license found for file \"{entry.SourceRelativePath}\".")
@@ -250,6 +254,18 @@ let internal GenerateLockFile(
             failwithf $"Several licenses found for one file: \"{entry.SourceRelativePath}\"."
             // TODO[#28]: If all the packages yield the same license, just let it be.
             // TODO[#28]: Otherwise, report this situation as a warning, and collect all the licenses.
+
+    for entry in packagedEntries.IgnoredEntries do
+        lockFileContent.Add(
+            LocalPathPattern entry.SourceRelativePath,
+            {
+                LockFileItem.SourceId = None
+                SourceVersion = None
+                Spdx = Array.empty
+                Copyright = Array.empty
+                IsIgnored = true
+            }
+        )
 
     do! SaveLockFile(lockFilePath, lockFileContent)
 }
@@ -268,19 +284,25 @@ let Verify(config: Configuration, baseFolder: AbsolutePath, wp: WarningProcessor
                 wp.ProduceWarning(ExitCode.LicenseSetEmpty, $"Entry with empty license set for path \"{pattern}\".")
 
     use ld = new LifetimeDefinition()
-    let! sourceEntries = ReadEntries ld.Lifetime baseFolder config.PackagedFiles
+    let! packagedEntries = ReadEntries ld.Lifetime baseFolder config.PackagedFiles
 
     let unusedLockFileEntries = HashSet(lockFileEntries.Keys |> Seq.map _.Value)
-    for sourceEntry in sourceEntries do
+    let dropEntry (sourceEntry: ISourceEntry) =
         if not <| unusedLockFileEntries.Remove sourceEntry.SourceRelativePath then
             let coveringEntry =
                 unusedLockFileEntries
-                |> Seq.tryFind(fun entry ->
-                    IsCoveredByPattern (LocalPath sourceEntry.SourceRelativePath) (LocalPathPattern entry)
+                |> Seq.tryFind(fun lockFileEntry ->
+                    IsCoveredByPattern (LocalPath sourceEntry.SourceRelativePath) (LocalPathPattern lockFileEntry)
                 )
             match coveringEntry with
             | Some entry -> unusedLockFileEntries.Remove entry |> ignore
             | None -> wp.ProduceWarning(ExitCode.FileNotCovered, $"File \"{sourceEntry.SourceRelativePath}\" is not covered by the lock file.")
+
+    for entry in packagedEntries.SourceEntries do
+        dropEntry entry
+
+    for entry in packagedEntries.IgnoredEntries do
+        dropEntry entry
 
     for unusedEntry in unusedLockFileEntries do
         wp.ProduceWarning(ExitCode.UnusedLockFileEntry, $"Lock file entry \"{unusedEntry}\" is not used.")

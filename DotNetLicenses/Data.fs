@@ -4,6 +4,7 @@
 
 namespace DotNetLicenses
 
+open System.Collections.Immutable
 open System.IO
 open System.Threading.Tasks
 open TruePath
@@ -36,3 +37,8 @@ type ISourceEntry =
     abstract member SourceRelativePath: string
     abstract member ReadContent: unit -> Task<Stream>
     abstract member CalculateHash: unit -> Task<string>
+
+type PackagedEntries = {
+    SourceEntries: ImmutableArray<ISourceEntry>
+    IgnoredEntries: ImmutableArray<ISourceEntry>
+}

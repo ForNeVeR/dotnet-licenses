@@ -4,6 +4,7 @@
 
 module DotNetLicenses.Tests.IgnoresTests
 
+open System.Collections.Immutable
 open DotNetLicenses
 open Xunit
 
@@ -21,4 +22,9 @@ let ``License filter should work``(): unit =
     let foo = makeItem "foo.txt"
     let license1 = makeItem "LICENSES/MIT.txt"
     let license2 = makeItem "licenses/MIT.txt"
-    Assert.Equal([| foo |], Ignores.Filter presets [| foo; license1; license2 |])
+    let expected = {
+        SourceEntries = ImmutableArray.Create foo
+        IgnoredEntries = ImmutableArray.Create(license1, license2)
+    }
+    let actual = Ignores.Filter presets [| foo; license1; license2 |]
+    Assert.Equal(expected, actual)

@@ -28,20 +28,22 @@ let private CollectLockFileItem (baseDir: AbsolutePath) = function
     | Package _ -> failwith "Function doesn't support packages."
     | License source ->
         Task.FromResult {
-            SourceId = null
-            SourceVersion = null
+            LockFileItem.SourceId = None
+            SourceVersion = None
             Spdx = [|source.Spdx|]
             Copyright = [|source.Copyright|]
+            IsIgnored = false
         }
     | Reuse source -> task {
         let basePath = baseDir / source.Root
         let! entries = Reuse.ReadReuseDirectory(basePath, source.Exclude |> Seq.map(fun x -> basePath / x))
         let resultEntry = ReuseFileEntry.CombineEntries(basePath, entries)
         return {
-            SourceId = null
-            SourceVersion = null
+            LockFileItem.SourceId = None
+            SourceVersion = None
             Spdx = Seq.toArray resultEntry.LicenseIdentifiers
             Copyright = Seq.toArray resultEntry.CopyrightStatements
+            IsIgnored = false
         }
     }
 

@@ -50,10 +50,11 @@ let ``MSBuild coverage pattern collector works``(): Task =
         use hashCache = new FileHashCache()
         let! result = CollectCoveredFileLicense baseDirectory coverageCache hashCache [| metadata |] sourceEntry
         Assert.Equal<_>([| LocalPathPattern sourceEntry.SourceRelativePath, {
-            SourceId = null
-            SourceVersion = null
+            LockFileItem.SourceId = None
+            SourceVersion = None
             Spdx = [|"MIT"|]
             Copyright = [|"2024 Me"|]
+            IsIgnored = false
         } |], result)
     })
 
@@ -104,10 +105,11 @@ let ``NuGet coverage pattern collector works``(): Task = task {
             else entry.SourceRelativePath
             |> LocalPathPattern
         Assert.Equal<_>([| pattern, {
-            SourceId = null
-            SourceVersion = null
+            LockFileItem.SourceId = None
+            SourceVersion = None
             Spdx = [|"MIT"|]
             Copyright = [|"2024 Me"|]
+            IsIgnored = false
         } |], result)
 }
 // REUSE-IgnoreEnd

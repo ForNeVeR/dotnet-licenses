@@ -5,7 +5,7 @@
 module DotNetLicenses.Sources
 
 open System
-open System.Collections.Generic
+open System.Collections.Immutable
 open System.IO
 open System.IO.Compression
 open System.Security.Cryptography
@@ -129,10 +129,15 @@ let private ExtractEntries(lifetime: Lifetime, baseDirectory: AbsolutePath, spec
 
 let ReadEntries (lifetime: Lifetime)
                 (baseDirectory: AbsolutePath)
-                (spec: PackageSpec seq): Task<IReadOnlyList<ISourceEntry>> = task {
-    let result = ResizeArray()
+                (spec: PackageSpec seq): Task<PackagedEntries> = task {
+    let sourceEntries = ResizeArray()
+    let ignoredEntries = ResizeArray()
     for package in spec do
         let! entries = ExtractEntries(lifetime, baseDirectory, package)
-        result.AddRange entries
-    return result
+        sourceEntries.AddRange entries.SourceEntries
+        ignoredEntries.AddRange entries.IgnoredEntries
+    return {
+        SourceEntries = ImmutableArray.ToImmutableArray sourceEntries
+        IgnoredEntries = ImmutableArray.ToImmutableArray ignoredEntries
+    }
 }

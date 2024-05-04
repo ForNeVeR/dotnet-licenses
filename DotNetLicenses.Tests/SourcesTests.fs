@@ -24,11 +24,13 @@ let ``Sources are enumerated for a file-system directory``(): Task = task {
 
     let spec = PackageSpecs.Directory directory.Path
     use ld = new LifetimeDefinition()
-    let! entries = ReadEntries ld.Lifetime directory.Path [| spec |]
+    let! packagedEntries = ReadEntries ld.Lifetime directory.Path [| spec |]
+    let entries = packagedEntries.SourceEntries
     Assert.Equivalent([|
         FileSourceEntry(directory.Path, spec, directory.Path / "file.txt")
         FileSourceEntry(directory.Path, spec, directory.Path / "subdirectory" / "file.txt")
     |], entries)
+    Assert.Empty packagedEntries.IgnoredEntries
 }
 
 [<Fact>]
@@ -83,6 +85,8 @@ let ``Ignore pattern works as expected``(): Task = task {
 
     use ld = new LifetimeDefinition()
     let! items = ReadEntries ld.Lifetime directory.Path [|spec|]
-    let paths = items |> Seq.map _.SourceRelativePath
-    Assert.Equal([| "file1.txt" |], paths)
+    let sourcePaths = items.SourceEntries |> Seq.map _.SourceRelativePath
+    let ignoredPaths = items.IgnoredEntries |> Seq.map _.SourceRelativePath
+    Assert.Equal([| "file1.txt" |], sourcePaths)
+    Assert.Equal([| "LICENSES/MIT.txt" |], ignoredPaths)
 }
