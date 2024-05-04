@@ -10,6 +10,7 @@ param (
     [switch] $Autofix
 )
 
+# REUSE-IgnoreStart
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -92,3 +93,4 @@ if ($Autofix) {
         Write-Error $diagnostics
     }
 }
+# REUSE-IgnoreEnd

@@ -57,6 +57,12 @@ If the CI asks you to update the file licenses, follow one of these:
 
 In case CI asks to update the package license (may happen in case of dependency update), run the `scripts/Test-NuGetLicense.ps1` script with the `-Autofix` switch.
 
+In case CI asks to update the license lock file, use these shell commands:
+```console
+$ dotnet pack
+$ dotnet run --project src/DotNetLicenses/DotNetLicenses.csproj -- generate-lock .dotnet-licenses.toml
+```
+
 GitHub Actions
 --------------
 If you want to update the GitHub Actions used in the project, edit the file that generated them: `scripts/github-actions.fsx`.

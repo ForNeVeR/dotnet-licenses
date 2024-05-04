@@ -1,5 +1,6 @@
 # REUSE-IgnoreStart
 "_rels/.rels" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
+".dotnet-licenses.lock.toml" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
 "[Content_Types].xml" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
 "*.nuspec" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
 "CHANGELOG.md" = [{spdx = ["MIT"], copyright = ["2024 Friedrich von Never <friedrich@fornever.me>"]}]
