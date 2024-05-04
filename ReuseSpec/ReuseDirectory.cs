@@ -23,7 +23,7 @@ public static class ReuseDirectory
                 return entry;
             entry = await ReuseFileEntry.ReadFromFile(new AbsolutePath(file.Value + ".license")).ConfigureAwait(false);
             if (entry != null)
-                return entry;
+                return entry with { Path = file };
 
             return FindDep5Entry(dep5, directory, file);
         })).ConfigureAwait(false);
@@ -55,6 +55,7 @@ public static class ReuseDirectory
         var gitDirectory = directory / ".git";
         return allFiles
             .Where(file => !new LocalPath(gitDirectory).IsPrefixOf(file)
+                           && !file.FileName.EndsWith(".license")
                            && file.FileName != "LICENSE.txt"
                            && file.Parent?.FileName != "LICENSES") // TODO[#46]: Verify with the spec
             .ToList();
