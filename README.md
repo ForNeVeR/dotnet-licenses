@@ -201,9 +201,12 @@ By contributing to this repository, you agree that any new files you contribute 
 
 You are welcome to explicitly state your copyright in the file's header as described in [the contributor guide][docs.contributing], but the project maintainers may do this for you as well.
 
-### Packaged Content License
-<!-- TODO[#6]: We should use the tool itself to deliver this license, obviously. -->
-The package of this program bundles FSharp.Core, see its license (MIT) [on the NuGet page][fsharp.core.nuget].
+### Packaged Content Licenses
+The NuGet package of this tool bundles several third-party binaries.
+
+The NuGet metadata includes the combined license information.
+
+To figure out the licenses and copyright statements related to every packaged file, see the bundled license lock file (`.dotnet-licenses.lock.toml`) in the package root. For convenience, the texts of each references license are packed into the `LICENSES` directory in the package root.
 
 [andivionian-status-classifier]: https://andivionian.fornever.me/v1/#status-zero-
 [docs.changelog]: CHANGELOG.md

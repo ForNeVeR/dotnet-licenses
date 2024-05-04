@@ -51,6 +51,7 @@ SPDX-License-Identifier: MIT
         <None Include="..\package-licenses\**" Pack="true" PackagePath="\LICENSES" />
         <None Include="..\CHANGELOG.md" Pack="true" PackagePath="\" />
         <None Include="..\README.md" Pack="true" PackagePath="\" />
+        <None Include="..\.dotnet-licenses.lock.toml" Pack="true" PackagePath="\" />
     </ItemGroup>
 
     <ItemGroup>
