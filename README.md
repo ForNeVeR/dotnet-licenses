@@ -31,15 +31,12 @@ for local solution-wide installation.
 
 Usage
 -----
-To run the tool, use the following shell command:
-```console
-$ dotnet licenses [print-packages] <config-file-path>
-```
-This command will print the packages used by the configured projects.
+After installation, the tool will be available in shell as `dotnet licenses`.
 
-```console
-$ dotnet licenses generate-lock <config-file-path>
-```
+The following arguments are supported:
+- `[print-packages] <config-file-path>` — prints the list of the packages used by the configured projects,
+- `generate-lock <config-file-path>` — generates the license lock file based on the configuration,
+- `verify <config-file-path>` — verifies the license lock file against the package contents.
 
 The command's exit code is `0` if the tool ran successfully and non-zero if there were any issues, including warnings.
 
@@ -163,7 +160,7 @@ where
 - `spdx` is the list of SPDX identifiers of the license.
 - `copyright` is the list of the copyright statements of the license.
 
-One file may have several records in case it is covered by several licenses simultaneously.
+Each file is only covered by one entry (that may contain combined license information about the file).
 
 You are meant to commit the lock file and update it if something in the package contents change.
 

@@ -5,24 +5,31 @@
 module DotNetLicenses.Tests.CommandLineParserTests
 
 open DotNetLicenses.CommandLine
+open TruePath
 open Xunit
 
 [<Fact>]
 let ``print command is the default``(): unit =
-    let path = "foo/bar.toml"
-    Assert.Equal(struct(Command.PrintPackages path, ExitCode.Success), Parse [| path |])
+    let path = "/foo/bar.toml"
+    Assert.Equal(struct(Command.PrintPackages(AbsolutePath path), ExitCode.Success), Parse [| path |])
 
 [<Fact>]
 let ``print command is supported``(): unit =
-    let path = "foo/bar.toml"
+    let path = "/foo/bar.toml"
     let command = Parse [| "print-packages"; path |]
-    Assert.Equal(struct(Command.PrintPackages path, ExitCode.Success), command)
+    Assert.Equal(struct(Command.PrintPackages(AbsolutePath path), ExitCode.Success), command)
 
 [<Fact>]
 let ``generate-lock command is supported``(): unit =
-    let path = "foo/bar.toml"
+    let path = "/foo/bar.toml"
     let command = Parse [| "generate-lock"; path |]
-    Assert.Equal(struct(Command.GenerateLock path, ExitCode.Success), command)
+    Assert.Equal(struct(Command.GenerateLock(AbsolutePath path), ExitCode.Success), command)
+
+[<Fact>]
+let ``verify command is supported``(): unit =
+    let path = "/foo/bar.toml"
+    let command = Parse [| "verify"; path |]
+    Assert.Equal(struct(Command.Verify(AbsolutePath path), ExitCode.Success), command)
 
 [<Fact>]
 let ``Help option is supported``(): unit =

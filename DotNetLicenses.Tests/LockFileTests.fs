@@ -4,9 +4,11 @@
 
 module DotNetLicenses.Tests.LockFileTests
 
+open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
 open DotNetLicenses.LockFile
+open DotNetLicenses.TestFramework
 open TruePath
 open Xunit
 
@@ -37,3 +39,34 @@ let ``LockFile should be have expected format``(): Task =
         let! content = File.ReadAllTextAsync lockFilePath.Value
         Assert.Equal(expectedContent.ReplaceLineEndings "\n", content.ReplaceLineEndings "\n")
     }
+
+[<Fact>]
+let ``LockFile is read correctly``(): Task = task {
+    use dir = DisposableDirectory.Create()
+    let content = """# REUSE-IgnoreStart
+"a.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
+"x.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}, {source_id = "b", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
+"y.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
+# REUSE-IgnoreEnd
+"""
+    let filePath = dir.Path / "lock.toml"
+    do! File.WriteAllTextAsync(filePath.Value, content)
+    let! data = ReadLockFile filePath
+    let expected = Dictionary()
+    expected.Add(
+        LocalPathPattern "a.txt",
+        [|{SourceId = "a"; SourceVersion = "1.0.0"; Spdx = [|"MIT"|]; Copyright = [|"none"|]}|]
+    )
+    expected.Add(
+        LocalPathPattern "x.txt",
+        [|
+            {SourceId = "a"; SourceVersion = "1.0.0"; Spdx = [|"MIT"|]; Copyright = [|"none"|]};
+            {SourceId = "b"; SourceVersion = "1.0.0"; Spdx = [|"MIT"|]; Copyright = [|"none"|]}
+        |]
+    )
+    expected.Add(
+        LocalPathPattern "y.txt",
+        [|{SourceId = "a"; SourceVersion = "1.0.0"; Spdx = [|"MIT"|]; Copyright = [|"none"|]}|]
+    )
+    Assert.Equivalent(expected, data)
+}

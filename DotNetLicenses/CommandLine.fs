@@ -4,10 +4,14 @@
 
 module DotNetLicenses.CommandLine
 
+open System
+open TruePath
+
 [<RequireQualifiedAccess>]
 type Command =
-    | GenerateLock of configFilePath: string
-    | PrintPackages of configFilePath: string
+    | GenerateLock of configFilePath: AbsolutePath
+    | PrintPackages of configFilePath: AbsolutePath
+    | Verify of configFilePath: AbsolutePath
     | PrintHelp
     | PrintVersion
 
@@ -18,19 +22,26 @@ type ExitCode =
     // Less important warnings:
     | UnusedOverride = 1
     | DuplicateOverride = 2
+    | UnusedLockFileEntry = 3
     // More important warnings:
-    | LicenseForFileNotFound = 3
+    | LicenseForFileNotFound = 10
+    | LicenseSetEmpty = 11
+    | FileNotCovered = 12
     // Configuration errors:
-    | LockFileIsNotDefined = 5
-    | PackagedFilesAreNotDefined = 6
+    | LockFileIsNotDefined = 20
+    | PackagedFilesAreNotDefined = 21
     // Unable to start:
     | InvalidArguments = 255
+
+let private resolvePath path =
+    AbsolutePath(Environment.CurrentDirectory) / path
 
 let Parse(args: string[]): struct(Command * ExitCode) =
     match args with
     | [| "--help" |] -> Command.PrintHelp, ExitCode.Success
     | [| "--version" |] -> Command.PrintVersion, ExitCode.Success
-    | [| path |] -> Command.PrintPackages path, ExitCode.Success
-    | [| "print-packages"; path |] -> Command.PrintPackages path, ExitCode.Success
-    | [| "generate-lock"; path |] -> Command.GenerateLock path, ExitCode.Success
+    | [| path |] -> Command.PrintPackages(resolvePath path), ExitCode.Success
+    | [| "print-packages"; path |] -> Command.PrintPackages(resolvePath path), ExitCode.Success
+    | [| "generate-lock"; path |] -> Command.GenerateLock(resolvePath path), ExitCode.Success
+    | [| "verify"; path |] -> Command.Verify(resolvePath path), ExitCode.Success
     | _ -> Command.PrintHelp, ExitCode.InvalidArguments

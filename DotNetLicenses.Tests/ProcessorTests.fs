@@ -464,3 +464,64 @@ let ``Package cover spec works``(): Task =
         let! actualContent = File.ReadAllTextAsync <| (baseDir / (Option.get config.LockFile)).Value
         Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualContent.ReplaceLineEndings "\n")
     })
+
+[<Fact>]
+let ``Verify works correctly on a happy path``(): Task = task {
+    use dir = DisposableDirectory.Create()
+    let subDir = dir.Path / "subdir"
+    Directory.CreateDirectory subDir.Value |> ignore
+
+    let file = subDir / "file.txt"
+    do! File.WriteAllTextAsync(file.Value, "Hello, world!")
+    let lockFileContent = """# REUSE-IgnoreStart
+"file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+# REUSE-IgnoreEnd
+"""
+    let lockFile = dir.Path / "lock.toml"
+    do! File.WriteAllTextAsync(lockFile.Value, lockFileContent)
+
+    let config = {
+        Configuration.Empty with
+            LockFile = Some <| LocalPath lockFile
+            PackagedFiles = [|
+                { Source = Directory <| LocalPath subDir; Ignores = Array.empty }
+            |]
+    }
+
+    let wp = WarningProcessor()
+    do! Processor.Verify(config, dir.Path, wp)
+    Assert.Empty wp.Messages
+    Assert.Empty wp.Codes
+}
+
+[<Fact>]
+let ``Verify works correctly on an unhappy path``(): Task = task {
+    use dir = DisposableDirectory.Create()
+    let subDir = dir.Path / "subdir"
+    Directory.CreateDirectory subDir.Value |> ignore
+
+    let file = subDir / "file1.txt"
+    do! File.WriteAllTextAsync(file.Value, "Hello, world!")
+    let lockFileContent = """# REUSE-IgnoreStart
+"file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+# REUSE-IgnoreEnd
+"""
+    let lockFile = dir.Path / "lock.toml"
+    do! File.WriteAllTextAsync(lockFile.Value, lockFileContent)
+
+    let config = {
+        Configuration.Empty with
+            LockFile = Some <| LocalPath lockFile
+            PackagedFiles = [|
+                { Source = Directory <| LocalPath subDir; Ignores = Array.empty }
+            |]
+    }
+
+    let wp = WarningProcessor()
+    do! Processor.Verify(config, dir.Path, wp)
+    Assert.Equivalent([|ExitCode.UnusedLockFileEntry; ExitCode.FileNotCovered|], wp.Codes)
+    Assert.Equal<_>(
+        [|"File \"file1.txt\" is not covered by the lock file."; "Lock file entry \"file.txt\" is not used."|],
+        wp.Messages
+    )
+}

@@ -33,3 +33,13 @@ let SaveLockFile(path: AbsolutePath, items: LockFileEntry seq): Task =
 
     let text = "# REUSE-IgnoreStart\n" + Toml.FromModel dictionary + "# REUSE-IgnoreEnd\n"
     File.WriteAllTextAsync(path.Value, text)
+
+let ReadLockFile(path: AbsolutePath): Task<Dictionary<LocalPathPattern, LockFileItem[]>> = task {
+    let! text = File.ReadAllTextAsync path.Value
+    let dict = Toml.ToModel<Dictionary<string, LockFileItem[]>>(text, sourcePath = path.Value)
+    let result = Dictionary<LocalPathPattern, LockFileItem[]>()
+    for pair in dict do
+        let key = LocalPathPattern pair.Key
+        result.Add(key, pair.Value)
+    return result
+}

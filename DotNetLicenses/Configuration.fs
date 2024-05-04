@@ -153,9 +153,9 @@ type Configuration =
         }
     }
 
-    static member ReadFromFile(path: string): Task<Configuration> = task {
-        use stream = new FileStream(path, FileMode.Open, FileAccess.Read)
-        return! Configuration.Read(stream, Some path)
+    static member ReadFromFile(path: AbsolutePath): Task<Configuration> = task {
+        use stream = new FileStream(path.Value, FileMode.Open, FileAccess.Read)
+        return! Configuration.Read(stream, Some path.Value)
     }
 
     member this.GetMetadataOverrides(

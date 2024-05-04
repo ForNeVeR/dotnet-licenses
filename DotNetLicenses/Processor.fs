@@ -6,7 +6,6 @@ module DotNetLicenses.Processor
 
 open System.Collections.Generic
 open System.Collections.Immutable
-open System.IO
 open System.Reflection
 open System.Threading.Tasks
 open DotNetLicenses.CommandLine
@@ -255,12 +254,44 @@ let internal GenerateLockFile(
     do! SaveLockFile(lockFilePath, lockFileContent)
 }
 
+let Verify(config: Configuration, baseFolder: AbsolutePath, wp: WarningProcessor): Task = task {
+    match config.LockFile with
+    | None -> wp.ProduceWarning(ExitCode.LockFileIsNotDefined, "lock_file is not specified in the configuration.")
+    | Some lockFile ->
+
+    let! lockFileEntries = ReadLockFile(baseFolder / lockFile)
+    for entry in lockFileEntries do
+        let pattern = entry.Key
+        let items = entry.Value
+        for item in items do
+            if item.Spdx.Length = 0 then
+                wp.ProduceWarning(ExitCode.LicenseSetEmpty, $"Entry with empty license set for path \"{pattern}\".")
+
+    use ld = new LifetimeDefinition()
+    let! sourceEntries = ReadEntries ld.Lifetime baseFolder config.PackagedFiles
+
+    let unusedLockFileEntries = HashSet(lockFileEntries.Keys |> Seq.map _.Value)
+    for sourceEntry in sourceEntries do
+        if not <| unusedLockFileEntries.Remove sourceEntry.SourceRelativePath then
+            let coveringEntry =
+                unusedLockFileEntries
+                |> Seq.tryFind(fun entry ->
+                    IsCoveredByPattern (LocalPath sourceEntry.SourceRelativePath) (LocalPathPattern entry)
+                )
+            match coveringEntry with
+            | Some entry -> unusedLockFileEntries.Remove entry |> ignore
+            | None -> wp.ProduceWarning(ExitCode.FileNotCovered, $"File \"{sourceEntry.SourceRelativePath}\" is not covered by the lock file.")
+
+    for unusedEntry in unusedLockFileEntries do
+        wp.ProduceWarning(ExitCode.UnusedLockFileEntry, $"Lock file entry \"{unusedEntry}\" is not used.")
+}
+
 let private RunSynchronously(task: Task<'a>) =
     task.GetAwaiter().GetResult()
 
-let private ProcessConfig(configFilePath: string) =
+let private ProcessConfig(configFilePath: AbsolutePath) =
     task {
-        let baseFolderPath = AbsolutePath(Path.GetFullPath(Path.GetDirectoryName configFilePath))
+        let baseFolderPath = configFilePath.Parent.Value
         let! config = Configuration.ReadFromFile configFilePath
         return baseFolderPath, config
     }
@@ -291,6 +322,14 @@ let Process: Command -> int =
             let! baseFolderPath, config = ProcessConfig configFilePath
             let wp = WarningProcessor()
             do! GenerateLockFile(config, baseFolderPath, NuGetReader(), wp)
+            return ProcessWarnings wp
+        }
+        |> RunSynchronously
+    | Command.Verify config ->
+        task {
+            let! baseFolderPath, config = ProcessConfig config
+            let wp = WarningProcessor()
+            do! Verify(config, baseFolderPath, wp)
             return ProcessWarnings wp
         }
         |> RunSynchronously

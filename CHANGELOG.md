@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## [Unreleased]
 ### Added
 - Support the standard `--help` and `--version` command-line options.
-- Supported commands: `print-packages` (default) and `generate-lock`.
+- Supported commands: `print-packages` (default), `generate-lock`, and `verify`.
 - Tool configuration file, the file path being passed through the command line.
 - Configuration file options available in this version: `metadata_sources`, `metadata_overrides`, `lock_file`, and `packaged_files`.
 - Supported metadata source types: `nuget`, `license`, and `reuse`.
