@@ -7,13 +7,11 @@ SPDX-License-Identifier: MIT
 <Project>
     <PropertyGroup Label="Packaging">
         <Version>0.0.0</Version>
-        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <PackageLicenseExpression>MIT AND Apache-2.0</PackageLicenseExpression>
         <!-- TODO[#5]: Automate this using reuse -->
         <!-- REUSE-IgnoreStart -->
-        <Copyright>
-© 2024 Friedrich von Never;
-© Microsoft Corporation. All rights reserved. <!-- This is from FSharp.Core -->
-        </Copyright>
+        <Copyright>2024 Friedrich von Never &lt;friedrich@fornever.me&gt;
+2024 Friedrich von Never &lt;friedrich@fornever.me&gt;</Copyright>
         <!-- REUSE-IgnoreEnd -->
     </PropertyGroup>
 

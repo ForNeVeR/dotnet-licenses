@@ -30,6 +30,9 @@ jobs:
     - name: Verify package
       shell: pwsh
       run: dotnet run --project DotNetLicenses -- verify .dotnet-licenses.toml
+    - name: Verify package metadata
+      shell: pwsh
+      run: scripts/Test-NuGetMetadata.ps1
     - name: Read changelog
       uses: ForNeVeR/ChangelogAutomation.action@v1
       with:

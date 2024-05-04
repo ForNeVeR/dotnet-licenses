@@ -55,6 +55,8 @@ If the CI asks you to update the file licenses, follow one of these:
 
 (Feel free to attribute the changes to "DotNetLicenses Authors <https://github.com/ForNeVeR/dotnet-licenses>" instead of your name in a multi-author file, or if you don't want your name to be mentioned in the project's source: this doesn't mean you'll lose the copyright.)
 
+In case CI asks to update the package license (may happen in case of dependency update), run the `scripts/Test-NuGetLicense.ps1` script with the `-Autofix` switch.
+
 GitHub Actions
 --------------
 If you want to update the GitHub Actions used in the project, edit the file that generated them: `scripts/github-actions.fsx`.

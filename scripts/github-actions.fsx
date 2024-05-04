@@ -70,6 +70,7 @@ let workflows = [
             pwsh("Download licenses", "dotnet run --project DotNetLicenses -- download-licenses .dotnet-licenses.toml")
             dotNetPack(version = versionField)
             pwsh("Verify package", "dotnet run --project DotNetLicenses -- verify .dotnet-licenses.toml")
+            pwsh("Verify package metadata", "scripts/Test-NuGetMetadata.ps1")
 
             let releaseNotes = "./release-notes.md"
             prepareChangelog(releaseNotes)
