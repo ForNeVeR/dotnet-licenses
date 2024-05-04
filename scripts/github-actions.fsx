@@ -28,18 +28,16 @@ let workflows = [
         onWorkflowDispatch
     ]
 
+    let pwsh(name, run) = step(name = name, shell = "pwsh", run = run)
+
     workflow "main" [
         name "Main"
         yield! mainTriggers
-
-        let pwsh(name, run) = step(name = name, shell = "pwsh", run = run)
-
         job "test" [
             checkout
             yield! dotNetBuildAndTest()
-            pwsh("Pack", "dotnet pack")
-            pwsh("Verify package", "dotnet run --project DotNetLicenses -- verify .dotnet-licenses.toml")
         ] |> addMatrix images
+
         job "licenses" [
             runsOn linuxImage
             checkout
@@ -47,6 +45,7 @@ let workflows = [
             pwsh("Check REUSE compliance", "reuse lint")
             pwsh("Check copyright years", "scripts/Test-LicenseHeaders.ps1")
         ]
+
         job "encoding" [
             runsOn linuxImage
             checkout
@@ -68,6 +67,8 @@ let workflows = [
             let versionField = "${{ steps." + versionStepId + ".outputs.version }}"
             getVersionWithScript(stepId = versionStepId, scriptPath = "scripts/Get-Version.ps1")
             dotNetPack(version = versionField)
+
+            pwsh("Verify package", "dotnet run --project DotNetLicenses -- verify .dotnet-licenses.toml")
 
             let releaseNotes = "./release-notes.md"
             prepareChangelog(releaseNotes)

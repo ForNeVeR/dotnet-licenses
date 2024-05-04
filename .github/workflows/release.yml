@@ -24,6 +24,9 @@ jobs:
       shell: pwsh
       run: echo "version=$(scripts/Get-Version.ps1 -RefName $env:GITHUB_REF)" >> $env:GITHUB_OUTPUT
     - run: dotnet pack --configuration Release -p:Version=${{ steps.version.outputs.version }}
+    - name: Verify package
+      shell: pwsh
+      run: dotnet run --project DotNetLicenses -- verify .dotnet-licenses.toml
     - name: Read changelog
       uses: ForNeVeR/ChangelogAutomation.action@v1
       with:

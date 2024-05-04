@@ -40,12 +40,6 @@ jobs:
     - name: Test
       run: dotnet test
       timeout-minutes: 10
-    - name: Pack
-      shell: pwsh
-      run: dotnet pack
-    - name: Verify package
-      shell: pwsh
-      run: dotnet run --project DotNetLicenses -- verify .dotnet-licenses.toml
   licenses:
     runs-on: ubuntu-22.04
     steps:
