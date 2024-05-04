@@ -66,8 +66,9 @@ let workflows = [
             let versionStepId = "version"
             let versionField = "${{ steps." + versionStepId + ".outputs.version }}"
             getVersionWithScript(stepId = versionStepId, scriptPath = "scripts/Get-Version.ps1")
-            dotNetPack(version = versionField)
 
+            pwsh("Download licenses", "dotnet run --project DotNetLicenses -- download-licenses .dotnet-licenses.toml")
+            dotNetPack(version = versionField)
             pwsh("Verify package", "dotnet run --project DotNetLicenses -- verify .dotnet-licenses.toml")
 
             let releaseNotes = "./release-notes.md"

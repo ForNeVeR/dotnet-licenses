@@ -23,6 +23,9 @@ jobs:
       name: Get version
       shell: pwsh
       run: echo "version=$(scripts/Get-Version.ps1 -RefName $env:GITHUB_REF)" >> $env:GITHUB_OUTPUT
+    - name: Download licenses
+      shell: pwsh
+      run: dotnet run --project DotNetLicenses -- download-licenses .dotnet-licenses.toml
     - run: dotnet pack --configuration Release -p:Version=${{ steps.version.outputs.version }}
     - name: Verify package
       shell: pwsh

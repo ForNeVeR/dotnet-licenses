@@ -32,6 +32,12 @@ let ``verify command is supported``(): unit =
     Assert.Equal(struct(Command.Verify(AbsolutePath path), ExitCode.Success), command)
 
 [<Fact>]
+let ``download-licenses command is supported``(): unit =
+    let path = "/foo/bar.toml"
+    let command = Parse [| "download-licenses"; path |]
+    Assert.Equal(struct(Command.DownloadLicenses(AbsolutePath path), ExitCode.Success), command)
+
+[<Fact>]
 let ``Help option is supported``(): unit =
     Assert.Equal(struct(Command.PrintHelp, ExitCode.Success), Parse [| "--help" |])
 

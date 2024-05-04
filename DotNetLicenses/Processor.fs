@@ -6,6 +6,8 @@ module DotNetLicenses.Processor
 
 open System.Collections.Generic
 open System.Collections.Immutable
+open System.IO
+open System.Net.Http
 open System.Reflection
 open System.Threading.Tasks
 open DotNetLicenses.CommandLine
@@ -17,6 +19,7 @@ open DotNetLicenses.Reuse
 open DotNetLicenses.Sources
 open JetBrains.Lifetimes
 open Microsoft.Extensions.FileSystemGlobbing
+open Microsoft.FSharp.Core
 open ReuseSpec
 open TruePath
 
@@ -313,6 +316,31 @@ let Verify(config: Configuration, baseFolder: AbsolutePath, wp: WarningProcessor
         wp.ProduceWarning(ExitCode.UnusedLockFileEntry, $"Lock file entry \"{unusedEntry}\" is not used.")
 }
 
+let private DownloadLicenses(config: Configuration, baseFolder: AbsolutePath) = task {
+    let lockFile = config.LockFile |> Option.defaultWith(fun() -> failwith "lock_file not defined.")
+    let licenseStorage =
+        config.LicenseStorage |> Option.defaultWith(fun() -> failwith "license_storage_path not defined.")
+    let! lockFileEntries = ReadLockFile(baseFolder / lockFile)
+    let licenses =
+        lockFileEntries.Values
+        |> Seq.collect(fun entries -> entries |> Seq.collect _.Spdx)
+        |> Seq.distinct
+        |> Seq.toArray
+    use client = new HttpClient()
+    for license in licenses do
+        let url = $"https://spdx.org/licenses/{license}.txt"
+        try
+            let! content = client.GetStringAsync(url)
+            let licensePath = baseFolder / licenseStorage / $"{license}.txt"
+            ignore <| Directory.CreateDirectory(licensePath.Parent.Value.Value)
+            do! File.WriteAllTextAsync(licensePath.Value, content)
+        with
+        | e ->
+            eprintfn $"Error while downloading license for SPDX {license}: {e.Message}"
+            raise e
+    printf $"{licenses.Length} license files successfully downloaded to \"{baseFolder / licenseStorage}\"."
+}
+
 let private RunSynchronously(task: Task<'a>) =
     task.GetAwaiter().GetResult()
 
@@ -334,6 +362,8 @@ let Process: Command -> int =
 - --help - Print this help message.
 - [print-packages] <config-file-path> - Print the licenses used by the projects designated by the configuration.
 - generate-lock <config-file-path> - Generate a license lock file and place it accordingly to the configuration.
+- verify <config-file-path> - Verify the lock file against the configuration.
+- download-licenses <config-file-path> - Download the licenses for the entries in the lock file.
     """
         0
     | Command.PrintPackages configFilePath ->
@@ -358,5 +388,12 @@ let Process: Command -> int =
             let wp = WarningProcessor()
             do! Verify(config, baseFolderPath, wp)
             return ProcessWarnings wp
+        }
+        |> RunSynchronously
+    | Command.DownloadLicenses config ->
+        task {
+            let! baseFolderPath, config = ProcessConfig config
+            do! DownloadLicenses(config, baseFolderPath)
+            return int ExitCode.Success
         }
         |> RunSynchronously

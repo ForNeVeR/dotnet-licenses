@@ -31,9 +31,10 @@ $ dotnet test
 
 Pack
 ----
-To prepare a NuGet package with the tool, use the following shell command:
+To prepare a NuGet package with the tool, use the following shell commands:
 
 ```console
+$ dotnet run --project src/DotNetLicenses/DotNetLicenses.csproj -- download-licenses .dotnet-licenses.toml
 $ dotnet pack
 ```
 

@@ -21,6 +21,7 @@ type Configuration =
         MetadataSources: MetadataSource[]
         MetadataOverrides: Override[]
         LockFile: LocalPath option
+        LicenseStorage: LocalPath option
         PackagedFiles: PackageSpec[]
     }
 
@@ -28,6 +29,7 @@ type Configuration =
         MetadataSources = Array.empty
         MetadataOverrides = Array.empty
         LockFile = None
+        LicenseStorage = None
         PackagedFiles = Array.empty
     }
 
@@ -143,12 +145,14 @@ type Configuration =
         let sources = getValue table "metadata_sources"
         let overrides = tryGetValue table "metadata_overrides"
         let lockFilePath = tryGetValue table "lock_file" |> Option.map (fun (x: string) -> LocalPath x)
+        let licenseStorage = tryGetValue table "license_storage_path" |> Option.map (fun (x: string) -> LocalPath x)
         let packagedFiles = tryGetValue table "packaged_files"
 
         return {
             MetadataSources = readSources sources
             MetadataOverrides = readOverrides overrides
             LockFile = lockFilePath
+            LicenseStorage = licenseStorage
             PackagedFiles = readPackagedFiles packagedFiles
         }
     }

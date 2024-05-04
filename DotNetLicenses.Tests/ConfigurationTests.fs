@@ -199,6 +199,15 @@ metadata_sources = [
             |]
     }
 
+let ``Download location is read correctly``(): Task =
+    let content = """
+license_storage_path = "../licenses"
+"""
+    doTest content {
+        Configuration.Empty with
+            LicenseStorage = Some <| LocalPath "../licenses"
+    }
+
 [<Fact>]
 let ``GetOverrides works on duplicate package names (not versions)``(): Task = task {
     let content = """

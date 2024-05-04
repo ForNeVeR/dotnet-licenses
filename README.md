@@ -34,9 +34,10 @@ Usage
 After installation, the tool will be available in shell as `dotnet licenses`.
 
 The following arguments are supported:
-- `[print-packages] <config-file-path>` — prints the list of the packages used by the configured projects,
-- `generate-lock <config-file-path>` — generates the license lock file based on the configuration,
-- `verify <config-file-path>` — verifies the license lock file against the package contents.
+- `[print-packages] <config-file-path>` — prints the list of the packages used by the configured projects;
+- `generate-lock <config-file-path>` — generates the license lock file based on the configuration;
+- `verify <config-file-path>` — verifies the license lock file against the package contents;
+- `download-licenses <config-file-path>` — downloads the licenses of the entries specified in the lock file.
 
 The command's exit code is `0` if the tool ran successfully and non-zero if there were any issues, including warnings.
 
@@ -63,7 +64,8 @@ metadata_overrides = [# optional
     { id = "package1", version = "1.0.0", spdx = "MIT", copyright = "Copyright" },
     { id = "package2", version = "2.0.0", spdx = "GPL-3.0", copyright = "Copyright" }
 ]
-lock_file = "path/to/lock-file.toml" # required for generate-lock
+lock_file = "path/to/lock-file.toml" # required for generate-lock command
+license_storage_path = "path/to/licenses" # required for download-licenses command
 packaged_files = [# required for generate-lock
     { type = "directory", path = "bin", ignore = [
         { type = "preset", name = "licenses" }
@@ -98,6 +100,8 @@ Currently supported metadata sources types are listed below.
 The `metadata_overrides` parameter (optional) should contain a set of license overrides for incorrectly marked packages in NuGet. Every record contains string fields `id`, `version`, `spdx`, and `copyright`. All fields are mandatory.
 
 The `lock_file` parameter (optional) is the path to the license lock file that will be produced or verified by the corresponding commands. This parameter is mandatory for the `generate-lock` command.
+
+The `license_storage_path` parameter (optional) is the path to the directory where the tool will download the licenses of the packages used by the lock file. This parameter is mandatory for the `download-licenses` command.
 
 The `packaged_files` parameter (optional) describes the list of the files you want to check for their license contents. It is a list of the entries having the following structure:
 - `type` (required) should be either `directory` (to point to the root of the file hierarchy that will be processed recursively) or `zip`, to point to a zip archive that the tool will analyze,
@@ -162,6 +166,8 @@ where
 - `is_ignored` _(optional)_ marks the items that were explicitly ignored by the user (or default ignore preset) when generating the lock file.
 
 Each file is only covered by one entry (that may contain combined license information about the file).
+
+Note that **every file** from the package is meant to be covered by the lock file. Orphaned files are not expected.
 
 You are meant to commit the lock file and update it if something in the package contents change.
 
