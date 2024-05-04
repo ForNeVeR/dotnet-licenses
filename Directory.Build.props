@@ -7,10 +7,14 @@ SPDX-License-Identifier: MIT
 <Project>
     <PropertyGroup Label="Packaging">
         <Version>0.0.0</Version>
-        <PackageLicenseExpression>MIT AND Apache-2.0</PackageLicenseExpression>
+        <PackageLicenseExpression>MIT AND Apache-2.0 AND BSD-2-Clause</PackageLicenseExpression>
         <!-- REUSE-IgnoreStart -->
         <Copyright>2024 Friedrich von Never &lt;friedrich@fornever.me&gt;
-2024 Friedrich von Never &lt;friedrich@fornever.me&gt;</Copyright>
+© Microsoft Corporation. All rights reserved.
+Copyright 2014 codemix ltd.; Copyright (c) 2021 Guiorgy
+Copyright © JetBrains 2024
+Copyright © 2017 Michael Adelson
+Alexandre Mutel</Copyright>
         <!-- REUSE-IgnoreEnd -->
     </PropertyGroup>
 
