@@ -8,7 +8,7 @@ REUSE-IgnoreStart
 
 dotnet-licenses [![Status Zero][status-zero]][andivionian-status-classifier] [![NuGet package][nuget.badge]][nuget.page]
 ===============
-dotnet-licenses is a set of tooling to automate following the requirements and inventorying the lists of the open-source licenses used by the projects that chose to publish licensed artifacts alongside their own files.
+dotnet-licenses is a tool to automate following the requirements and inventorying the lists of the open-source licenses used by the projects that chose to publish artifacts covered by external licenses alongside their own files.
 
 The general approach is inspired by [REUSE][reuse], but adopted for binary packages.
 
@@ -45,6 +45,8 @@ Read about the configuration file expected to be found by the `<config-file-path
 
 Configuration
 -------------
+Looking to set up the tool for your new project? Check the [core concepts][docs.concepts] documentation article first.
+
 The configuration file format is TOML. The format:
 ```toml
 metadata_sources = [# required
