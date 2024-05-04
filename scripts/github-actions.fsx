@@ -31,16 +31,18 @@ let workflows = [
     workflow "main" [
         name "Main"
         yield! mainTriggers
+
+        let pwsh(name, run) = step(name = name, shell = "pwsh", run = run)
+
         job "test" [
             checkout
             yield! dotNetBuildAndTest()
+            pwsh("Pack", "dotnet pack")
+            pwsh("Verify package", "dotnet run --project DotNetLicenses -- verify .dotnet-licenses.toml")
         ] |> addMatrix images
         job "licenses" [
             runsOn linuxImage
             checkout
-
-            let pwsh(name, run) = step(name = name, shell = "pwsh", run = run)
-
             pwsh("Install REUSE", "pipx install reuse")
             pwsh("Check REUSE compliance", "reuse lint")
             pwsh("Check copyright years", "scripts/Test-LicenseHeaders.ps1")
