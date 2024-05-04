@@ -24,7 +24,7 @@ $packagingGroup = $directoryBuildProps.Project.PropertyGroup `
 $packageLicenseExpression = $packagingGroup.PackageLicenseExpression
 $copyrightStatements = $packagingGroup.Copyright
 
-# TODO: This should be performed using the tooling provided by dotnet-authors in the future.
+# TODO[#74]: This should be performed using the tooling provided by dotnet-authors in the future.
 function normalizeCopyrights($copyrights) {
     $normalized = @()
     foreach ($copyright in $copyrights) {
