@@ -26,7 +26,8 @@ type ExitCode =
     // More important warnings:
     | LicenseForFileNotFound = 10
     | LicenseSetEmpty = 11
-    | FileNotCovered = 12
+    | NonEmptyIgnoredLockFileEntry = 12
+    | FileNotCovered = 13
     // Configuration errors:
     | LockFileIsNotDefined = 20
     | PackagedFilesAreNotDefined = 21

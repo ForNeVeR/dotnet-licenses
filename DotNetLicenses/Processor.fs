@@ -280,7 +280,12 @@ let Verify(config: Configuration, baseFolder: AbsolutePath, wp: WarningProcessor
         let pattern = entry.Key
         let items = entry.Value
         for item in items do
-            if item.Spdx.Length = 0 then
+            if item.IsIgnored && (item.Spdx.Length > 0 || item.Copyright.Length > 0) then
+                wp.ProduceWarning(
+                    ExitCode.NonEmptyIgnoredLockFileEntry,
+                    $"Ignored entry with license or copyright set for path \"{pattern}\"."
+                )
+            else if not item.IsIgnored && item.Spdx.Length = 0 then
                 wp.ProduceWarning(ExitCode.LicenseSetEmpty, $"Entry with empty license set for path \"{pattern}\".")
 
     use ld = new LifetimeDefinition()
