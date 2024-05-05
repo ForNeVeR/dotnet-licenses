@@ -103,7 +103,7 @@ let internal PrintMetadata(
             let! entries = ReadReuseDirectory(root, excludes)
             for entry in entries do
                 let licenses = entry.LicenseIdentifiers |> String.concat ", "
-                let copyrights = entry.CopyrightStatements |> String.concat ("\n    ")
+                let copyrights = entry.CopyrightStatements |> String.concat "\n    "
                 printfn $"  - {entry.Path}: {licenses}\n    {copyrights}"
 }
 
@@ -208,7 +208,14 @@ let internal GenerateLockFile(
 
     let coverageCache = CoverageCache.Empty()
 
-    let findLicensesForFile entry: Task<LockFileEntry[]> = task {
+    let findLicensesForFile (entry: ISourceEntry): Task<LockFileEntry[]> = task {
+        let! possiblePackageEntries =
+            packages
+            |> Seq.map(fun p ->
+                nuGet.ContainsFileName p <| Path.GetFileName(entry.SourceRelativePath)
+            )
+            |> Task.WhenAll
+        let fileContainingPackagesCount = possiblePackageEntries |> Seq.filter id |> Seq.length
         let! packageEntries = nuGet.FindFile hashCache packages entry
         let packageSearchResults =
             packageEntries
@@ -216,9 +223,10 @@ let internal GenerateLockFile(
                 let metadata = packageMetadata[package]
                 match metadata with
                 | Package p ->
+                    let sourceVersion = if fileContainingPackagesCount <= 1 then None else Some package.Version
                     LocalPathPattern entry.SourceRelativePath, {
                         LockFileItem.SourceId = Some package.PackageId
-                        SourceVersion = Some package.Version
+                        SourceVersion = sourceVersion
                         Spdx = p.Spdx
                         Copyright = p.Copyrights
                         IsIgnored = false

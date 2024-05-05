@@ -22,6 +22,9 @@ let MirroringReader = {
                 Copyright = $"Copyright {id}"
             }
         }
+
+        member _.ContainsFileName _ _ = Task.FromResult true
+
         member _.FindFile _ packages _ = packages |> Seq.toArray |> Task.FromResult
 }
 

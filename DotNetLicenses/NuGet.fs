@@ -27,15 +27,17 @@ let internal UnpackedPackagePath(packageReference: PackageReference): AbsolutePa
 let internal GetNuSpecFilePath(packageReference: PackageReference): AbsolutePath =
     UnpackedPackagePath packageReference / $"{packageReference.PackageId.ToLowerInvariant()}.nuspec"
 
+let private GetPackageFiles package =
+    Directory.EnumerateFileSystemEntries(
+        (UnpackedPackagePath package).Value,
+        "*",
+        EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
+    )
+    |> Seq.map AbsolutePath
+
 let internal ContainsFile (fileHashCache: FileHashCache)
                           (package: PackageReference, entry: ISourceEntry): Task<bool> = task {
-    let files =
-        Directory.EnumerateFileSystemEntries(
-            (UnpackedPackagePath package).Value,
-            "*",
-            EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
-        )
-        |> Seq.map AbsolutePath
+    let files = GetPackageFiles package
     let fileName = Path.GetFileName entry.SourceRelativePath
     let possibleFiles = files |> Seq.filter(fun f -> f.FileName = fileName)
     let! possibleFileCheckResults =
@@ -87,12 +89,21 @@ let internal ReadNuSpec(filePath: AbsolutePath): Task<NuSpec> = Task.Run(fun() -
 
 type INuGetReader =
     abstract ReadNuSpec: PackageReference -> Task<NuSpec>
+    abstract ContainsFileName: PackageReference -> string -> Task<bool>
     abstract FindFile: FileHashCache -> PackageReference seq -> ISourceEntry -> Task<PackageReference[]>
 
 type NuGetReader() =
     interface INuGetReader with
         member _.ReadNuSpec(reference: PackageReference): Task<NuSpec> =
             GetNuSpecFilePath reference |> ReadNuSpec
+
+        member _.ContainsFileName (package: PackageReference) (fileName: string): Task<bool> =
+            task {
+                do! Task.Yield()
+                let files = GetPackageFiles package
+                return files |> Seq.exists(fun f -> Path.GetFileName f.Value = fileName)
+            }
+
         member _.FindFile (cache: FileHashCache)
                           (packages: PackageReference seq)
                           (entry: ISourceEntry): Task<PackageReference[]> = task {

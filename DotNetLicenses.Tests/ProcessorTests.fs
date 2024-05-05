@@ -106,7 +106,7 @@ let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj"
     do! File.WriteAllTextAsync((directory.Path / "test.txt").Value, "Hello!")
 
     let expectedLock = """# REUSE-IgnoreStart
-"test.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"test.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
     let config = {
@@ -132,7 +132,7 @@ let ``Processor generates a lock file for a file tree``(): Task = task {
     let packagedFile = directory.Path / "my-file.txt"
     do! File.WriteAllTextAsync(packagedFile.Value, "Hello World!")
     let expectedLock = """# REUSE-IgnoreStart
-"my-file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -162,7 +162,7 @@ let ``Processor generates a lock file for a ZIP archive``(): Task = task {
     let archivePath = directory.Path / "file.zip"
     ZipFiles.SingleFileArchive(archivePath, "content/my-file.txt", "Hello World"B)
     let expectedLock = """# REUSE-IgnoreStart
-"content/my-file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"content/my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
     do! DataFiles.Deploy "Test.csproj" (fun project -> task {
