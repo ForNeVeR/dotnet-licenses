@@ -38,7 +38,9 @@ SPDX-License-Identifier: MIT
         <Compile Include="MsBuild.fs" />
         <Compile Include="FileHashCache.fs" />
         <Compile Include="Sources.fs" />
+        <Compile Include="DotNetSdk.fs" />
         <Compile Include="NuGet.fs" />
+        <Compile Include="License.fs" />
         <Compile Include="Metadata.fs" />
         <Compile Include="LockFile.fs" />
         <Compile Include="Reuse.fs" />
@@ -48,7 +50,7 @@ SPDX-License-Identifier: MIT
     </ItemGroup>
 
     <ItemGroup Label="Packaging">
-        <None Include="..\package-licenses\**" Pack="true" PackagePath="\LICENSES" />
+        <None Include="..\package-licenses\**" Pack="true" LinkBase="LICENSES" PackagePath="\LICENSES" />
         <None Include="..\CHANGELOG.md" Pack="true" PackagePath="\" />
         <None Include="..\README.md" Pack="true" PackagePath="\" />
         <None Include="..\.dotnet-licenses.lock.toml" Pack="true" PackagePath="\" />

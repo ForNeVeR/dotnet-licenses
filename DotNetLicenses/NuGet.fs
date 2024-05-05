@@ -22,10 +22,13 @@ let mutable internal PackagesFolderPath: AbsolutePath =
     )
 
 let internal UnpackedPackagePath(packageReference: PackageReference): AbsolutePath =
-    PackagesFolderPath / packageReference.PackageId.ToLowerInvariant() / packageReference.Version.ToLowerInvariant()
+    match packageReference with
+    | NuGetReference coordinates ->
+        PackagesFolderPath / coordinates.PackageId.ToLowerInvariant() / coordinates.Version.ToLowerInvariant()
+    | FrameworkReference coordinates -> failwith "TODO"
 
-let internal GetNuSpecFilePath(packageReference: PackageReference): AbsolutePath =
-    UnpackedPackagePath packageReference / $"{packageReference.PackageId.ToLowerInvariant()}.nuspec"
+let internal GetNuSpecFilePath(packageReference: PackageCoordinates): AbsolutePath =
+    UnpackedPackagePath(NuGetReference packageReference) / $"{packageReference.PackageId.ToLowerInvariant()}.nuspec"
 
 let private GetPackageFiles package =
     Directory.EnumerateFileSystemEntries(
@@ -88,14 +91,14 @@ let internal ReadNuSpec(filePath: AbsolutePath): Task<NuSpec> = Task.Run(fun() -
 )
 
 type INuGetReader =
-    abstract ReadNuSpec: PackageReference -> Task<NuSpec>
+    abstract ReadNuSpec: PackageCoordinates -> Task<NuSpec>
     abstract ContainsFileName: PackageReference -> string -> Task<bool>
     abstract FindFile: FileHashCache -> PackageReference seq -> ISourceEntry -> Task<PackageReference[]>
 
 type NuGetReader() =
     interface INuGetReader with
-        member _.ReadNuSpec(reference: PackageReference): Task<NuSpec> =
-            GetNuSpecFilePath reference |> ReadNuSpec
+        member _.ReadNuSpec(coordinates: PackageCoordinates): Task<NuSpec> =
+            GetNuSpecFilePath coordinates |> ReadNuSpec
 
         member _.ContainsFileName (package: PackageReference) (fileName: string): Task<bool> =
             task {
@@ -139,18 +142,21 @@ let private ReadProjectReferences(project: AbsolutePath): Task<PackageReference[
     let projectAssetsJson = project.Parent.Value / objDir / "project.assets.json"
     if File.Exists projectAssetsJson.Value then
         let! assets = ReadProjectAssetsJson projectAssetsJson
-        let references =
+        let frameworkReferences = failwith "TODO"
+        let nuGetReferences =
             assets.Libraries
             |> Seq.filter(fun e -> e.Value.Type = "package")
             |> Seq.map(fun e ->
                 let entryName = e.Key
                 match entryName.Split('/') with
                 | [| packageId; version |] ->
-                    { PackageId = packageId; Version = version }
+                    NuGetReference { PackageId = packageId; Version = version }
                 | _ -> failwithf $"Cannot read package reference in file \"{project}\": \"{entryName}\"."
             )
-            |> Seq.toArray
-        return references
+        return [|
+            frameworkReferences
+            nuGetReferences
+        |] |> Seq.concat |> Seq.toArray
     else
         return! MsBuild.GetDirectPackageReferences project
 }
@@ -164,7 +170,10 @@ let ReadTransitiveProjectReferences(projectOrSolution: AbsolutePath): Task<Packa
     let allReferences =
         Seq.concat assetReferences
         |> Seq.distinct
-        |> Seq.sortBy(fun r -> r.PackageId, r.Version)
+        |> Seq.sortBy(function
+            | FrameworkReference f -> 0, f.PackageId, f.Version
+            | NuGetReference r -> 1, r.PackageId, r.Version
+        )
         |> Seq.toArray
     return allReferences
 }

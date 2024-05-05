@@ -9,14 +9,18 @@ open System.IO
 open System.Threading.Tasks
 open TruePath
 
-type PackageReference = {
+type PackageCoordinates = {
     PackageId: string
     Version: string
 }
 
+type PackageReference =
+    | NuGetReference of PackageCoordinates
+    | FrameworkReference of PackageCoordinates
+
 type MetadataOverride = {
-    SpdxExpressions: string[]
-    Copyrights: string[]
+    SpdxExpression: string
+    CopyrightNotices: string[]
 }
 
 type IgnorePattern =

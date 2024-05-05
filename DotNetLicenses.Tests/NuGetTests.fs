@@ -52,7 +52,7 @@ let ``NuSpec file should be read correctly``(fileName: string): Task = task {
 [<Fact>]
 let ``Package file searcher works correctly``(): Task = task {
     use mockedPackageRoot = DisposableDirectory.Create()
-    let package = {
+    let coords = {
         PackageId = "FVNever.DotNetLicenses.StubPackage"
         Version = "1.0.0"
     }
@@ -69,10 +69,11 @@ let ``Package file searcher works correctly``(): Task = task {
 
     use cache = new FileHashCache()
     do! NuGetMock.WithNuGetPackageRoot mockedPackageRoot.Path <| fun() -> task {
+        let reference = NuGetReference coords
         do! deployFileTo contentFullPath
-        do! deployFileTo(UnpackedPackagePath package / "file.txt")
+        do! deployFileTo(UnpackedPackagePath reference / "file.txt")
 
-        let! contains = ContainsFile cache (package, fileEntry)
+        let! contains = ContainsFile cache (reference, fileEntry)
         Assert.True(contains, "File should be considered as part of the package while it is unchanged.")
 
         // Sadly, the file system time storage precision is not enough for the test to work without this in some
@@ -84,7 +85,7 @@ let ``Package file searcher works correctly``(): Task = task {
         do! Task.Delay(TimeSpan.FromMilliseconds 1.0)
         File.WriteAllBytes((projectDir.Path / fileRelativePath).Value, "Hello2"B)
 
-        let! contains = ContainsFile cache (package, fileEntry)
+        let! contains = ContainsFile cache (reference, fileEntry)
         Assert.False(contains, "File should not be considered as part of the package after change.")
     }
 }
@@ -97,9 +98,9 @@ let ``NuGet reads transitive package references correctly``(): Task =
         Assert.True <| File.Exists projectAssetsJson.Value
         let! references = ReadTransitiveProjectReferences project
         Assert.Equal<PackageReference>([|
-            { PackageId = "FSharp.Core"; Version = "8.0.200" }
-            { PackageId = "Generaptor"; Version = "1.2.0" }
-            { PackageId = "YamlDotNet";  Version = "15.1.1" }
+            NuGetReference { PackageId = "FSharp.Core"; Version = "8.0.200" }
+            NuGetReference { PackageId = "Generaptor"; Version = "1.2.0" }
+            NuGetReference { PackageId = "YamlDotNet";  Version = "15.1.1" }
         |], references)
     })
 

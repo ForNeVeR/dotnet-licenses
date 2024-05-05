@@ -85,8 +85,8 @@ type Configuration =
                 | "nuget" -> NuGet { Include = LocalPath(getValue t "include" : string) }
                 | "license" ->
                     License {
-                        Spdx = getValue t "spdx"
-                        Copyright = getValue t "copyright"
+                        SpdxExpression = getValue t "spdx"
+                        CopyrightNotice = getValue t "copyright"
                         FilesCovered = readFilesCovered t
                         PatternsCovered = readPatternsCovered t
                     }
@@ -105,8 +105,8 @@ type Configuration =
             {
                 Id = getValue t "id"
                 Version = getValue t "version"
-                Spdx = readItemOrArray "spdx" id t
-                Copyright = readItemOrArray "copyright" id t
+                SpdxExpression = getValue t "spdx"
+                CopyrightNotices = readItemOrArray "copyright" id t
             }
         )
 
@@ -164,14 +164,14 @@ type Configuration =
 
     member this.GetMetadataOverrides(
         warningProcessor: WarningProcessor
-    ): IReadOnlyDictionary<PackageReference, MetadataOverride> =
+    ): IReadOnlyDictionary<PackageCoordinates, MetadataOverride> =
         let packageReference(o: Override) = {
             PackageId = o.Id
             Version = o.Version
         }
         let metadataOverride(o: Override) = {
-            SpdxExpressions = o.Spdx
-            Copyrights = o.Copyright
+            SpdxExpression = o.SpdxExpression
+            CopyrightNotices = o.CopyrightNotices
         }
 
         let map = Dictionary()
@@ -195,8 +195,8 @@ and MetadataSource =
 and Override = {
     Id: string
     Version: string
-    Spdx: string[]
-    Copyright: string[]
+    SpdxExpression: string
+    CopyrightNotices: string[]
 }
 
 and AssignedMetadata = {
@@ -212,8 +212,8 @@ and NuGetSource =
     static member Of(relativePath: string) = NuGetSource.Of(LocalPath relativePath)
 
 and LicenseSource = {
-    Spdx: string
-    Copyright: string
+    SpdxExpression: string
+    CopyrightNotice: string
     FilesCovered: LocalPathPattern[]
     PatternsCovered: CoverageSpec[]
 }

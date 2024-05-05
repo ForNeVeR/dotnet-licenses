@@ -6,6 +6,7 @@ module DotNetLicenses.CoveragePattern
 
 open System
 open System.Collections.Concurrent
+open System.Collections.Immutable
 open System.IO
 open System.Threading.Tasks
 open DotNetLicenses.LockFile
@@ -30,8 +31,8 @@ let private CollectLockFileItem (baseDir: AbsolutePath) = function
         Task.FromResult {
             LockFileItem.SourceId = None
             SourceVersion = None
-            Spdx = [|source.Spdx|]
-            Copyright = [|source.Copyright|]
+            SpdxExpression = Some source.SpdxExpression
+            CopyrightNotices = ImmutableArray.Create source.CopyrightNotice
             IsIgnored = false
         }
     | Reuse source -> task {
@@ -41,8 +42,8 @@ let private CollectLockFileItem (baseDir: AbsolutePath) = function
         return {
             LockFileItem.SourceId = None
             SourceVersion = None
-            Spdx = Seq.toArray resultEntry.LicenseIdentifiers
-            Copyright = Seq.toArray resultEntry.CopyrightStatements
+            SpdxExpression = Some <| String.Join(" AND ", resultEntry.SpdxLicenseIdentifiers)
+            CopyrightNotices = resultEntry.CopyrightNotices
             IsIgnored = false
         }
     }

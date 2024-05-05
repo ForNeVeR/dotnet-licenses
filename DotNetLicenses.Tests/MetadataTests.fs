@@ -4,6 +4,8 @@
 
 module DotNetLicenses.Tests.MetadataTests
 
+open System.Collections.Immutable
+open System.IO
 open System.Threading.Tasks
 open DotNetLicenses
 open DotNetLicenses.Metadata
@@ -15,37 +17,50 @@ open Xunit
 
 [<Fact>]
 let ``Get metadata from .nuspec works correctly``(): Task = task {
-    let path = DataFiles.Get "Test1.nuspec"
-    let! nuSpec = ReadNuSpec path
-    let reference = {
-        PackageId = "Package"
-        Version = "1.0.0"
-    }
-    let metadata = GetMetadata reference nuSpec
-    Assert.Equal(Some <| Package {|
-        Source = reference
-        Spdx = [|"MIT"|]
-        Copyrights = [|"© 2024 Friedrich von Never"|]
-    |}, metadata)
+    use dir = DisposableDirectory.Create()
+    do! NuGetMock.WithNuGetPackageRoot dir.Path (fun packageRoot -> task {
+        let coords = {
+            PackageId = "Package"
+            Version = "1.0.0"
+        }
+        let nuSpec = DataFiles.Get "Test1.nuspec"
+        let targetPath = GetNuSpecFilePath coords
+        Directory.CreateDirectory(targetPath.Parent.Value.Value) |> ignore
+        File.Copy(nuSpec.Value, targetPath.Value)
+
+        let reference = NuGetReference coords
+        let! metadata = GetMetadata NuGetMock.MirroringReader reference
+        Assert.Equal(Some <| Package {|
+            Source = reference
+            License = {
+                SpdxLicense.SpdxExpression = "MIT"
+                CopyrightNotices = ImmutableArray.Create "© 2024 Friedrich von Never"
+            }
+        |}, metadata)
+    })
 }
 
 [<Fact>]
 let ``Overrides work as expected``(): Task = DataFiles.Deploy "TestComplex.csproj" (fun path -> task {
     let reader = MetadataReader NuGetMock.MirroringReader
     let! metadata = reader.ReadFromProject(path, Map.ofArray [|
-        { PackageId = "FVNever.Package1"; Version = "0.0.0" }, { SpdxExpressions = [|"EXPR1"|]; Copyrights = [|"C1"|] }
-        { PackageId = "FVNever.Package1"; Version = "1.0.0" }, { SpdxExpressions = [|"EXPR2"|]; Copyrights = [|"C2"|] }
+        { PackageId = "FVNever.Package1"; Version = "0.0.0" }, { SpdxExpression = "EXPR1"; CopyrightNotices = [|"C1"|] }
+        { PackageId = "FVNever.Package1"; Version = "1.0.0" }, { SpdxExpression = "EXPR2"; CopyrightNotices = [|"C2"|] }
     |])
     Assert.Equivalent([|
         Package {|
-            Source = { PackageId = "FVNever.Package1"; Version = "0.0.0" }
-            Spdx = [|"EXPR1"|]
-            Copyrights = [|"C1"|]
+            Source = NuGetReference { PackageId = "FVNever.Package1"; Version = "0.0.0" }
+            License = {
+                SpdxLicense.SpdxExpression = "EXPR1"
+                CopyrightNotices = ImmutableArray.Create "C1"
+            }
         |}
         Package {|
-            Source = { PackageId = "FVNever.Package3"; Version = "0.0.0" }
-            Spdx = [|"License FVNever.Package3"|]
-            Copyrights = [|"Copyright FVNever.Package3"|]
+            Source = NuGetReference { PackageId = "FVNever.Package3"; Version = "0.0.0" }
+            License = {
+                SpdxLicense.SpdxExpression = "License FVNever.Package3"
+                CopyrightNotices = ImmutableArray.Create "Copyright FVNever.Package3"
+            }
         |}
     |], metadata.Items)
     Assert.Equivalent([| { PackageId = "FVNever.Package1"; Version = "0.0.0" } |], metadata.UsedOverrides)

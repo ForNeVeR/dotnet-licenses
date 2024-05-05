@@ -119,7 +119,12 @@ let internal GetDirectPackageReferences(input: AbsolutePath): Task<PackageRefere
             return references |> Array.map _.FromMsBuild()
         })
         |> Task.WhenAll
-    return references |> Seq.collect id |> Seq.distinct |> Seq.sortBy (fun x -> x.PackageId, x.Version) |> Seq.toArray
+    return references
+           |> Seq.collect id
+           |> Seq.distinct
+           |> Seq.sortBy(fun x -> x.PackageId, x.Version)
+           |> Seq.map NuGetReference
+           |> Seq.toArray
 }
 
 type ProjectGeneratedArtifacts =

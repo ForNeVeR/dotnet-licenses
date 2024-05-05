@@ -8,7 +8,9 @@ open System.IO
 open System.Threading.Tasks
 open DotNetLicenses
 open DotNetLicenses.CommandLine
+open DotNetLicenses.NuGet
 open DotNetLicenses.TestFramework
+open Medallion.Shell
 open TruePath
 open Xunit
 
@@ -73,8 +75,8 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
                 MetadataOverrides = [|{
                     Id = "NonExistent"
                     Version = ""
-                    Spdx = [|""|]
-                    Copyright = [|""|]
+                    SpdxExpression = ""
+                    CopyrightNotices = [|""|]
                 }|]
                 LockFile = Some <| LocalPath "lock.toml"
         }
@@ -244,8 +246,8 @@ let ``License metadata gets saved to the lock file``(): Task = task {
         Configuration.Empty with
             MetadataSources = [|
                 License {
-                    Spdx = "MIT"
-                    Copyright = "Me"
+                    SpdxExpression = "MIT"
+                    CopyrightNotice = "Me"
                     FilesCovered = [| LocalPathPattern "*.txt" |]
                     PatternsCovered = Array.empty
                 }
@@ -437,8 +439,8 @@ let ``Package cover spec works``(): Task =
             Configuration.Empty with
                 MetadataSources = [|
                     License {
-                        Spdx = "MIT"
-                        Copyright = "Package cover spec works"
+                        SpdxExpression = "MIT"
+                        CopyrightNotice = "Package cover spec works"
                         FilesCovered = Array.empty
                         PatternsCovered = [|
                             MsBuildCoverage(LocalPath project)
@@ -524,6 +526,73 @@ let ``Verify works correctly on an unhappy path``(): Task = task {
         [|"File \"file1.txt\" is not covered by the lock file."; "Lock file entry \"file.txt\" is not used."|],
         wp.Messages
     )
+}
+
+let private PublishProject (project: AbsolutePath) (publishDir: AbsolutePath) = task {
+    let! executionResult =
+        Command.Run(
+            "dotnet",
+            "publish",
+            "--output", publishDir.Value,
+            "--self-contained",
+            project.Value
+        ).Task
+    if not executionResult.Success then
+        let message = String.concat "\n" [|
+            $"Exit code of dotnet publish: {executionResult.ExitCode}"
+            if executionResult.StandardOutput.Length > 0 then
+                $"Standard output: {executionResult.StandardOutput}"
+            if executionResult.StandardError.Length > 0 then
+                $"Standard error: {executionResult.StandardError}"
+        |]
+        Assert.Fail message
+}
+
+[<Fact>]
+let ``Metadata for a self-contained application``(): Task = task {
+    use dir = DisposableDirectory.Create()
+    let sourceDir = dir.Path / "src"
+    dir.MakeSubDirs [| LocalPath sourceDir |]
+
+    let projectInTextFolder = DataFiles.Get "TestExe.csproj"
+    let project = sourceDir / "TestExe.csproj"
+    File.Copy(projectInTextFolder.Value, project.Value)
+    File.Copy((DataFiles.Get "Program.cs").Value, (sourceDir / "Program.cs").Value)
+
+    let publishDir = dir.Path / "publish"
+    do! PublishProject project publishDir
+
+    let lockFile = dir.Path / "lock.toml"
+
+    let config = {
+        Configuration.Empty with
+            MetadataSources = [|
+                License {
+                    SpdxExpression = "MIT"
+                    CopyrightNotice = "me"
+                    FilesCovered = Array.empty
+                    PatternsCovered = [|
+                        MsBuildCoverage(LocalPath project)
+                    |]
+                }
+            |]
+            LockFile = Some(LocalPath lockFile)
+            PackagedFiles = [|
+                {
+                    Source = Directory(LocalPath publishDir)
+                    Ignores = Array.empty
+                }
+            |]
+        }
+
+    let wp = WarningProcessor()
+    do! Processor.GenerateLockFile(config, dir.Path, NuGetReader(), wp)
+    Assert.Empty wp.Messages
+    Assert.Empty wp.Codes
+
+    let! lockFileItems = LockFile.ReadLockFile lockFile
+    let exeFileLicense = lockFileItems[LocalPathPattern "TextExe.exe"] |> Assert.Single
+    Assert.Equal(Some "LicenseRef-DotNetSdk", exeFileLicense.SpdxExpression)
 }
 
 [<Fact>]

@@ -11,58 +11,75 @@ open DotNetLicenses.NuGet
 open TruePath
 
 type MetadataItem =
-    | Package of {| Source: PackageReference; Spdx: string[]; Copyrights: string[] |}
+    | Package of {| Source: PackageReference; License: ILicense |}
     | License of LicenseSource
     | Reuse of ReuseSource
 
-let internal GetMetadata (source: PackageReference) (nuSpec: NuSpec): MetadataItem option =
-    let metadata = nuSpec.Metadata
-    let license = metadata.License
-    if isNull <| box license then
-        None
-    else
+let internal GetMetadata (nuGet: INuGetReader) (reference: PackageReference): Task<MetadataItem option> = task {
+    let! license =
+        match reference with
+        | NuGetReference coords ->
+            task {
+                let! nuSpec = nuGet.ReadNuSpec coords
 
-    let spdx =
-        match license.Type with
-        | "expression" -> metadata.License.Value
-        | "file" -> $"<No SPDX Expression; see https://www.nuget.org/packages/{source.PackageId}/{source.Version}/License>"
-            // TODO[#57]: ↑ Support the files properly?
-        | _ -> failwithf $"Unsupported license type for source {source.PackageId} v{source.Version}: {license.Type}"
-    Some <| Package {|
-        Source = source
-        Spdx = [|spdx|]
-        Copyrights = [|metadata.Copyright|]
-    |}
+                let metadata = nuSpec.Metadata
+                let license = metadata.License
+                if isNull <| box license then
+                    return None
+                else
+
+                let packageId, version = coords.PackageId, coords.Version
+                let spdx =
+                    match license.Type with
+                    | "expression" -> metadata.License.Value
+                    | "file" -> $"<No SPDX Expression; see https://www.nuget.org/packages/{packageId}/{version}/License>"
+                        // TODO[#57]: ↑ Support the files properly?
+                    | _ -> failwithf $"Unsupported license type for source {packageId} v{version}: {license.Type}"
+                return Some({
+                    SpdxExpression = spdx
+                    CopyrightNotices = ImmutableArray.Create metadata.Copyright
+                } :> ILicense)
+            }
+        | FrameworkReference coords ->
+            Task.FromResult(Some <| DotNetSdkLicense)
+
+    return license |> Option.map (fun l -> Package {|
+        Source = reference
+        License = l
+    |})
+}
 
 type MetadataReadResult = {
     Items: ImmutableArray<MetadataItem>
-    UsedOverrides: Set<PackageReference>
+    UsedOverrides: Set<PackageCoordinates>
 }
 
 type MetadataReader(nuGet: INuGetReader) =
     member _.ReadFromProject(
         projectFilePath: AbsolutePath,
-        overrides: IReadOnlyDictionary<PackageReference, MetadataOverride>
+        overrides: IReadOnlyDictionary<PackageCoordinates, MetadataOverride>
     ): Task<MetadataReadResult> = task {
         let mutable usedOverrides = Set.empty
 
         let! packageReferences = ReadTransitiveProjectReferences projectFilePath
         let result = ResizeArray(packageReferences.Length)
         for reference in packageReferences do
+            let coordinates =
+                match reference with
+                | NuGetReference coords -> coords
+                | FrameworkReference coords -> coords
             let! metadata =
-                match overrides.TryGetValue reference with
+                match overrides.TryGetValue coordinates with
                 | true, metaOverride ->
-                    usedOverrides <- usedOverrides |> Set.add reference
+                    usedOverrides <- usedOverrides |> Set.add coordinates
                     Task.FromResult(Some <| Package {|
                         Source = reference
-                        Spdx = metaOverride.SpdxExpressions
-                        Copyrights = metaOverride.Copyrights
+                        License = {
+                            SpdxLicense.SpdxExpression = metaOverride.SpdxExpression
+                            CopyrightNotices = ImmutableArray.ToImmutableArray metaOverride.CopyrightNotices
+                        }
                     |})
-                | false, _ ->
-                    task {
-                        let! nuSpec = nuGet.ReadNuSpec reference
-                        return GetMetadata reference nuSpec
-                    }
+                | false, _ -> GetMetadata nuGet reference
 
             metadata |> Option.iter result.Add
 

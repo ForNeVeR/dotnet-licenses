@@ -4,6 +4,7 @@
 
 module DotNetLicenses.Tests.CoveragePatternTests
 
+open System.Collections.Immutable
 open System.IO
 open System.Threading.Tasks
 open DotNetLicenses
@@ -19,8 +20,8 @@ open Xunit
 let ``MSBuild coverage pattern collector works``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let metadata = MetadataItem.License {
-            Spdx = "MIT"
-            Copyright = "2024 Me"
+            SpdxExpression = "MIT"
+            CopyrightNotice = "2024 Me"
             FilesCovered = Array.empty
             PatternsCovered = [| MsBuildCoverage(LocalPath project) |]
         }
@@ -52,8 +53,8 @@ let ``MSBuild coverage pattern collector works``(): Task =
         Assert.Equal<_>([| LocalPathPattern sourceEntry.SourceRelativePath, {
             LockFileItem.SourceId = None
             SourceVersion = None
-            Spdx = [|"MIT"|]
-            Copyright = [|"2024 Me"|]
+            SpdxExpression = Some "MIT"
+            CopyrightNotices = ImmutableArray.Create "2024 Me"
             IsIgnored = false
         } |], result)
     })
@@ -71,8 +72,8 @@ let ``NuGet coverage pattern collector works``(): Task = task {
         do! File.WriteAllTextAsync(file.Value, "test output")
 
     let metadata = MetadataItem.License {
-        Spdx = "MIT"
-        Copyright = "2024 Me"
+        SpdxExpression = "MIT"
+        CopyrightNotice = "2024 Me"
         FilesCovered = Array.empty
         PatternsCovered = [| NuGetCoverage |]
     }
@@ -107,8 +108,8 @@ let ``NuGet coverage pattern collector works``(): Task = task {
         Assert.Equal<_>([| pattern, {
             LockFileItem.SourceId = None
             SourceVersion = None
-            Spdx = [|"MIT"|]
-            Copyright = [|"2024 Me"|]
+            SpdxExpression = Some "MIT"
+            CopyrightNotices = ImmutableArray.Create "2024 Me"
             IsIgnored = false
         } |], result)
 }
