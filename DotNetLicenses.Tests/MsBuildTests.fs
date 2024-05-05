@@ -24,7 +24,7 @@ let ``MSBuild reads the project references correctly``(): Task =
 [<Fact>]
 let ``MSBuild reads the project-generated artifacts correctly``(): Task =
     DataFiles.Deploy("Test.csproj") (fun project -> task {
-        let! output = GetGeneratedArtifacts project
+        let! output = GetGeneratedArtifacts(project, None)
         Assert.Equal({
             FilesWithContent = [|
                 project.Parent.Value / "bin" / "Release" / "net8.0" / "Test.dll"
@@ -33,6 +33,7 @@ let ``MSBuild reads the project-generated artifacts correctly``(): Task =
             |]
             FilePatterns = [|
                 LocalPathPattern "**/Test.deps.json"
+                LocalPathPattern "**/Test.exe"
                 LocalPathPattern "**/Test.pdb"
             |]
         }, output)
@@ -53,7 +54,7 @@ let ``MSBuild deduplicates the project references across solution``(): Task =
 let ``MSBuild reads the solution-generated artifacts correctly``(): Task =
     DataFiles.DeployGroup [|"Test.csproj"; "Test2.csproj"; "Test.sln"|] (fun path -> task {
         let solution = path / "Test.sln"
-        let! output = GetGeneratedArtifacts solution
+        let! output = GetGeneratedArtifacts(solution, None)
         Assert.Equal({
             FilesWithContent = [|
                 path / "bin" / "Release" / "net8.0" / "Test.dll"
@@ -64,8 +65,10 @@ let ``MSBuild reads the solution-generated artifacts correctly``(): Task =
             |]
             FilePatterns = [|
                 LocalPathPattern "**/Test.deps.json"
+                LocalPathPattern "**/Test.exe"
                 LocalPathPattern "**/Test.pdb"
                 LocalPathPattern "**/Test2.deps.json"
+                LocalPathPattern "**/Test2.exe"
                 LocalPathPattern "**/Test2.pdb"
             |]
         }, output)

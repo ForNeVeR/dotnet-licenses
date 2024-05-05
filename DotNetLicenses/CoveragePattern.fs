@@ -18,12 +18,12 @@ open TruePath
 
 type CoverageCache =
     // Project path => Project output path
-    | CoverageCache of ConcurrentDictionary<AbsolutePath, Task<ProjectGeneratedArtifacts>>
+    | CoverageCache of ConcurrentDictionary<AbsolutePath * string option, Task<ProjectGeneratedArtifacts>>
 
     static member Empty(): CoverageCache = CoverageCache(ConcurrentDictionary())
-    member this.Read(project: AbsolutePath) =
+    member this.Read(project: AbsolutePath, runtime: string option) =
         let (CoverageCache map) = this
-        map.GetOrAdd(project, GetGeneratedArtifacts)
+        map.GetOrAdd((project, runtime), GetGeneratedArtifacts)
 
 let private CollectLockFileItem (baseDir: AbsolutePath) = function
     | Package _ -> failwith "Function doesn't support packages."
@@ -69,9 +69,9 @@ let CollectCoveredFileLicense (baseDirectory: AbsolutePath)
                               (sourceEntry: ISourceEntry): Task<ResizeArray<LocalPathPattern * LockFileItem>> = task {
     let doesSpecCover spec =
         match spec with
-        | MsBuildCoverage project ->
+        | MsBuildCoverage(project, runtime) ->
             task {
-                let! projectOutputs = coverageCache.Read(baseDirectory / project)
+                let! projectOutputs = coverageCache.Read(baseDirectory / project, runtime)
 
                 let matcher = Matcher()
                 matcher.AddIncludePatterns(projectOutputs.FilePatterns |> Seq.map _.Value)

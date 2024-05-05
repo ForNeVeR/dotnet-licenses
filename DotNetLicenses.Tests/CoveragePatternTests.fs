@@ -23,10 +23,10 @@ let ``MSBuild coverage pattern collector works``(): Task =
             SpdxExpression = "MIT"
             CopyrightNotice = "2024 Me"
             FilesCovered = Array.empty
-            PatternsCovered = [| MsBuildCoverage(LocalPath project) |]
+            PatternsCovered = [| MsBuildCoverage(LocalPath project, None) |]
         }
 
-        let! projectOutputs = MsBuild.GetGeneratedArtifacts project
+        let! projectOutputs = MsBuild.GetGeneratedArtifacts(project, None)
         let targetAssembly = projectOutputs.FilesWithContent |> Seq.head
         let baseDirectory = targetAssembly.Parent.Value
         Directory.CreateDirectory baseDirectory.Value |> ignore

@@ -69,10 +69,14 @@ let private ExecuteDotNetBuild(args: string seq): Task<string> =
 
 let internal GetProperties(input: AbsolutePath,
                           configuration: string,
+                          runtime: string option,
                           properties: string[]): Task<Dictionary<string, string>> = task {
     let! result = ExecuteDotNetBuild [|
         "--configuration"; configuration
         "-getProperty:" + String.concat "," properties
+        match runtime with
+        | Some r -> "--runtime"; r
+        | None -> ()
         input.Value
     |]
 
@@ -148,11 +152,13 @@ let internal GetKnownFrameworkReferences(project: AbsolutePath): Task<KnownFrame
     return! GetItems project (Some DefaultConfiguration) [| "KnownFrameworkReference" |] _.KnownFrameworkReference
 }
 
-let private GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
-    let! properties = GetProperties(input, DefaultConfiguration, [|
+let private GetProjectGeneratedArtifacts (runtime: string option)
+                                         (input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
+    let! properties = GetProperties(input, DefaultConfiguration, runtime, [|
         "BaseIntermediateOutputPath"
         "TargetName"
         "TargetDir"; "TargetFileName"
+        "UseAppHost"
     |])
     let properties =
         properties
@@ -167,15 +173,19 @@ let private GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGener
     let target = basePath / targetDir / targetFileName
     let objDir = basePath / properties["BaseIntermediateOutputPath"]
     let targetName = properties["TargetName"]
+    let useAppHost = properties["UseAppHost"] = "true"
     let artifacts = [|
         target
         basePath / targetDir / $"{targetName}.runtimeconfig.json"
         // dotnet tools:
         objDir / "DotNetToolSettings.xml"
     |]
+    let isDllProject = Path.GetExtension targetFileName = ".dll"
     let patterns = [|
         LocalPathPattern $"**/{targetName}.pdb"
         LocalPathPattern $"**/{targetName}.deps.json"
+        if useAppHost && isDllProject then
+            LocalPathPattern $"**/{targetName}.exe"
     |]
     return {
         FilesWithContent = artifacts
@@ -183,11 +193,11 @@ let private GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGener
     }
 }
 
-let GetGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
+let GetGeneratedArtifacts(input: AbsolutePath, runtime: string option): Task<ProjectGeneratedArtifacts> = task {
     let! projects = GetProjects input
     let! artifacts =
         projects
-        |> Seq.map GetProjectGeneratedArtifacts
+        |> Seq.map (GetProjectGeneratedArtifacts runtime)
         |> Task.WhenAll
     return artifacts |> ProjectGeneratedArtifacts.Merge
 }

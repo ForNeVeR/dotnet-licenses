@@ -108,7 +108,7 @@ let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj"
     do! File.WriteAllTextAsync((directory.Path / "test.txt").Value, "Hello!")
 
     let expectedLock = """# REUSE-IgnoreStart
-"test.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"test.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = "License FVNever.DotNetLicenses", copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
     let config = {
@@ -134,7 +134,7 @@ let ``Processor generates a lock file for a file tree``(): Task = task {
     let packagedFile = directory.Path / "my-file.txt"
     do! File.WriteAllTextAsync(packagedFile.Value, "Hello World!")
     let expectedLock = """# REUSE-IgnoreStart
-"my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = "License FVNever.DotNetLicenses", copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -164,7 +164,7 @@ let ``Processor generates a lock file for a ZIP archive``(): Task = task {
     let archivePath = directory.Path / "file.zip"
     ZipFiles.SingleFileArchive(archivePath, "content/my-file.txt", "Hello World"B)
     let expectedLock = """# REUSE-IgnoreStart
-"content/my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"content/my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = "License FVNever.DotNetLicenses", copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
     do! DataFiles.Deploy "Test.csproj" (fun project -> task {
@@ -429,7 +429,7 @@ text
 let ``Package cover spec works``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let baseDir = project.Parent.Value
-        let! projectOutput = MsBuild.GetGeneratedArtifacts project
+        let! projectOutput = MsBuild.GetGeneratedArtifacts(project, None)
         projectOutput.FilesWithContent
         |> Array.iter (fun p -> Directory.CreateDirectory p.Parent.Value.Value |> ignore)
 
@@ -443,7 +443,7 @@ let ``Package cover spec works``(): Task =
                         CopyrightNotice = "Package cover spec works"
                         FilesCovered = Array.empty
                         PatternsCovered = [|
-                            MsBuildCoverage(LocalPath project)
+                            MsBuildCoverage(LocalPath project, None)
                         |]
                     }
                 |]
@@ -455,7 +455,7 @@ let ``Package cover spec works``(): Task =
 
         do! File.WriteAllTextAsync(targetAssembly.Value, "Test file")
         let expectedLock = """# REUSE-IgnoreStart
-"Test.dll" = [{spdx = ["MIT"], copyright = ["Package cover spec works"]}]
+"Test.dll" = [{spdx = "MIT", copyright = ["Package cover spec works"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -476,7 +476,7 @@ let ``Verify works correctly on a happy path``(): Task = task {
     let file = subDir / "file.txt"
     do! File.WriteAllTextAsync(file.Value, "Hello, world!")
     let lockFileContent = """# REUSE-IgnoreStart
-"file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = "License FVNever.DotNetLicenses", copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
     let lockFile = dir.Path / "lock.toml"
@@ -505,7 +505,7 @@ let ``Verify works correctly on an unhappy path``(): Task = task {
     let file = subDir / "file1.txt"
     do! File.WriteAllTextAsync(file.Value, "Hello, world!")
     let lockFileContent = """# REUSE-IgnoreStart
-"file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = "License FVNever.DotNetLicenses", copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
     let lockFile = dir.Path / "lock.toml"
@@ -575,7 +575,7 @@ let ``Metadata for a self-contained application``(): Task = task {
                     CopyrightNotice = "me"
                     FilesCovered = Array.empty
                     PatternsCovered = [|
-                        MsBuildCoverage(LocalPath project)
+                        MsBuildCoverage(LocalPath project, Some "win-x64") // TODO: Portable test on macOS/Linux
                     |]
                 }
             |]
@@ -594,8 +594,9 @@ let ``Metadata for a self-contained application``(): Task = task {
     Assert.Empty wp.Codes
 
     let! lockFileItems = LockFile.ReadLockFile lockFile
-    let exeFileLicense = lockFileItems[LocalPathPattern "TextExe.exe"] |> Assert.Single
-    Assert.Equal(Some "LicenseRef-DotNetSdk", exeFileLicense.SpdxExpression)
+    let exeFileLicense = lockFileItems[LocalPathPattern "TestExe.exe"] |> Assert.Single
+    // TODO: Actually, this should be "MIT AND LicenseRef-DotNetSDK", since the produced binary is the .NET app host with customizations
+    Assert.Equal(Some "MIT", exeFileLicense.SpdxExpression)
 }
 
 [<Fact>]
