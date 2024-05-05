@@ -21,10 +21,15 @@ let mutable internal PackagesFolderPath: AbsolutePath =
         AbsolutePath(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)) / ".nuget" / "packages"
     )
 
+let private FallbackFolder = AbsolutePath(@"C:\Program Files\dotnet\sdk\NuGetFallbackFolder") // TODO: make it portable
+
 let internal UnpackedPackagePath(packageReference: PackageReference): AbsolutePath =
     match packageReference with
     | NuGetReference coordinates ->
-        PackagesFolderPath / coordinates.PackageId.ToLowerInvariant() / coordinates.Version.ToLowerInvariant()
+        let mainPath =  PackagesFolderPath / coordinates.PackageId.ToLowerInvariant() / coordinates.Version.ToLowerInvariant()
+        if Directory.Exists mainPath.Value
+        then mainPath
+        else FallbackFolder / coordinates.PackageId.ToLowerInvariant() / coordinates.Version.ToLowerInvariant()
     | FrameworkReference _ -> failwith "Not supported."
 
 let internal GetNuSpecFilePath(packageReference: PackageCoordinates): AbsolutePath =
@@ -179,7 +184,7 @@ let private ReadAllFrameworkReferences(
         tfms
         |> Seq.collect(fun tfm ->
             assets.Project.Frameworks[tfm].FrameworkReferences.Keys
-            |> Seq.map(fun id -> tfm, id)
+            |> Seq.map(fun id -> tfm.Split("-")[0], id)
         )
     let! knownFrameworks = MsBuild.GetKnownFrameworkReferences project
     let tfmToKnownFrameworkVersion =
