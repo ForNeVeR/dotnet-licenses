@@ -237,7 +237,7 @@ let ``License metadata gets saved to the lock file``(): Task = task {
     do! File.WriteAllTextAsync(packagedFile.Value, "")
 
     let expectedLock = """# REUSE-IgnoreStart
-"my-file.txt" = [{spdx = ["MIT"], copyright = ["Me"]}]
+"my-file.txt" = [{spdx = "MIT", copyright = ["Me"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -282,7 +282,7 @@ text
     do! File.WriteAllTextAsync(sourceFile.Value, fileContent)
 
     let expectedLock = """# REUSE-IgnoreStart
-"my-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
+"my-file.txt" = [{spdx = "MIT", copyright = ["2024 Me"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -328,7 +328,7 @@ License: MIT
     """)
 
     let expectedLock = """# REUSE-IgnoreStart
-"my-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
+"my-file.txt" = [{spdx = "MIT", copyright = ["2024 Me"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -397,8 +397,8 @@ text
     // REUSE-IgnoreEnd
 
     let expectedLock = """# REUSE-IgnoreStart
-"my-combined-file.txt" = [{spdx = ["CC-BY-1.0", "CC-BY-4.0", "CC-0", "MIT"], copyright = ["2024 Me"]}]
-"my-mit-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
+"my-combined-file.txt" = [{spdx = "CC-BY-1.0 AND CC-BY-4.0 AND CC-0 AND MIT", copyright = ["2024 Me"]}]
+"my-mit-file.txt" = [{spdx = "MIT", copyright = ["2024 Me"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -567,6 +567,9 @@ let ``Metadata for a self-contained application``(): Task = task {
     let config = {
         Configuration.Empty with
             MetadataSources = [|
+                NuGet {
+                    Include = LocalPath project
+                }
                 License {
                     SpdxExpression = "MIT"
                     CopyrightNotice = "me"

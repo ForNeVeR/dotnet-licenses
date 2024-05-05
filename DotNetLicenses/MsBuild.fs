@@ -22,6 +22,7 @@ and [<CLIMutable>] MsBuildItem = {
 and [<CLIMutable>] MsBuildItems = {
     PackageReference: MsBuildPackageReference[]
     DebugSymbolsProjectOutputGroupOutput: MsBuildItem[]
+    KnownFrameworkReference: KnownFrameworkReference[]
 }
 and [<CLIMutable>] MsBuildPackageReference =
     {
@@ -34,6 +35,12 @@ and [<CLIMutable>] MsBuildPackageReference =
             PackageId = this.Identity
             Version = this.Version
         }
+
+and [<CLIMutable>] KnownFrameworkReference = {
+    TargetFramework: string
+    Identity: string
+    LatestRuntimeFrameworkVersion: string
+}
 
 [<CLIMutable>]
 type MultiPropertyMsBuildOutput = {
@@ -136,6 +143,10 @@ type ProjectGeneratedArtifacts =
         FilesWithContent = items |> Seq.collect _.FilesWithContent |> Seq.distinct |> Seq.sortBy _.Value |> Array.ofSeq
         FilePatterns = items |> Seq.collect _.FilePatterns |> Seq.distinct |> Seq.sortBy _.Value |> Array.ofSeq
     }
+
+let internal GetKnownFrameworkReferences(project: AbsolutePath): Task<KnownFrameworkReference[]> = task {
+    return! GetItems project (Some DefaultConfiguration) [| "KnownFrameworkReference" |] _.KnownFrameworkReference
+}
 
 let private GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
     let! properties = GetProperties(input, DefaultConfiguration, [|

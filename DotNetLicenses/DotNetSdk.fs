@@ -9,7 +9,7 @@ open System.IO
 open System.Threading.Tasks
 open TruePath
 
-let FindLocation(): Task<AbsolutePath> = task {
+let Location: Task<AbsolutePath> = task {
     do! Task.Yield()
     let dotNetExecutable = if OperatingSystem.IsWindows() then "dotnet.exe" else "dotnet"
     let path = Environment.GetEnvironmentVariable "PATH"
@@ -19,4 +19,9 @@ let FindLocation(): Task<AbsolutePath> = task {
         |> Seq.find (fun p -> File.Exists(Path.Combine(p, dotNetExecutable)))
         |> AbsolutePath
     return dotNetPath
+}
+
+let SharedFrameworkLocation(framework: PackageCoordinates): Task<AbsolutePath> = task {
+    let! sdkPath = Location
+    return sdkPath / "shared" / framework.PackageId / framework.Version
 }

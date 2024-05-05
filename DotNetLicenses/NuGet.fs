@@ -25,7 +25,7 @@ let internal UnpackedPackagePath(packageReference: PackageReference): AbsolutePa
     match packageReference with
     | NuGetReference coordinates ->
         PackagesFolderPath / coordinates.PackageId.ToLowerInvariant() / coordinates.Version.ToLowerInvariant()
-    | FrameworkReference coordinates -> failwith "TODO"
+    | FrameworkReference _ -> failwith "Not supported."
 
 let internal GetNuSpecFilePath(packageReference: PackageCoordinates): AbsolutePath =
     UnpackedPackagePath(NuGetReference packageReference) / $"{packageReference.PackageId.ToLowerInvariant()}.nuspec"
@@ -124,9 +124,21 @@ type NuGetReader() =
 type ProjectAssetsJson = {
     Version: int
     Libraries: Dictionary<string, LibraryAsset>
+    Project: ProjectAssetsProject
 }
 and [<CLIMutable>] LibraryAsset = {
     Type: string
+}
+and [<CLIMutable>] ProjectAssetsProject = {
+    Frameworks: Dictionary<string, ProjectAssetsFramework>
+}
+and [<CLIMutable>] ProjectAssetsFramework = {
+    FrameworkReferences: Dictionary<string, Dictionary<string, string>>
+}
+
+[<CLIMutable>]
+type DepsJson = {
+    Targets: Dictionary<string, Dictionary<string, obj>>
 }
 
 let private SerializerOptions = JsonSerializerOptions(JsonSerializerDefaults.Web)
@@ -136,13 +148,73 @@ let private ReadProjectAssetsJson(file: AbsolutePath): Task<ProjectAssetsJson> =
     return! JsonSerializer.DeserializeAsync<ProjectAssetsJson>(stream, SerializerOptions)
 }
 
+let private ReadDepsJson(file: AbsolutePath): Task<DepsJson> = task {
+    use stream = File.OpenRead file.Value
+    return! JsonSerializer.DeserializeAsync<DepsJson>(stream, SerializerOptions)
+}
+
+let private ReadNuGetReferencesForFramework coordinates = task {
+    let! directory = DotNetSdk.SharedFrameworkLocation coordinates
+    let depsJsonFile = directory / $"{coordinates.PackageId}.deps.json"
+    if File.Exists depsJsonFile.Value then
+        let! depsJson = ReadDepsJson depsJsonFile
+        let packages = depsJson.Targets.Values |> Seq.collect _.Keys
+        return packages |> Seq.map(fun packageSpec ->
+            let nameAndVersion = packageSpec.Split('/', 2)
+            match nameAndVersion with
+            | [| name; version |] -> NuGetReference { PackageId = name; Version = version }
+            | _ -> failwithf $"Invalid name/version spec in \"{depsJsonFile}\": \"{packageSpec}\"."
+        )
+
+    else
+        return [||]
+}
+
+let private ReadAllFrameworkReferences(
+    project: AbsolutePath,
+    assets: ProjectAssetsJson
+): Task<PackageReference[]> = task {
+    let tfms = assets.Project.Frameworks.Keys
+    let frameworks =
+        tfms
+        |> Seq.collect(fun tfm ->
+            assets.Project.Frameworks[tfm].FrameworkReferences.Keys
+            |> Seq.map(fun id -> tfm, id)
+        )
+    let! knownFrameworks = MsBuild.GetKnownFrameworkReferences project
+    let tfmToKnownFrameworkVersion =
+        knownFrameworks
+        |> Seq.map(fun kf -> (kf.TargetFramework, kf.Identity), kf.LatestRuntimeFrameworkVersion)
+        |> Map.ofSeq
+
+    let frameworkCoordinates =
+        frameworks
+        |> Seq.map(fun (tfm, id) ->
+            match tfmToKnownFrameworkVersion.TryGetValue((tfm, id)) with
+            | true, version -> { PackageId = id; Version = version }
+            | _ -> failwithf $"Cannot find known framework reference for \"{tfm}\" and \"{id}\"."
+        )
+
+    let! transitivePackages =
+        frameworkCoordinates
+        |> Seq.map ReadNuGetReferencesForFramework
+        |> Task.WhenAll
+
+    let allReferences =
+        transitivePackages
+        |> Seq.collect id
+        |> Seq.distinct
+        |> Seq.toArray
+    return allReferences
+}
+
 let private ReadProjectReferences(project: AbsolutePath): Task<PackageReference[]> = task {
     let! properties = MsBuild.GetProperties(project, MsBuild.DefaultConfiguration, [| "BaseIntermediateOutputPath" |])
     let objDir = LocalPath(properties["BaseIntermediateOutputPath"].Replace('\\', Path.DirectorySeparatorChar))
     let projectAssetsJson = project.Parent.Value / objDir / "project.assets.json"
     if File.Exists projectAssetsJson.Value then
         let! assets = ReadProjectAssetsJson projectAssetsJson
-        let frameworkReferences = failwith "TODO"
+        let! frameworkReferences = ReadAllFrameworkReferences(project, assets)
         let nuGetReferences =
             assets.Libraries
             |> Seq.filter(fun e -> e.Value.Type = "package")
@@ -154,9 +226,9 @@ let private ReadProjectReferences(project: AbsolutePath): Task<PackageReference[
                 | _ -> failwithf $"Cannot read package reference in file \"{project}\": \"{entryName}\"."
             )
         return [|
-            frameworkReferences
-            nuGetReferences
-        |] |> Seq.concat |> Seq.toArray
+            yield! frameworkReferences
+            yield! nuGetReferences
+        |]
     else
         return! MsBuild.GetDirectPackageReferences project
 }

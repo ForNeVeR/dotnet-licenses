@@ -35,6 +35,6 @@ type DotNetSdkLicense =
         member _.SpdxExpression = "LicenseRef-DotNetSdk"
         member _.CopyrightNotices = ImmutableArray.Create()
         member this.GetText() = task {
-            let! sdk = DotNetSdk.FindLocation()
+            let! sdk = DotNetSdk.Location
             return! File.ReadAllTextAsync((sdk / "LICENSE.txt").Value)
         }

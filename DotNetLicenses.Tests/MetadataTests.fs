@@ -18,7 +18,7 @@ open Xunit
 [<Fact>]
 let ``Get metadata from .nuspec works correctly``(): Task = task {
     use dir = DisposableDirectory.Create()
-    do! NuGetMock.WithNuGetPackageRoot dir.Path (fun packageRoot -> task {
+    do! NuGetMock.WithNuGetPackageRoot dir.Path (fun _ -> task {
         let coords = {
             PackageId = "Package"
             Version = "1.0.0"
@@ -29,7 +29,8 @@ let ``Get metadata from .nuspec works correctly``(): Task = task {
         File.Copy(nuSpec.Value, targetPath.Value)
 
         let reference = NuGetReference coords
-        let! metadata = GetMetadata NuGetMock.MirroringReader reference
+        let nuGet = NuGetReader()
+        let! metadata = GetMetadata nuGet reference
         Assert.Equal(Some <| Package {|
             Source = reference
             License = {
