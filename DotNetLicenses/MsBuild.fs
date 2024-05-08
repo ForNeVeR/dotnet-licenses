@@ -20,9 +20,11 @@ and [<CLIMutable>] MsBuildItem = {
     Identity: string
 }
 and [<CLIMutable>] MsBuildItems = {
-    PackageReference: MsBuildPackageReference[]
     DebugSymbolsProjectOutputGroupOutput: MsBuildItem[]
     KnownFrameworkReference: KnownFrameworkReference[]
+    PackageReference: MsBuildPackageReference[]
+    ResolvedFrameworkReference: ResolvedFrameworkReference[]
+    ResolvedTargetingPack: ResolvedTargetingPack[]
 }
 and [<CLIMutable>] MsBuildPackageReference =
     {
@@ -40,6 +42,17 @@ and [<CLIMutable>] KnownFrameworkReference = {
     TargetFramework: string
     Identity: string
     LatestRuntimeFrameworkVersion: string
+}
+
+and [<CLIMutable>] ResolvedFrameworkReference = {
+    Identity: string
+    NuGetPackageVersion: string
+}
+and [<CLIMutable>] ResolvedTargetingPack = {
+    Identity: string
+    NuGetPackageVersion: string
+    RuntimeFrameworkName: string
+    RuntimePackRuntimeIdentifiers: string
 }
 
 [<CLIMutable>]
@@ -91,11 +104,16 @@ let internal GetProperties(input: AbsolutePath,
 
 let private GetItems (input: AbsolutePath)
                      (configuration: string option)
+                     (taskName: string option)
                      (itemGroups: string seq)
                      (transformer: MsBuildItems -> 'a): Task<'a> = task {
     let! result = ExecuteDotNetBuild [|
         match configuration with
         | Some c -> "--configuration"; c
+        | None -> ()
+
+        match taskName with
+        | Some t -> "-target:" + t
         | None -> ()
 
         "-getItem:" + String.concat "," itemGroups
@@ -126,7 +144,7 @@ let internal GetDirectPackageReferences(input: AbsolutePath): Task<PackageRefere
     let! references =
         projects
         |> Seq.map(fun project -> task {
-            let! references = GetItems project None [| "PackageReference" |] _.PackageReference
+            let! references = GetItems project None None [| "PackageReference" |] _.PackageReference
             return references |> Array.map _.FromMsBuild()
         })
         |> Task.WhenAll
@@ -149,7 +167,7 @@ type ProjectGeneratedArtifacts =
     }
 
 let internal GetKnownFrameworkReferences(project: AbsolutePath): Task<KnownFrameworkReference[]> = task {
-    return! GetItems project (Some DefaultConfiguration) [| "KnownFrameworkReference" |] _.KnownFrameworkReference
+    return! GetItems project (Some DefaultConfiguration) None [| "KnownFrameworkReference" |] _.KnownFrameworkReference
 }
 
 let private GetProjectGeneratedArtifacts (runtime: string option)
@@ -191,6 +209,34 @@ let private GetProjectGeneratedArtifacts (runtime: string option)
         FilesWithContent = artifacts
         FilePatterns = patterns
     }
+}
+
+let internal GetRuntimePackReferences(project: AbsolutePath): Task<PackageReference[]> = task {
+    let! frameworkReferences, targetingPacks =
+        GetItems
+            project
+            (Some DefaultConfiguration)
+            (Some "ResolveFrameworkReferences")
+            [| "ResolvedFrameworkReference"; "ResolvedTargetingPack" |]
+            (fun out -> out.ResolvedFrameworkReference, out.ResolvedTargetingPack)
+    let targetingPacks =
+        targetingPacks
+        |> Seq.map(fun pack -> pack.Identity, pack)
+        |> Map.ofSeq
+    let runtimePackReferences =
+        frameworkReferences
+        |> Seq.map(fun framework -> targetingPacks[framework.Identity])
+        |> Seq.collect(fun targetingPack ->
+            let baseRuntimePackName = $"{targetingPack.RuntimeFrameworkName}.runtime"
+            targetingPack.RuntimePackRuntimeIdentifiers.Split(';')
+            |> Seq.map(fun id -> $"{baseRuntimePackName}.{id}")
+            |> Seq.map(fun package -> NuGetReference {
+                PackageId = package
+                Version = targetingPack.NuGetPackageVersion
+            })
+        )
+        |> Seq.toArray
+    return runtimePackReferences
 }
 
 let GetGeneratedArtifacts(input: AbsolutePath, runtime: string option): Task<ProjectGeneratedArtifacts> = task {

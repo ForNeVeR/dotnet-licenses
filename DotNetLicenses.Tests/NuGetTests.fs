@@ -96,7 +96,7 @@ let ``NuGet reads transitive package references correctly``(): Task =
         let! _ = MsBuild.ExecuteDotNet [| "restore"; project.Value |]
         let projectAssetsJson = project.Parent.Value / "obj/project.assets.json"
         Assert.True <| File.Exists projectAssetsJson.Value
-        let! references = ReadTransitiveProjectReferences project
+        let! references = ReadPackageReferences(project, ReferenceType.PackageReference ||| ReferenceType.ProjectAssets)
         Assert.Equal<PackageReference>([|
             NuGetReference { PackageId = "FSharp.Core"; Version = "8.0.200" }
             NuGetReference { PackageId = "Generaptor"; Version = "1.2.0" }

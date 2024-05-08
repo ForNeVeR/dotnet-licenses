@@ -40,7 +40,7 @@ let internal GetMetadata (nuGet: INuGetReader) (reference: PackageReference): Ta
                     CopyrightNotices = ImmutableArray.Create metadata.Copyright
                 } :> ILicense)
             }
-        | FrameworkReference coords ->
+        | FrameworkReference _ ->
             Task.FromResult(Some <| DotNetSdkLicense)
 
     return license |> Option.map (fun l -> Package {|
@@ -61,7 +61,7 @@ type MetadataReader(nuGet: INuGetReader) =
     ): Task<MetadataReadResult> = task {
         let mutable usedOverrides = Set.empty
 
-        let! packageReferences = ReadTransitiveProjectReferences projectFilePath
+        let! packageReferences = nuGet.ReadPackageReferences projectFilePath
         let result = ResizeArray(packageReferences.Length)
         for reference in packageReferences do
             let coordinates =
