@@ -24,6 +24,7 @@ type ExitCode =
     | UnusedOverride = 1
     | DuplicateOverride = 2
     | UnusedLockFileEntry = 3
+    | DifferentLicensesForFile = 4
     // More important warnings:
     | LicenseForFileNotFound = 10
     | LicenseSetEmpty = 11

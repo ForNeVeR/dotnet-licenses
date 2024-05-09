@@ -525,3 +525,41 @@ let ``Verify works correctly on an unhappy path``(): Task = task {
         wp.Messages
     )
 }
+
+[<Fact>]
+let ``Several similar licenses for same artifact are deduplicated``(): Task =
+    failwith "TODO"
+
+[<Fact>]
+let ``Several different licenses for same artifact generate a warning``(): Task =
+    DataFiles.Deploy "TestComplex.csproj" (fun project -> task {
+        let! packages = MsBuild.GetDirectPackageReferences project
+        Assert.Equal(2, packages.Length)
+
+        use deployDir = DisposableDirectory.Create()
+        let packagedFile = deployDir.Path / "my-file.txt"
+        do! File.WriteAllTextAsync(packagedFile.Value, "Hello World!")
+
+        let config = {
+            Configuration.Empty with
+                MetadataSources = [|
+                    NuGetSource.Of project
+                |]
+                LockFile = Some <| LocalPath "lock.toml"
+                PackagedFiles = [|
+                    PackageSpecs.Directory deployDir.Path
+                |]
+        }
+
+        let! result = runGenerator config
+        Assert.Equal([|ExitCode.DifferentLicensesForFile|], result.Codes)
+        Assert.Equal([|
+            "Multiple licenses found for file \"my-file.txt\": \"FVNever.Package1 license\"," +
+            " \"FVNever.Package2 license\"."
+        |], result.Messages)
+
+        let expectedLock = """"my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"""
+        let! actualLock = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
+        Assert.Equal(expectedLock, actualLock)
+    })
