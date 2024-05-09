@@ -98,10 +98,14 @@ type NoNamespaceXmlReader(input: Stream) =
     override this.NamespaceURI = ""
 
 let private serializer = XmlSerializer typeof<NuSpec>
-let internal ReadNuSpec(filePath: AbsolutePath): Task<NuSpec> = Task.Run(fun() ->
+let internal ReadNuSpec(filePath: AbsolutePath): Task<NuSpec option> = Task.Run(fun() ->
+    if not (File.Exists filePath.Value) then
+        None
+    else
+
     use stream = File.Open(filePath.Value, FileMode.Open, FileAccess.Read, FileShare.Read)
     use reader = new NoNamespaceXmlReader(stream)
-    serializer.Deserialize(reader) :?> NuSpec
+    Some(serializer.Deserialize(reader) :?> NuSpec)
 )
 
 [<CLIMutable>]
@@ -227,14 +231,14 @@ let ReadPackageReferences(
 }
 
 type INuGetReader =
-    abstract ReadNuSpec: PackageCoordinates -> Task<NuSpec>
+    abstract ReadNuSpec: PackageCoordinates -> Task<NuSpec option>
     abstract ReadPackageReferences: AbsolutePath -> Task<PackageReference[]>
     abstract ContainsFileName: PackageReference -> string -> Task<bool>
     abstract FindFile: FileHashCache -> PackageReference seq -> ISourceEntry -> Task<PackageReference[]>
 
 type NuGetReader() =
     interface INuGetReader with
-        member _.ReadNuSpec(coordinates: PackageCoordinates): Task<NuSpec> =
+        member _.ReadNuSpec(coordinates: PackageCoordinates): Task<NuSpec option> =
             GetNuSpecFilePath coordinates |> ReadNuSpec
 
         member _.ReadPackageReferences input = ReadPackageReferences(input, ReferenceType.All)

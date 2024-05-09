@@ -36,7 +36,7 @@ let ``NuSpec file path should be determined correctly``(): unit =
 let ``NuSpec file should be read correctly``(fileName: string): Task = task {
     let path = DataFiles.Get fileName
     let! nuSpec = ReadNuSpec path
-    Assert.Equal({
+    Assert.Equal(Some {
         Metadata = {
             Id = "FVNever.DotNetLicenses"
             Version = "0.0.0"

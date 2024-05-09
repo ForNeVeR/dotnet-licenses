@@ -11,7 +11,7 @@ open TruePath
 
 type MockedNuGetReader(licenseOverride: string option) =
     interface INuGetReader with
-        member _.ReadNuSpec { PackageId = id; Version = version } = Task.FromResult {
+        member _.ReadNuSpec { PackageId = id; Version = version } = Task.FromResult <| Some {
             Metadata = {
                 Id = id
                 Version = version

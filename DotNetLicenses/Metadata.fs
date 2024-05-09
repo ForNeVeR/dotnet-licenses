@@ -21,24 +21,28 @@ let internal GetMetadata (nuGet: INuGetReader) (reference: PackageReference): Ta
         | NuGetReference coords ->
             task {
                 let! nuSpec = nuGet.ReadNuSpec coords
+                let license =
+                    nuSpec
+                    |> Option.bind (fun nuSpec ->
+                        let metadata = nuSpec.Metadata
+                        let license = metadata.License
+                        if isNull <| box license then
+                            None
+                        else
 
-                let metadata = nuSpec.Metadata
-                let license = metadata.License
-                if isNull <| box license then
-                    return None
-                else
-
-                let packageId, version = coords.PackageId, coords.Version
-                let spdx =
-                    match license.Type with
-                    | "expression" -> metadata.License.Value
-                    | "file" -> $"<No SPDX Expression; see https://www.nuget.org/packages/{packageId}/{version}/License>"
-                        // TODO[#57]: ↑ Support the files properly?
-                    | _ -> failwithf $"Unsupported license type for source {packageId} v{version}: {license.Type}"
-                return Some({
-                    SpdxExpression = spdx
-                    CopyrightNotices = ImmutableArray.Create metadata.Copyright
-                } :> ILicense)
+                        let packageId, version = coords.PackageId, coords.Version
+                        let spdx =
+                            match license.Type with
+                            | "expression" -> metadata.License.Value
+                            | "file" -> $"<No SPDX Expression; see https://www.nuget.org/packages/{packageId}/{version}/License>"
+                                // TODO[#57]: ↑ Support the files properly?
+                            | _ -> failwithf $"Unsupported license type for source {packageId} v{version}: {license.Type}"
+                        Some({
+                            SpdxExpression = spdx
+                            CopyrightNotices = ImmutableArray.Create metadata.Copyright
+                        } :> ILicense)
+                    )
+                return license
             }
         | FrameworkReference _ ->
             Task.FromResult(Some <| DotNetSdkLicense)
