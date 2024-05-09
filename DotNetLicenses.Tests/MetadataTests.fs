@@ -30,9 +30,7 @@ let ``Get metadata from .nuspec works correctly``(): Task = task {
 }
 
 [<Fact>]
-let ``Overrides work as expected``(): Task = task {
-    let path = DataFiles.Get "TestComplex.csproj"
-
+let ``Overrides work as expected``(): Task = DataFiles.Deploy "TestComplex.csproj" (fun path -> task {
     let reader = MetadataReader NuGetMock.MirroringReader
     let! metadata = reader.ReadFromProject(path, Map.ofArray [|
         { PackageId = "FVNever.Package1"; Version = "0.0.0" }, { SpdxExpressions = [|"EXPR1"|]; Copyrights = [|"C1"|] }
@@ -51,6 +49,6 @@ let ``Overrides work as expected``(): Task = task {
         |}
     |], metadata.Items)
     Assert.Equivalent([| { PackageId = "FVNever.Package1"; Version = "0.0.0" } |], metadata.UsedOverrides)
-}
+})
 
 // REUSE-IgnoreEnd
