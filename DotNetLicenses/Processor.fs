@@ -276,12 +276,39 @@ let internal GenerateLockFile(
     for entry in packagedEntries.SourceEntries do
         let! resultEntries = findLicensesForFile entry
         match resultEntries.Length with
-        | 0 -> wp.ProduceWarning(ExitCode.LicenseForFileNotFound, $"No license found for file \"{entry.SourceRelativePath}\".")
-        | 1 -> lockFileContent.AddRange(resultEntries)
+        | 0 ->
+            wp.ProduceWarning(
+                ExitCode.LicenseForFileNotFound,
+                $"No license found for file \"{entry.SourceRelativePath}\"."
+            )
+        | 1 -> lockFileContent.AddRange resultEntries
         | _ ->
-            failwithf $"Several licenses found for one file: \"{entry.SourceRelativePath}\"."
-            // TODO[#28]: If all the packages yield the same license, just let it be.
-            // TODO[#28]: Otherwise, report this situation as a warning, and collect all the licenses.
+            let expressions =
+                resultEntries
+                |> Seq.distinctBy(fun(_, x) -> x.Spdx)
+                |> Seq.toArray
+            if expressions.Length > 1 then
+                let differentExpressions =
+                    expressions
+                    |> Seq.map(fun (_, entry: LockFileItem) ->
+                        String.concat "" [|
+                            "["
+                            entry.Spdx |> String.concat ", "
+                            "]"
+                            match entry.SourceId, entry.SourceVersion with
+                            | sourceId, Some version ->
+                                let id = sourceId |> Option.defaultValue "unknown source"
+                                $" ({id} {version})"
+                            | Some id, None -> $" ({id})"
+                            | None, None -> ()
+                        |]
+                    )
+                    |> String.concat ", "
+                wp.ProduceWarning(
+                    ExitCode.DifferentLicenseSetsForFile,
+                    $"Multiple different license sets for file \"{entry.SourceRelativePath}\": {differentExpressions}."
+                )
+            lockFileContent.AddRange resultEntries
 
     for entry in packagedEntries.IgnoredEntries do
         lockFileContent.Add(

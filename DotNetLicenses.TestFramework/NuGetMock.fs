@@ -9,15 +9,15 @@ open DotNetLicenses
 open DotNetLicenses.NuGet
 open TruePath
 
-let MirroringReader = {
-    new INuGetReader with
+type MockedNuGetReader(licenseOverride: string option) =
+    interface INuGetReader with
         member _.ReadNuSpec { PackageId = id; Version = version } = Task.FromResult {
             Metadata = {
                 Id = id
                 Version = version
                 License = {
                     Type = "expression"
-                    Value = $"License {id}"
+                    Value = licenseOverride |> Option.defaultWith (fun () -> $"License {id}")
                 }
                 Copyright = $"Copyright {id}"
             }
@@ -26,7 +26,8 @@ let MirroringReader = {
         member _.ContainsFileName _ _ = Task.FromResult true
 
         member _.FindFile _ packages _ = packages |> Seq.toArray |> Task.FromResult
-}
+
+let MirroringReader = MockedNuGetReader None
 
 let WithNuGetPackageRoot (rootPath: AbsolutePath) (action: unit -> Task): Task = task {
     let oldPath = PackagesFolderPath

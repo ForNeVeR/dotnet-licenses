@@ -527,11 +527,7 @@ let ``Verify works correctly on an unhappy path``(): Task = task {
 }
 
 [<Fact>]
-let ``Several similar licenses for same artifact are deduplicated``(): Task =
-    failwith "TODO"
-
-[<Fact>]
-let ``Several different licenses for same artifact generate a warning``(): Task =
+let ``Multiple similar licenses for same artifact don't give a warning``(): Task =
     DataFiles.Deploy "TestComplex.csproj" (fun project -> task {
         let! packages = MsBuild.GetDirectPackageReferences project
         Assert.Equal(2, packages.Length)
@@ -540,26 +536,72 @@ let ``Several different licenses for same artifact generate a warning``(): Task 
         let packagedFile = deployDir.Path / "my-file.txt"
         do! File.WriteAllTextAsync(packagedFile.Value, "Hello World!")
 
+        let lockFile = deployDir.Path / "lock.toml"
         let config = {
             Configuration.Empty with
                 MetadataSources = [|
                     NuGetSource.Of project
                 |]
-                LockFile = Some <| LocalPath "lock.toml"
+                LockFile = Some <| LocalPath lockFile
+                PackagedFiles = [|
+                    PackageSpecs.Directory deployDir.Path
+                |]
+        }
+
+        let nuGet = NuGetMock.MockedNuGetReader(licenseOverride = Some "MIT")
+        let wp = WarningProcessor()
+        do! Processor.GenerateLockFile(
+            config,
+            project.Parent.Value,
+            nuGet,
+            wp
+        )
+
+        Assert.Empty wp.Codes
+        Assert.Empty wp.Messages
+
+        let expectedLock = """# REUSE-IgnoreStart
+"my-file.txt" = [{source_id = "FVNever.Package1", source_version = "0.0.0", spdx = ["MIT"], copyright = ["Copyright FVNever.Package1"]}, {source_id = "FVNever.Package3", source_version = "0.0.0", spdx = ["MIT"], copyright = ["Copyright FVNever.Package3"]}]
+# REUSE-IgnoreEnd
+"""
+        let! actualLock = File.ReadAllTextAsync lockFile.Value
+        Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualLock.ReplaceLineEndings "\n")
+    })
+
+[<Fact>]
+let ``Multiple different licenses for same artifact generate a warning``(): Task =
+    DataFiles.Deploy "TestComplex.csproj" (fun project -> task {
+        let! packages = MsBuild.GetDirectPackageReferences project
+        Assert.Equal(2, packages.Length)
+
+        use deployDir = DisposableDirectory.Create()
+        let packagedFile = deployDir.Path / "my-file.txt"
+        do! File.WriteAllTextAsync(packagedFile.Value, "Hello World!")
+
+        let lockFile = deployDir.Path / "lock.toml"
+        let config = {
+            Configuration.Empty with
+                MetadataSources = [|
+                    NuGetSource.Of project
+                |]
+                LockFile = Some <| LocalPath lockFile
                 PackagedFiles = [|
                     PackageSpecs.Directory deployDir.Path
                 |]
         }
 
         let! result = runGenerator config
-        Assert.Equal([|ExitCode.DifferentLicensesForFile|], result.Codes)
-        Assert.Equal([|
-            "Multiple licenses found for file \"my-file.txt\": \"FVNever.Package1 license\"," +
-            " \"FVNever.Package2 license\"."
-        |], result.Messages)
+        Assert.Equal([|ExitCode.DifferentLicenseSetsForFile|], result.Codes)
+        Assert.Equal(
+            "Multiple different license sets for file \"my-file.txt\":" +
+            " [License FVNever.Package1] (FVNever.Package1 0.0.0)," +
+            " [License FVNever.Package3] (FVNever.Package3 0.0.0)."
+        , Assert.Single result.Messages)
 
-        let expectedLock = """"my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+        let expectedLock = """# REUSE-IgnoreStart
+"my-file.txt" = [{source_id = "FVNever.Package1", source_version = "0.0.0", spdx = ["License FVNever.Package1"], copyright = ["Copyright FVNever.Package1"]}, {source_id = "FVNever.Package3", source_version = "0.0.0", spdx = ["License FVNever.Package3"], copyright = ["Copyright FVNever.Package3"]}]
+# REUSE-IgnoreEnd
 """
-        let! actualLock = File.ReadAllTextAsync <| (Option.get config.LockFile).Value
-        Assert.Equal(expectedLock, actualLock)
+        let! actualLock = File.ReadAllTextAsync lockFile.Value
+        Assert.Equal(expectedLock.ReplaceLineEndings "\n", actualLock.ReplaceLineEndings "\n")
     })
