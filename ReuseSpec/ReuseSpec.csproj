@@ -20,7 +20,7 @@ SPDX-License-Identifier: MIT
     <ItemGroup>
       <PackageReference Include="GitignoreParserNet" Version="0.2.0.13" />
       <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="8.0.0" />
-      <PackageReference Include="TruePath" Version="1.2.0" />
+      <PackageReference Include="TruePath" Version="1.2.1" />
     </ItemGroup>
 
 </Project>
