@@ -11,7 +11,7 @@ open TruePath
 
 type MockedNuGetReader(licenseOverride: string option) =
     interface INuGetReader with
-        member _.ReadNuSpec { PackageId = id; Version = version } = Task.FromResult <| Some {
+        member _.ReadNuSpec _ { PackageId = id; Version = version } = Task.FromResult <| Some {
             Metadata = {
                 Id = id
                 Version = version
@@ -26,17 +26,20 @@ type MockedNuGetReader(licenseOverride: string option) =
         member _.ReadPackageReferences(path: AbsolutePath) =
             ReadPackageReferences(path, ReferenceType.PackageReference)
 
-        member _.ContainsFileName _ _ = Task.FromResult true
+        member _.ContainsFileName _ _ _ = Task.FromResult true
 
         member _.FindFile _ packages _ = packages |> Seq.toArray |> Task.FromResult
 
 let MirroringReader = MockedNuGetReader None
 
-let WithNuGetPackageRoot (rootPath: AbsolutePath) (action: unit -> Task): Task = task {
-    let oldPath = PackagesFolderPath
-    try
-        PackagesFolderPath <- rootPath
-        do! action()
-    finally
-        PackagesFolderPath <- oldPath
-}
+type DirectNuSpecReader(packages: AbsolutePath) =
+    let parent = NuGetReader() :> INuGetReader
+    interface INuGetReader with
+        member _.ReadNuSpec _ coords = task {
+            let! nuSpec = GetNuSpecFilePath [| packages |] coords RootResolveBehavior.Any
+            let! result = ReadNuSpec(Option.get nuSpec)
+            return Some result
+        }
+        member _.ReadPackageReferences path = parent.ReadPackageReferences path
+        member _.ContainsFileName path name packages = parent.ContainsFileName path name packages
+        member _.FindFile path packages name = parent.FindFile path packages name

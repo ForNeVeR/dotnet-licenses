@@ -18,27 +18,28 @@ open Xunit
 [<Fact>]
 let ``Get metadata from .nuspec works correctly``(): Task = task {
     use dir = DisposableDirectory.Create()
-    do! NuGetMock.WithNuGetPackageRoot dir.Path (fun _ -> task {
-        let coords = {
-            PackageId = "Package"
-            Version = "1.0.0"
-        }
-        let nuSpec = DataFiles.Get "Test1.nuspec"
-        let targetPath = GetNuSpecFilePath coords
-        Directory.CreateDirectory(targetPath.Parent.Value.Value) |> ignore
-        File.Copy(nuSpec.Value, targetPath.Value)
+    let sourceRoots = [| dir.Path |]
+    let coords = {
+        PackageId = "Package"
+        Version = "1.0.0"
+    }
+    let nuSpec = DataFiles.Get "Test1.nuspec"
+    let! targetPath = GetNuSpecFilePath sourceRoots coords RootResolveBehavior.Any
+    let targetPath = Option.get targetPath
+    Directory.CreateDirectory(targetPath.Parent.Value.Value) |> ignore
+    File.Copy(nuSpec.Value, targetPath.Value)
 
-        let reference = NuGetReference coords
-        let nuGet = NuGetReader()
-        let! metadata = GetMetadata nuGet reference
-        Assert.Equal(Some <| Package {|
-            Source = reference
-            License = {
-                SpdxLicense.SpdxExpression = "MIT"
-                CopyrightNotices = ImmutableArray.Create "© 2024 Friedrich von Never"
-            }
-        |}, metadata)
-    })
+    let projectFile = dir.Path / "imaginative-file.csproj"
+    let reference = NuGetReference(projectFile, coords)
+    let nuGet = NuGetMock.DirectNuSpecReader(dir.Path)
+    let! metadata = GetMetadata projectFile nuGet reference
+    Assert.Equal(Some <| Package {|
+        Source = reference
+        License = {
+            SpdxLicense.SpdxExpression = "MIT"
+            CopyrightNotices = ImmutableArray.Create "© 2024 Friedrich von Never"
+        }
+    |}, metadata)
 }
 
 [<Fact>]
@@ -50,14 +51,14 @@ let ``Overrides work as expected``(): Task = DataFiles.Deploy "TestComplex.cspro
     |])
     Assert.Equivalent([|
         Package {|
-            Source = NuGetReference { PackageId = "FVNever.Package1"; Version = "0.0.0" }
+            Source = NuGetReference(path, { PackageId = "FVNever.Package1"; Version = "0.0.0" })
             License = {
                 SpdxLicense.SpdxExpression = "EXPR1"
                 CopyrightNotices = ImmutableArray.Create "C1"
             }
         |}
         Package {|
-            Source = NuGetReference { PackageId = "FVNever.Package3"; Version = "0.0.0" }
+            Source = NuGetReference(path, { PackageId = "FVNever.Package3"; Version = "0.0.0" })
             License = {
                 SpdxLicense.SpdxExpression = "License FVNever.Package3"
                 CopyrightNotices = ImmutableArray.Create "Copyright FVNever.Package3"

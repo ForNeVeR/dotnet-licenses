@@ -15,12 +15,14 @@ type MetadataItem =
     | License of LicenseSource
     | Reuse of ReuseSource
 
-let internal GetMetadata (nuGet: INuGetReader) (reference: PackageReference): Task<MetadataItem option> = task {
+let internal GetMetadata (input: AbsolutePath)
+                         (nuGet: INuGetReader)
+                         (reference: PackageReference): Task<MetadataItem option> = task {
     let! license =
         match reference with
-        | NuGetReference coords ->
+        | NuGetReference(_, coords) ->
             task {
-                let! nuSpec = nuGet.ReadNuSpec coords
+                let! nuSpec = nuGet.ReadNuSpec input coords
                 let license =
                     nuSpec
                     |> Option.bind (fun nuSpec ->
@@ -70,7 +72,7 @@ type MetadataReader(nuGet: INuGetReader) =
         for reference in packageReferences do
             let coordinates =
                 match reference with
-                | NuGetReference coords -> coords
+                | NuGetReference(_, coords) -> coords
                 | FrameworkReference coords -> coords
             let! metadata =
                 match overrides.TryGetValue coordinates with
@@ -83,7 +85,7 @@ type MetadataReader(nuGet: INuGetReader) =
                             CopyrightNotices = ImmutableArray.ToImmutableArray metaOverride.CopyrightNotices
                         }
                     |})
-                | false, _ -> GetMetadata nuGet reference
+                | false, _ -> GetMetadata projectFilePath nuGet reference
 
             metadata |> Option.iter result.Add
 

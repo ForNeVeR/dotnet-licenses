@@ -25,6 +25,7 @@ and [<CLIMutable>] MsBuildItems = {
     PackageReference: MsBuildPackageReference[]
     ResolvedFrameworkReference: ResolvedFrameworkReference[]
     ResolvedTargetingPack: ResolvedTargetingPack[]
+    SourceRoot: MsBuildItem[]
 }
 and [<CLIMutable>] MsBuildPackageReference =
     {
@@ -145,13 +146,13 @@ let internal GetDirectPackageReferences(input: AbsolutePath): Task<PackageRefere
         projects
         |> Seq.map(fun project -> task {
             let! references = GetItems project None None [| "PackageReference" |] _.PackageReference
-            return references |> Array.map _.FromMsBuild()
+            return references |> Seq.map _.FromMsBuild() |> Seq.map(fun ref -> project, ref) |> Seq.toArray
         })
         |> Task.WhenAll
     return references
            |> Seq.collect id
            |> Seq.distinct
-           |> Seq.sortBy(fun x -> x.PackageId, x.Version)
+           |> Seq.sortBy(fun (p, x) -> p.Value, x.PackageId, x.Version)
            |> Seq.map NuGetReference
            |> Seq.toArray
 }
@@ -230,10 +231,10 @@ let internal GetRuntimePackReferences(project: AbsolutePath): Task<PackageRefere
             let baseRuntimePackName = $"{targetingPack.RuntimeFrameworkName}.runtime"
             targetingPack.RuntimePackRuntimeIdentifiers.Split(';')
             |> Seq.map(fun id -> $"{baseRuntimePackName}.{id}")
-            |> Seq.map(fun package -> NuGetReference {
+            |> Seq.map(fun package -> NuGetReference(project, {
                 PackageId = package
                 Version = targetingPack.NuGetPackageVersion
-            })
+            }))
         )
         |> Seq.toArray
     return runtimePackReferences
@@ -246,4 +247,13 @@ let GetGeneratedArtifacts(input: AbsolutePath, runtime: string option): Task<Pro
         |> Seq.map (GetProjectGeneratedArtifacts runtime)
         |> Task.WhenAll
     return artifacts |> ProjectGeneratedArtifacts.Merge
+}
+
+let GetSourceRoots(input: AbsolutePath): Task<AbsolutePath[]> = task {
+    let! projects = GetProjects input
+    let! items =
+        projects
+        |> Seq.map(fun p -> GetItems p None (Some "Restore") [| "SourceRoot" |] _.SourceRoot)
+        |> Task.WhenAll
+    return items |> Seq.collect id |> Seq.map(fun i -> AbsolutePath i.Identity) |> Seq.toArray
 }

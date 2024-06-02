@@ -15,7 +15,7 @@ type PackageCoordinates = {
 }
 
 type PackageReference =
-    | NuGetReference of PackageCoordinates
+    | NuGetReference of AbsolutePath * PackageCoordinates
     | FrameworkReference of PackageCoordinates
 
 type MetadataOverride = {

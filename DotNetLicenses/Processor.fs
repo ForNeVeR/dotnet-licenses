@@ -92,7 +92,7 @@ let internal PrintMetadata(
             let copyrights = package.License.CopyrightNotices |> String.concat "\n  "
             let coords =
                 match package.Source with
-                | NuGetReference c -> c
+                | NuGetReference(_, c) -> c
                 | FrameworkReference c -> c
             printfn $"- Package {coords.PackageId} {coords.Version}: {spdx}\n  {copyrights}"
 
@@ -160,10 +160,10 @@ let internal GenerateLockFile(
         metadata
         |> Seq.collect(fun m ->
             match m with
-            | Package p -> [| p.Source, m |]
+            | Package p -> [| KeyValuePair(p.Source, m) |]
             | _ -> Array.empty
         )
-        |> Map.ofSeq
+        |> Dictionary
     let reuseMetadata =
         metadata
         |> Seq.collect(fun m ->
@@ -220,7 +220,10 @@ let internal GenerateLockFile(
         let! possiblePackageEntries =
             packages
             |> Seq.map(fun p ->
-                nuGet.ContainsFileName p <| Path.GetFileName(entry.SourceRelativePath)
+                match p with
+                | NuGetReference(project, _) ->
+                    nuGet.ContainsFileName project p <| Path.GetFileName(entry.SourceRelativePath)
+                | FrameworkReference _ -> failwithf $"Framework reference not supported: {p}."
             )
             |> Task.WhenAll
         let fileContainingPackagesCount = possiblePackageEntries |> Seq.filter id |> Seq.length
@@ -231,7 +234,7 @@ let internal GenerateLockFile(
                 let metadata = packageMetadata[package]
                 match metadata with
                 | Package p ->
-                    let coords = match package with NuGetReference c -> c | FrameworkReference c -> c
+                    let coords = match package with NuGetReference(_, c) -> c | FrameworkReference c -> c
                     let sourceVersion = if fileContainingPackagesCount <= 1 then None else Some coords.Version
                     LocalPathPattern entry.SourceRelativePath, {
                         LockFileItem.SourceId = Some coords.PackageId

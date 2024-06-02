@@ -15,10 +15,10 @@ open Xunit
 let ``MSBuild reads the project references correctly``(): Task =
     DataFiles.Deploy("Test.csproj") (fun path -> task {
         let! references = NuGet.ReadPackageReferences(path, NuGet.ReferenceType.PackageReference)
-        Assert.Equal<PackageReference>([| NuGetReference {
+        Assert.Equal<PackageReference>([| NuGetReference(path, {
             PackageId = "FVNever.DotNetLicenses"
             Version = "1.0.0"
-        }|], references)
+        })|], references)
     })
 
 [<Fact>]
@@ -40,14 +40,19 @@ let ``MSBuild reads the project-generated artifacts correctly``(): Task =
     })
 
 [<Fact>]
-let ``MSBuild deduplicates the project references across solution``(): Task =
+let ``MSBuild processes the project references across solution``(): Task =
     DataFiles.DeployGroup [|"Test.csproj"; "Test2.csproj"; "Test.sln"|] (fun path -> task {
         let solution = path / "Test.sln"
         let! references = NuGet.ReadPackageReferences(solution, NuGet.ReferenceType.PackageReference)
-        Assert.Equal<PackageReference>([| NuGetReference {
+        let projects = [|
+            path / "Test.csproj"
+            path / "Test2.csproj"
+        |]
+        let expectedReferences = projects |> Array.map (fun project -> NuGetReference(project, {
             PackageId = "FVNever.DotNetLicenses"
             Version = "1.0.0"
-        }|], references)
+        }))
+        Assert.Equal<PackageReference>(expectedReferences, references)
     })
 
 [<Fact>]
