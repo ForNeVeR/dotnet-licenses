@@ -294,16 +294,16 @@ let internal GenerateLockFile(
         | _ ->
             let expressions =
                 resultEntries
-                |> Seq.distinctBy(fun(_, x) -> x.Spdx)
+                |> Seq.distinctBy(fun(_, x) -> x.SpdxExpression)
                 |> Seq.toArray
             if expressions.Length > 1 then
                 let differentExpressions =
                     expressions
                     |> Seq.map(fun (_, entry: LockFileItem) ->
                         String.concat "" [|
-                            "["
-                            entry.Spdx |> String.concat ", "
-                            "]"
+                            match entry.SpdxExpression with
+                            | None -> ()
+                            | Some expr -> $"[{expr}]"
                             match entry.SourceId, entry.SourceVersion with
                             | sourceId, Some version ->
                                 let id = sourceId |> Option.defaultValue "unknown source"

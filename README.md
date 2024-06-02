@@ -158,14 +158,14 @@ Lock File
 License lock file looks like this:
 ```toml
 "file_name" = [
-    { source_id = "FSharp.Core", source_version = "8.0.200", spdx = ["MIT"], copyright = ["© Microsoft Corporation. All rights reserved."] }
+    { source_id = "FSharp.Core", source_version = "8.0.200", spdx = "MIT", copyright = ["© Microsoft Corporation. All rights reserved."] }
 ]
 ```
 where
 - `file_name` is the path of the file (or a glob) relatively to the package root.
 - `source_id` _(optional)_ is the NuGet package that is the origin of the file, if it originated from a NuGet package.
 - `source_version` _(optional)_ is the version of the NuGet package, if the file originates from NuGet (note that it only gets filled if a file with same name is provided by several packages, i.e. it only serves the disambiguation purpose — this is done for the lock file to not be updated on every minor dependency version update).
-- `spdx` _(optional for ignored items)_ is the list of SPDX identifiers of the license.
+- `spdx` _(optional for ignored items)_ is the SPDX expression of the license used for the file.
 - `copyright` _(optional for ignored items)_ is the list of the copyright statements of the license.
 - `is_ignored` _(optional)_ marks the items that were explicitly ignored by the user (or default ignore preset) when generating the lock file.
 
