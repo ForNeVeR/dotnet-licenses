@@ -245,9 +245,11 @@ let ReadPackageReferences(
 }
 
 type NuGetReader() =
+    let itemCache = MsBuildItemCache()
+
     interface INuGetReader with
         member _.ReadNuSpec (input: AbsolutePath) (coordinates: PackageCoordinates): Task<NuSpec option> = task {
-            let! sourceRoots = MsBuild.GetSourceRoots input
+            let! sourceRoots = MsBuild.GetSourceRoots itemCache input
             let! nuSpec = GetNuSpecFilePath sourceRoots coordinates RootResolveBehavior.Existing
             match nuSpec with
             | Some n ->
@@ -261,7 +263,7 @@ type NuGetReader() =
         member _.ContainsFileName (input: AbsolutePath) (package: PackageReference) (fileName: string): Task<bool> =
             task {
 
-                let! sourceRoots = MsBuild.GetSourceRoots input
+                let! sourceRoots = MsBuild.GetSourceRoots itemCache input
                 let coords = match package with NuGetReference(_, c) -> c | FrameworkReference c -> c
                 let! files = GetPackageFiles sourceRoots coords
                 return files |> Seq.exists(fun f -> Path.GetFileName f.Value = fileName)
@@ -276,7 +278,7 @@ type NuGetReader() =
                     // TODO: Source root resolve cache, shared between invocations.
                     let! sourceRoots =
                         match p with
-                        | NuGetReference(project, _) -> MsBuild.GetSourceRoots project
+                        | NuGetReference(project, _) -> MsBuild.GetSourceRoots itemCache project
                         | _ -> failwithf $"Reference not supported: {p}."
                     let! checkResult = ContainsFile cache sourceRoots (p, entry)
                     return checkResult, p

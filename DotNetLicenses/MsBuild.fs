@@ -249,11 +249,17 @@ let GetGeneratedArtifacts(input: AbsolutePath, runtime: string option): Task<Pro
     return artifacts |> ProjectGeneratedArtifacts.Merge
 }
 
-let GetSourceRoots(input: AbsolutePath): Task<AbsolutePath[]> = task {
+let private LoadSourceRoots(input: AbsolutePath): Task<MsBuildItem[]> = task {
     let! projects = GetProjects input
     let! items =
         projects
         |> Seq.map(fun p -> GetItems p None (Some "Restore") [| "SourceRoot" |] _.SourceRoot)
         |> Task.WhenAll
-    return items |> Seq.collect id |> Seq.map(fun i -> AbsolutePath i.Identity) |> Seq.toArray
+    return items |> Array.collect id
+}
+
+
+let GetSourceRoots (cache: MsBuildItemCache<MsBuildItem>) (input: AbsolutePath): Task<AbsolutePath[]> = task {
+    let! items = cache.Get input LoadSourceRoots
+    return items |> Array.map (fun item -> AbsolutePath item.Identity)
 }
