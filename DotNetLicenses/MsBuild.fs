@@ -8,6 +8,7 @@ open System.Collections.Generic
 open System.IO
 open System.Text.Json
 open System.Threading.Tasks
+open DotNetLicenses.GeneratedArtifacts
 open Microsoft.Build.Construction
 open TruePath
 open Medallion.Shell
@@ -157,22 +158,12 @@ let internal GetDirectPackageReferences(input: AbsolutePath): Task<PackageRefere
            |> Seq.toArray
 }
 
-type ProjectGeneratedArtifacts =
-    {
-        FilesWithContent: AbsolutePath[]
-        FilePatterns: LocalPathPattern[]
-    }
-    static member Merge(items: ProjectGeneratedArtifacts[]): ProjectGeneratedArtifacts = {
-        FilesWithContent = items |> Seq.collect _.FilesWithContent |> Seq.distinct |> Seq.sortBy _.Value |> Array.ofSeq
-        FilePatterns = items |> Seq.collect _.FilePatterns |> Seq.distinct |> Seq.sortBy _.Value |> Array.ofSeq
-    }
-
 let internal GetKnownFrameworkReferences(project: AbsolutePath): Task<KnownFrameworkReference[]> = task {
     return! GetItems project (Some DefaultConfiguration) None [| "KnownFrameworkReference" |] _.KnownFrameworkReference
 }
 
 let private GetProjectGeneratedArtifacts (runtime: string option)
-                                         (input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
+                                         (input: AbsolutePath): Task<GeneratedArtifactEntry[]> = task {
     let! properties = GetProperties(input, DefaultConfiguration, runtime, [|
         "BaseIntermediateOutputPath"
         "TargetName"
@@ -201,15 +192,15 @@ let private GetProjectGeneratedArtifacts (runtime: string option)
     |]
     let isDllProject = Path.GetExtension targetFileName = ".dll"
     let patterns = [|
-        LocalPathPattern $"**/{targetName}.pdb"
-        LocalPathPattern $"**/{targetName}.deps.json"
+        LocalPathPattern $"**/{targetName}.pdb", None
+        LocalPathPattern $"**/{targetName}.deps.json", None
         if useAppHost && isDllProject then
-            LocalPathPattern $"**/{targetName}.exe"
+            LocalPathPattern $"**/{targetName}.exe", Some(DotNetSdkLicense :> ILicense)
     |]
-    return {
-        FilesWithContent = artifacts
-        FilePatterns = patterns
-    }
+    return [|
+        yield! artifacts |> Seq.map (fun a -> { Artifact = GeneratedArtifact.File a; AdditionalLicense = None })
+        yield! patterns |> Seq.map (fun(p, l) -> { Artifact = GeneratedArtifact.Pattern p; AdditionalLicense = l })
+    |]
 }
 
 let internal GetRuntimePackReferences(project: AbsolutePath): Task<PackageReference[]> = task {
@@ -240,13 +231,13 @@ let internal GetRuntimePackReferences(project: AbsolutePath): Task<PackageRefere
     return runtimePackReferences
 }
 
-let GetGeneratedArtifacts(input: AbsolutePath, runtime: string option): Task<ProjectGeneratedArtifacts> = task {
+let GetGeneratedArtifacts(input: AbsolutePath, runtime: string option): Task<GeneratedArtifactEntry[]> = task {
     let! projects = GetProjects input
     let! artifacts =
         projects
         |> Seq.map (GetProjectGeneratedArtifacts runtime)
         |> Task.WhenAll
-    return artifacts |> ProjectGeneratedArtifacts.Merge
+    return artifacts |> Seq.collect id |> Merge |> Seq.toArray
 }
 
 let private LoadSourceRoots(input: AbsolutePath): Task<MsBuildItem[]> = task {

@@ -4,15 +4,37 @@
 
 namespace DotNetLicenses
 
+open System.Collections.Generic
 open System.Collections.Immutable
 open System.IO
 open System.Net.Http
 open System.Threading.Tasks
 
+
+[<Interface>]
 type ILicense =
     abstract member SpdxExpression: string
     abstract member CopyrightNotices: ImmutableArray<string>
     abstract member GetText: unit -> Task<string>
+
+    static member Merge(licenses: IReadOnlyList<ILicense>): ILicense option =
+        if licenses.Count = 0 then None
+        else Some (
+            let spdx = licenses |> Seq.map _.SpdxExpression |> Seq.distinct |> String.concat " AND "
+            let copyrightNotices = licenses |> Seq.collect _.CopyrightNotices |> Seq.distinct |> Seq.toArray
+            { new ILicense with
+                member _.SpdxExpression = spdx
+                member _.CopyrightNotices = ImmutableArray.ToImmutableArray copyrightNotices
+                member _.GetText() = task {
+                    let! contents = licenses |> Seq.map _.GetText() |> Task.WhenAll
+                    let distinctContents = contents |> Seq.distinct |> Seq.toArray
+                    if distinctContents.Length > 1 then
+                        failwithf $"Multiple licenses with different content: ${licenses}"
+                        // TODO: Support several licenses this way
+                    return Array.exactlyOne distinctContents
+                }
+            }
+        )
 
 type SpdxLicense =
     {
