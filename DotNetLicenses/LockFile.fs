@@ -6,6 +6,7 @@ module DotNetLicenses.LockFile
 
 open System
 open System.Collections.Generic
+open System.Collections.Immutable
 open System.IO
 open System.Threading.Tasks
 open JetBrains.Annotations
@@ -15,8 +16,8 @@ open Tomlyn
 type LockFileItem = {
     SourceId: string option
     SourceVersion: string option
-    Spdx: string[]
-    Copyright: string[]
+    SpdxExpression: string option
+    CopyrightNotices: ImmutableArray<string>
     IsIgnored: bool
 }
 
@@ -25,7 +26,7 @@ type StoredLockFileItem =
     {
         [<CanBeNull>] SourceId: string
         [<CanBeNull>] SourceVersion: string
-        [<CanBeNull>] Spdx: string[]
+        [<CanBeNull>] Spdx: string
         [<CanBeNull>] Copyright: string[]
         IsIgnored: Nullable<bool>
     }
@@ -33,8 +34,14 @@ type StoredLockFileItem =
         {
             SourceId = Option.toObj item.SourceId
             SourceVersion = Option.toObj item.SourceVersion
-            Spdx = if item.IsIgnored && item.Spdx.Length = 0 then null else item.Spdx
-            Copyright = if item.IsIgnored && item.Copyright.Length = 0 then null else item.Copyright
+            Spdx =
+                if item.IsIgnored && Option.isNone item.SpdxExpression
+                then null
+                else Option.toObj item.SpdxExpression
+            Copyright =
+                if item.IsIgnored && item.CopyrightNotices.Length = 0
+                then null
+                else item.CopyrightNotices |> Seq.toArray
             IsIgnored = if item.IsIgnored then Nullable true else Nullable()
         }
 
@@ -42,8 +49,12 @@ type StoredLockFileItem =
         {
             SourceId = Option.ofObj this.SourceId
             SourceVersion = Option.ofObj this.SourceVersion
-            Spdx = this.Spdx |> Option.ofObj |> Option.defaultValue Array.empty
-            Copyright = this.Copyright |> Option.ofObj |> Option.defaultValue Array.empty
+            SpdxExpression = this.Spdx |> Option.ofObj
+            CopyrightNotices =
+                this.Copyright
+                |> Option.ofObj
+                |> Option.map ImmutableArray.ToImmutableArray
+                |> Option.defaultValue(ImmutableArray.Create())
             IsIgnored = this.IsIgnored |> Option.ofNullable |> Option.defaultValue false
         }
 

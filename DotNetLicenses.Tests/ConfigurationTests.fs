@@ -52,7 +52,7 @@ let ``Metadata overrides are read correctly``(): Task =
 metadata_sources = [{ type = "nuget", include = "File.csproj" }]
 metadata_overrides = [
     { id = "Package1", version = "1.0.0", spdx = "MIT", copyright = "" },
-    { id = "Package1", version = "2.0.0", spdx = ["MIT"], copyright = ["Copyright1"] }
+    { id = "Package1", version = "2.0.0", spdx = "MIT", copyright = ["Copyright1"] }
 ]
 """
     doTest content {
@@ -62,14 +62,14 @@ metadata_overrides = [
                 {
                     Id = "Package1"
                     Version = "1.0.0"
-                    Spdx = [|"MIT"|]
-                    Copyright = [|""|]
+                    SpdxExpression = "MIT"
+                    CopyrightNotices = [|""|]
                 }
                 {
                     Id = "Package1"
                     Version = "2.0.0"
-                    Spdx = [|"MIT"|]
-                    Copyright = [|"Copyright1"|]
+                    SpdxExpression = "MIT"
+                    CopyrightNotices = [|"Copyright1"|]
                 }
             |]
     }
@@ -86,14 +86,14 @@ metadata_sources = [
         Configuration.Empty with
             MetadataSources = [|
                 License {
-                    Spdx = "MIT"
-                    Copyright =  "Me"
+                    SpdxExpression = "MIT"
+                    CopyrightNotice = "Me"
                     FilesCovered = [| LocalPathPattern "**/*.txt" |]
                     PatternsCovered = Array.empty
                 }
                 License {
-                    Spdx = "MIT"
-                    Copyright =  "Me"
+                    SpdxExpression = "MIT"
+                    CopyrightNotice = "Me"
                     FilesCovered = [|
                         LocalPathPattern "**/*.pdf"
                         LocalPathPattern "**/*.pdb"
@@ -168,7 +168,8 @@ let ``Covered patterns are read correctly``(): Task =
     let content = """
 metadata_sources = [
     { type = "license", spdx = "MIT", copyright = "My Copyright", patterns_covered = [
-        { type = "msbuild", include = "project2.csproj" },
+        { type = "msbuild", include = "project1.csproj" },
+        { type = "msbuild", include = "project2.csproj", runtime = "win-x64" },
         { type = "nuget" },
     ] },
     { type = "reuse", root = ".", patterns_covered = [
@@ -180,11 +181,12 @@ metadata_sources = [
         Configuration.Empty with
             MetadataSources = [|
                 License {
-                    Spdx = "MIT"
-                    Copyright = "My Copyright"
+                    SpdxExpression = "MIT"
+                    CopyrightNotice = "My Copyright"
                     FilesCovered = Array.empty
                     PatternsCovered = [|
-                        MsBuildCoverage(LocalPath "project2.csproj")
+                        MsBuildCoverage(LocalPath "project1.csproj", None)
+                        MsBuildCoverage(LocalPath "project2.csproj", Some "win-x64")
                         NuGetCoverage
                     |]
                 }
@@ -193,7 +195,7 @@ metadata_sources = [
                     Exclude = Array.empty
                     FilesCovered = Array.empty
                     PatternsCovered = [|
-                        MsBuildCoverage(LocalPath "project2.csproj")
+                        MsBuildCoverage(LocalPath "project2.csproj", None)
                     |]
                 }
             |]
@@ -222,8 +224,8 @@ metadata_overrides = [
     let wp = WarningProcessor()
     let overrides = configuration.GetMetadataOverrides wp
     Assert.Equivalent(Map.ofArray [|
-        { PackageId = "Package1"; Version = "1.0.0" }, { SpdxExpressions = [|"MIT"|]; Copyrights = [|""|] }
-        { PackageId = "Package2"; Version = "1.0.0" }, { SpdxExpressions = [|"MIT"|]; Copyrights = [|"Copyright1"|] }
+        { PackageId = "Package1"; Version = "1.0.0" }, { SpdxExpression = "MIT"; CopyrightNotices = [|""|] }
+        { PackageId = "Package2"; Version = "1.0.0" }, { SpdxExpression = "MIT"; CopyrightNotices = [|"Copyright1"|] }
     |], overrides)
     Assert.Equivalent(WarningProcessor(), wp)
 }
@@ -248,6 +250,6 @@ metadata_overrides = [
         wp.Messages
     )
     Assert.Equivalent(Map.ofArray [|
-        { PackageId = "Package1"; Version = "1.0.0" }, { SpdxExpressions = [|"MIT"|]; Copyrights = [|"Copyright1"|] }
+        { PackageId = "Package1"; Version = "1.0.0" }, { SpdxExpression = "MIT"; CopyrightNotices =  [|"Copyright1"|] }
     |], result)
 }
