@@ -165,7 +165,7 @@ where
 - `file_name` is the path of the file (or a glob) relatively to the package root.
 - `source_id` _(optional)_ is the NuGet package that is the origin of the file, if it originated from a NuGet package.
 - `source_version` _(optional)_ is the version of the NuGet package, if the file originates from NuGet (note that it only gets filled if a file with same name is provided by several packages, i.e. it only serves the disambiguation purpose — this is done for the lock file to not be updated on every minor dependency version update).
-- `spdx` _(optional for ignored items)_ is the SPDX expression of the license used for the file.
+- `spdx` _(optional for ignored items)_ is the SPDX expression of the license used for the file. It might be a `LicenseRef-<SomeId>` for custom licenses. This is currently partially supported by the tool, see #TODO for more information.
 - `copyright` _(optional for ignored items)_ is the list of the copyright statements of the license.
 - `is_ignored` _(optional)_ marks the items that were explicitly ignored by the user (or default ignore preset) when generating the lock file.
 
