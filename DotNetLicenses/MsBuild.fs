@@ -154,7 +154,10 @@ let internal GetDirectPackageReferences(input: AbsolutePath): Task<PackageRefere
            |> Seq.collect id
            |> Seq.distinct
            |> Seq.sortBy(fun (p, x) -> p.Value, x.PackageId, x.Version)
-           |> Seq.map NuGetReference
+           |> Seq.map(fun(project, coords) -> {
+               ReferencingProject = project
+               Coordinates = coords
+           })
            |> Seq.toArray
 }
 
@@ -222,10 +225,13 @@ let internal GetRuntimePackReferences(project: AbsolutePath): Task<PackageRefere
             let baseRuntimePackName = $"{targetingPack.RuntimeFrameworkName}.runtime"
             targetingPack.RuntimePackRuntimeIdentifiers.Split(';')
             |> Seq.map(fun id -> $"{baseRuntimePackName}.{id}")
-            |> Seq.map(fun package -> NuGetReference(project, {
-                PackageId = package
-                Version = targetingPack.NuGetPackageVersion
-            }))
+            |> Seq.map(fun package -> {
+                ReferencingProject = project
+                Coordinates = {
+                    PackageId = package
+                    Version = targetingPack.NuGetPackageVersion
+                }
+            })
         )
         |> Seq.toArray
     return runtimePackReferences

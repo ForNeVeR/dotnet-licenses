@@ -30,7 +30,7 @@ let ``Get metadata from .nuspec works correctly``(): Task = task {
     File.Copy(nuSpec.Value, targetPath.Value)
 
     let projectFile = dir.Path / "imaginative-file.csproj"
-    let reference = NuGetReference(projectFile, coords)
+    let reference = { ReferencingProject = projectFile; Coordinates = coords }
     let nuGet = NuGetMock.DirectNuSpecReader(dir.Path)
     let! metadata = GetMetadata projectFile nuGet reference
     Assert.Equal(Some <| Package {|
@@ -51,14 +51,14 @@ let ``Overrides work as expected``(): Task = DataFiles.Deploy "TestComplex.cspro
     |])
     Assert.Equivalent([|
         Package {|
-            Source = NuGetReference(path, { PackageId = "FVNever.Package1"; Version = "0.0.0" })
+            Source = { ReferencingProject = path; Coordinates = { PackageId = "FVNever.Package1"; Version = "0.0.0" } }
             License = {
                 SpdxLicense.SpdxExpression = "EXPR1"
                 CopyrightNotices = ImmutableArray.Create "C1"
             }
         |}
         Package {|
-            Source = NuGetReference(path, { PackageId = "FVNever.Package3"; Version = "0.0.0" })
+            Source = { ReferencingProject = path; Coordinates = { PackageId = "FVNever.Package3"; Version = "0.0.0" } }
             License = {
                 SpdxLicense.SpdxExpression = "License FVNever.Package3"
                 CopyrightNotices = ImmutableArray.Create "Copyright FVNever.Package3"

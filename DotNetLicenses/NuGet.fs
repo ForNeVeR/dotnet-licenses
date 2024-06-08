@@ -43,18 +43,15 @@ type INuGetReader =
     abstract ContainsFileName: AbsolutePath -> PackageReference -> string -> Task<bool>
     abstract FindFile: FileHashCache -> PackageReference seq -> ISourceEntry -> Task<PackageReference[]>
 
-let internal UnpackedPackagePath (packagesRoot: AbsolutePath) (packageReference: PackageReference): AbsolutePath =
-    match packageReference with
-    | NuGetReference(_, coordinates) ->
-        packagesRoot / coordinates.PackageId.ToLowerInvariant() / coordinates.Version.ToLowerInvariant()
-    | FrameworkReference _ -> failwith "Not supported."
+let internal UnpackedPackagePath (packagesRoot: AbsolutePath) (coords: PackageCoordinates): AbsolutePath =
+    packagesRoot / coords.PackageId.ToLowerInvariant() / coords.Version.ToLowerInvariant()
 
 let private ExistingUnpackedPackagePath sourceRoots coords = task {
     do! Task.Yield()
 
     let packagePaths =
         sourceRoots
-        |> Seq.map(fun root -> UnpackedPackagePath root (NuGetReference(AbsolutePath "/", coords))) // TODO: Consider removing the AbsolutePath from here after dropping the FrameworkReference: perhaps UnpackedPackagePath may accept PackageCoordinates instead?
+        |> Seq.map(fun root -> UnpackedPackagePath root coords)
         |> Seq.toArray
 
     return packagePaths |> Seq.filter(fun p -> Directory.Exists p.Value) |> Seq.tryHead
@@ -71,7 +68,7 @@ let internal GetNuSpecFilePath (sourceRoots: AbsolutePath seq)
         match resolveBehavior with
         | RootResolveBehavior.Any ->
             let root = Seq.head sourceRoots
-            Some(UnpackedPackagePath root (NuGetReference(root, package)))
+            Some(UnpackedPackagePath root package)
             |> Task.FromResult
         | RootResolveBehavior.Existing -> ExistingUnpackedPackagePath sourceRoots package
     return directory |> Option.map (fun d -> d / $"{package.PackageId.ToLowerInvariant()}.nuspec")
@@ -96,7 +93,7 @@ let private GetPackageFiles sourceRoots (package: PackageCoordinates) = task {
 let internal ContainsFile (fileHashCache: FileHashCache)
                           (sourceRoots: AbsolutePath seq)
                           (package: PackageReference, entry: ISourceEntry): Task<bool> = task {
-    let coords = match package with NuGetReference(_, c) -> c | FrameworkReference c -> c
+    let coords = package.Coordinates
     let! files = GetPackageFiles sourceRoots coords
     let fileName = Path.GetFileName entry.SourceRelativePath
     let possibleFiles = files |> Seq.filter(fun f -> f.FileName = fileName)
@@ -164,7 +161,11 @@ let private ReadNuGetReferencesForFramework project coordinates = task {
         return packages |> Seq.map(fun packageSpec ->
             let nameAndVersion = packageSpec.Split('/', 2)
             match nameAndVersion with
-            | [| name; version |] -> NuGetReference(project, { PackageId = name; Version = version })
+            | [| name; version |] ->
+                {
+                    ReferencingProject = project
+                    Coordinates = { PackageId = name; Version = version }
+                }
             | _ -> failwithf $"Invalid name/version spec in \"{depsJsonFile}\": \"{packageSpec}\"."
         )
 
@@ -213,7 +214,10 @@ let private ReadPackageReferencesFromProject (referenceType: ReferenceType)
                     let entryName = e.Key
                     match entryName.Split('/') with
                     | [| packageId; version |] ->
-                        NuGetReference(project, { PackageId = packageId; Version = version })
+                        {
+                            ReferencingProject = project
+                            Coordinates =  { PackageId = packageId; Version = version }
+                        }
                     | _ -> failwithf $"Cannot read package reference in file \"{project}\": \"{entryName}\"."
                 )
             result.AddRange nuGetReferences
@@ -237,10 +241,7 @@ let ReadPackageReferences(
     let allReferences =
         Seq.concat projectReferences
         |> Seq.distinct
-        |> Seq.sortBy(function
-            | FrameworkReference f -> 0, f.PackageId, f.Version
-            | NuGetReference(_, r) -> 1, r.PackageId, r.Version
-        )
+        |> Seq.sortBy(fun x -> x.Coordinates.PackageId, x.Coordinates.Version)
     return allReferences |> Seq.distinct |> Seq.toArray
 }
 
@@ -264,8 +265,7 @@ type NuGetReader() =
             task {
 
                 let! sourceRoots = MsBuild.GetSourceRoots itemCache input
-                let coords = match package with NuGetReference(_, c) -> c | FrameworkReference c -> c
-                let! files = GetPackageFiles sourceRoots coords
+                let! files = GetPackageFiles sourceRoots package.Coordinates
                 return files |> Seq.exists(fun f -> Path.GetFileName f.Value = fileName)
             }
 
@@ -275,11 +275,7 @@ type NuGetReader() =
             let! checkResults =
                 packages
                 |> Seq.map(fun p -> task {
-                    // TODO: Source root resolve cache, shared between invocations.
-                    let! sourceRoots =
-                        match p with
-                        | NuGetReference(project, _) -> MsBuild.GetSourceRoots itemCache project
-                        | _ -> failwithf $"Reference not supported: {p}."
+                    let! sourceRoots = MsBuild.GetSourceRoots itemCache p.ReferencingProject
                     let! checkResult = ContainsFile cache sourceRoots (p, entry)
                     return checkResult, p
                 })

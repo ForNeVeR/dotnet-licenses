@@ -73,9 +73,9 @@ let ``Package file searcher works correctly``(): Task = task {
         File.WriteAllBytesAsync(fullPath.Value, fileContent)
 
     use cache = new FileHashCache()
-    let reference = NuGetReference(projectFile, coords)
+    let reference = { ReferencingProject = projectFile; Coordinates = coords }
     do! deployFileTo contentFullPath
-    do! deployFileTo(UnpackedPackagePath mockedPackageRoot.Path reference / "file.txt")
+    do! deployFileTo(UnpackedPackagePath mockedPackageRoot.Path coords / "file.txt")
 
     let! contains = ContainsFile cache sourceRoots (reference, fileEntry)
     Assert.True(contains, "File should be considered as part of the package while it is unchanged.")
@@ -101,9 +101,9 @@ let ``NuGet reads transitive package references correctly``(): Task =
         Assert.True <| File.Exists projectAssetsJson.Value
         let! references = ReadPackageReferences(project, ReferenceType.PackageReference ||| ReferenceType.ProjectAssets)
         Assert.Equal<PackageReference>([|
-            NuGetReference(project, { PackageId = "FSharp.Core"; Version = "8.0.200" })
-            NuGetReference(project, { PackageId = "Generaptor"; Version = "1.2.0" })
-            NuGetReference(project, { PackageId = "YamlDotNet";  Version = "15.1.1" })
+            { ReferencingProject = project; Coordinates = { PackageId = "FSharp.Core"; Version = "8.0.200" } }
+            { ReferencingProject = project; Coordinates = { PackageId = "Generaptor"; Version = "1.2.0" } }
+            { ReferencingProject = project; Coordinates = { PackageId = "YamlDotNet";  Version = "15.1.1" } }
         |], references)
     })
 

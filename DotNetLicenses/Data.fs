@@ -14,9 +14,10 @@ type PackageCoordinates = {
     Version: string
 }
 
-type PackageReference =
-    | NuGetReference of AbsolutePath * PackageCoordinates
-    | FrameworkReference of PackageCoordinates
+type PackageReference = {
+    ReferencingProject: AbsolutePath
+    Coordinates: PackageCoordinates
+}
 
 type MetadataOverride = {
     SpdxExpression: string

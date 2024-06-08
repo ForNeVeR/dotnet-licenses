@@ -90,10 +90,7 @@ let internal PrintMetadata(
         | Package package ->
             let spdx = package.License.SpdxExpression
             let copyrights = package.License.CopyrightNotices |> String.concat "\n  "
-            let coords =
-                match package.Source with
-                | NuGetReference(_, c) -> c
-                | FrameworkReference c -> c
+            let coords = package.Source.Coordinates
             printfn $"- Package {coords.PackageId} {coords.Version}: {spdx}\n  {copyrights}"
 
         | License license ->
@@ -220,10 +217,7 @@ let internal GenerateLockFile(
         let! possiblePackageEntries =
             packages
             |> Seq.map(fun p ->
-                match p with
-                | NuGetReference(project, _) ->
-                    nuGet.ContainsFileName project p <| Path.GetFileName(entry.SourceRelativePath)
-                | FrameworkReference _ -> failwithf $"Framework reference not supported: {p}."
+                nuGet.ContainsFileName p.ReferencingProject p <| Path.GetFileName(entry.SourceRelativePath)
             )
             |> Task.WhenAll
         let fileContainingPackagesCount = possiblePackageEntries |> Seq.filter id |> Seq.length
@@ -234,7 +228,7 @@ let internal GenerateLockFile(
                 let metadata = packageMetadata[package]
                 match metadata with
                 | Package p ->
-                    let coords = match package with NuGetReference(_, c) -> c | FrameworkReference c -> c
+                    let coords = package.Coordinates
                     let sourceVersion = if fileContainingPackagesCount <= 1 then None else Some coords.Version
                     LocalPathPattern entry.SourceRelativePath, {
                         LockFileItem.SourceId = Some coords.PackageId

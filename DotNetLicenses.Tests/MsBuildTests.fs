@@ -16,10 +16,13 @@ open Xunit
 let ``MSBuild reads the project references correctly``(): Task =
     DataFiles.Deploy("Test.csproj") (fun path -> task {
         let! references = NuGet.ReadPackageReferences(path, NuGet.ReferenceType.PackageReference)
-        Assert.Equal<PackageReference>([| NuGetReference(path, {
-            PackageId = "FVNever.DotNetLicenses"
-            Version = "1.0.0"
-        })|], references)
+        Assert.Equal<PackageReference>([| {
+            ReferencingProject = path
+            Coordinates = {
+                PackageId = "FVNever.DotNetLicenses"
+                Version = "1.0.0"
+            }
+        }|], references)
     })
 
 [<Fact>]
@@ -32,7 +35,7 @@ let ``MSBuild reads the project-generated artifacts correctly``(): Task =
             project.Parent.Value / "bin" / "Release" / "net8.0" / "Test.runtimeconfig.json"
             project.Parent.Value / "obj" / "DotNetToolSettings.xml"
         |], files)
-        Assert.Equal([|
+        Assert.Equivalent([|
             LocalPathPattern "**/Test.deps.json"
             LocalPathPattern "**/Test.exe"
             LocalPathPattern "**/Test.pdb"
@@ -48,10 +51,13 @@ let ``MSBuild processes the project references across solution``(): Task =
             path / "Test.csproj"
             path / "Test2.csproj"
         |]
-        let expectedReferences = projects |> Array.map (fun project -> NuGetReference(project, {
-            PackageId = "FVNever.DotNetLicenses"
-            Version = "1.0.0"
-        }))
+        let expectedReferences = projects |> Array.map (fun project -> {
+            ReferencingProject =  project
+            Coordinates = {
+                PackageId = "FVNever.DotNetLicenses"
+                Version = "1.0.0"
+            }
+        })
         Assert.Equal<PackageReference>(expectedReferences, references)
     })
 
@@ -61,14 +67,14 @@ let ``MSBuild reads the solution-generated artifacts correctly``(): Task =
         let solution = path / "Test.sln"
         let! output = GetGeneratedArtifacts(solution, None)
         let files, patterns = Split output
-        Assert.Equal([|
+        Assert.Equivalent([|
             path / "bin" / "Release" / "net8.0" / "Test.dll"
             path / "bin" / "Release" / "net8.0" / "Test.runtimeconfig.json"
             path / "bin" / "Release" / "net8.0" / "Test2.dll"
             path / "bin" / "Release" / "net8.0" / "Test2.runtimeconfig.json"
             path / "obj" / "DotNetToolSettings.xml"
         |], files)
-        Assert.Equal([|
+        Assert.Equivalent([|
             LocalPathPattern "**/Test.deps.json"
             LocalPathPattern "**/Test.exe"
             LocalPathPattern "**/Test.pdb"
