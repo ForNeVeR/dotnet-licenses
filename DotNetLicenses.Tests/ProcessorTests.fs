@@ -430,10 +430,11 @@ let ``Package cover spec works``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let baseDir = project.Parent.Value
         let! projectOutput = MsBuild.GetGeneratedArtifacts(project, None)
-        projectOutput.FilesWithContent
-        |> Array.iter (fun p -> Directory.CreateDirectory p.Parent.Value.Value |> ignore)
+        let files, _ = GeneratedArtifacts.Split projectOutput
+        files
+        |> Seq.iter (fun p -> Directory.CreateDirectory p.Parent.Value.Value |> ignore)
 
-        let targetAssembly = projectOutput.FilesWithContent |> Array.head
+        let targetAssembly = files |> Seq.head
         let outDir = targetAssembly.Parent.Value
         let config = {
             Configuration.Empty with
@@ -595,8 +596,7 @@ let ``Metadata for a self-contained application``(): Task = task {
 
     let! lockFileItems = LockFile.ReadLockFile lockFile
     let exeFileLicense = lockFileItems[LocalPathPattern "TestExe.exe"] |> Assert.Single
-    // TODO: Actually, this should be "MIT AND LicenseRef-DotNetSDK", since the produced binary is the .NET app host with customizations
-    Assert.Equal(Some "MIT", exeFileLicense.SpdxExpression)
+    Assert.Equal(Some "MIT AND LicenseRef-DotNetSDK", exeFileLicense.SpdxExpression)
 }
 
 [<Fact>]

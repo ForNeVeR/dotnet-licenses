@@ -15,6 +15,8 @@ open System.Threading.Tasks
 type ILicense =
     abstract member SpdxExpression: string
     abstract member CopyrightNotices: ImmutableArray<string>
+    // TODO: Improve the licensing model somehow. Currently, there's no command to download and save the license. Also,
+    // custom license refs aren't properly validated.
     abstract member GetText: unit -> Task<string>
 
     static member Merge(licenses: IReadOnlyList<ILicense>): ILicense option =

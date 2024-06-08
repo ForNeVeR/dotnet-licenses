@@ -1,5 +1,6 @@
 module DotNetLicenses.GeneratedArtifacts
 
+open System.Collections.Generic
 open TruePath
 
 [<RequireQualifiedAccess>]
@@ -22,3 +23,13 @@ let Merge(items: GeneratedArtifactEntry seq): GeneratedArtifactEntry seq =
             AdditionalLicense = license
         }
     )
+
+let Split(entries: GeneratedArtifactEntry seq): IList<AbsolutePath> * IList<LocalPathPattern> =
+    let files = ResizeArray()
+    let patterns = ResizeArray()
+    for entry in entries do
+        match entry.Artifact with
+        | GeneratedArtifact.File f -> files.Add f
+        | GeneratedArtifact.Pattern p -> patterns.Add p
+
+    files, patterns

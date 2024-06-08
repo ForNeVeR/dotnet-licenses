@@ -392,16 +392,17 @@ let private DownloadLicenses(config: Configuration, baseFolder: AbsolutePath) = 
         |> Seq.toArray
     use client = new HttpClient()
     for license in licenses do
-        let url = $"https://spdx.org/licenses/{license}.txt"
-        try
-            let! content = client.GetStringAsync(url)
-            let licensePath = baseFolder / licenseStorage / $"{license}.txt"
-            ignore <| Directory.CreateDirectory(licensePath.Parent.Value.Value)
-            do! File.WriteAllTextAsync(licensePath.Value, content)
-        with
-        | e ->
-            eprintfn $"Error while downloading license for SPDX {license}: {e.Message}"
-            raise e
+        if not(license.StartsWith "Ref-") then
+            let url = $"https://spdx.org/licenses/{license}.txt"
+            try
+                let! content = client.GetStringAsync(url)
+                let licensePath = baseFolder / licenseStorage / $"{license}.txt"
+                ignore <| Directory.CreateDirectory(licensePath.Parent.Value.Value)
+                do! File.WriteAllTextAsync(licensePath.Value, content)
+            with
+            | e ->
+                eprintfn $"Error while downloading license for SPDX {license}: {e.Message}"
+                raise e
     printf $"{licenses.Length} license files successfully downloaded to \"{baseFolder / licenseStorage}\"."
 }
 

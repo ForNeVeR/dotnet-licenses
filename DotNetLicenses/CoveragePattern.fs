@@ -9,6 +9,7 @@ open System.Collections.Concurrent
 open System.Collections.Immutable
 open System.IO
 open System.Threading.Tasks
+open DotNetLicenses.GeneratedArtifacts
 open DotNetLicenses.LockFile
 open DotNetLicenses.Metadata
 open DotNetLicenses.MsBuild
@@ -18,7 +19,7 @@ open TruePath
 
 type CoverageCache =
     // Project path => Project output path
-    | CoverageCache of ConcurrentDictionary<AbsolutePath * string option, Task<ProjectGeneratedArtifacts>>
+    | CoverageCache of ConcurrentDictionary<AbsolutePath * string option, Task<GeneratedArtifactEntry[]>>
 
     static member Empty(): CoverageCache = CoverageCache(ConcurrentDictionary())
     member this.Read(project: AbsolutePath, runtime: string option) =
@@ -72,16 +73,17 @@ let CollectCoveredFileLicense (baseDirectory: AbsolutePath)
         | MsBuildCoverage(project, runtime) ->
             task {
                 let! projectOutputs = coverageCache.Read(baseDirectory / project, runtime)
+                let files, patterns = GeneratedArtifacts.Split projectOutputs
 
                 let matcher = Matcher()
-                matcher.AddIncludePatterns(projectOutputs.FilePatterns |> Seq.map _.Value)
+                matcher.AddIncludePatterns(patterns |> Seq.map _.Value)
                 if matcher.Match(sourceEntry.SourceRelativePath).HasMatches then
                     return true
                 else
 
                 let! fileHash = sourceEntry.CalculateHash()
                 let! hashes =
-                    projectOutputs.FilesWithContent
+                    files
                     |> Seq.filter (fun p -> File.Exists(p.Value))
                     |> Seq.map hashCache.CalculateFileHash
                     |> Task.WhenAll
