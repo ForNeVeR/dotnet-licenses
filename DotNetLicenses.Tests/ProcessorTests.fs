@@ -596,7 +596,7 @@ let ``Metadata for a self-contained application``(): Task = task {
 
     let! lockFileItems = LockFile.ReadLockFile lockFile
     let exeFileLicense = lockFileItems[LocalPathPattern "TestExe.exe"] |> Assert.Single
-    Assert.Equal(Some "MIT AND LicenseRef-DotNetSDK", exeFileLicense.SpdxExpression)
+    Assert.Equal(Some "MIT AND LicenseRef-DotNetSdk", exeFileLicense.SpdxExpression)
 }
 
 [<Fact>]
