@@ -34,7 +34,7 @@ jobs:
       shell: pwsh
       run: scripts/Test-NuGetMetadata.ps1
     - name: Read changelog
-      uses: ForNeVeR/ChangelogAutomation.action@v1
+      uses: ForNeVeR/ChangelogAutomation.action@v2
       with:
         output: ./release-notes.md
     - name: Upload artifacts
