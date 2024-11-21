@@ -11,6 +11,7 @@
       <w>runtimeconfig</w>
       <w>sha</w>
       <w>snupkg</w>
+      <w>tfms</w>
       <w>tomlyn</w>
     </words>
   </dictionary>

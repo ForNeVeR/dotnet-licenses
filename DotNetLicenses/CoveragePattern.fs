@@ -6,8 +6,9 @@ module DotNetLicenses.CoveragePattern
 
 open System
 open System.Collections.Concurrent
-open System.IO
+open System.Collections.Immutable
 open System.Threading.Tasks
+open DotNetLicenses.GeneratedArtifacts
 open DotNetLicenses.LockFile
 open DotNetLicenses.Metadata
 open DotNetLicenses.MsBuild
@@ -17,12 +18,12 @@ open TruePath
 
 type CoverageCache =
     // Project path => Project output path
-    | CoverageCache of ConcurrentDictionary<AbsolutePath, Task<ProjectGeneratedArtifacts>>
+    | CoverageCache of ConcurrentDictionary<AbsolutePath * string option, Task<GeneratedArtifactEntry[]>>
 
     static member Empty(): CoverageCache = CoverageCache(ConcurrentDictionary())
-    member this.Read(project: AbsolutePath) =
+    member this.Read(project: AbsolutePath, runtime: string option) =
         let (CoverageCache map) = this
-        map.GetOrAdd(project, GetGeneratedArtifacts)
+        map.GetOrAdd((project, runtime), GetGeneratedArtifacts)
 
 let private CollectLockFileItem (baseDir: AbsolutePath) = function
     | Package _ -> failwith "Function doesn't support packages."
@@ -30,8 +31,8 @@ let private CollectLockFileItem (baseDir: AbsolutePath) = function
         Task.FromResult {
             LockFileItem.SourceId = None
             SourceVersion = None
-            Spdx = [|source.Spdx|]
-            Copyright = [|source.Copyright|]
+            SpdxExpression = Some source.SpdxExpression
+            CopyrightNotices = ImmutableArray.Create source.CopyrightNotice
             IsIgnored = false
         }
     | Reuse source -> task {
@@ -41,8 +42,8 @@ let private CollectLockFileItem (baseDir: AbsolutePath) = function
         return {
             LockFileItem.SourceId = None
             SourceVersion = None
-            Spdx = Seq.toArray resultEntry.LicenseIdentifiers
-            Copyright = Seq.toArray resultEntry.CopyrightStatements
+            SpdxExpression = Some <| String.Join(" AND ", resultEntry.SpdxLicenseIdentifiers)
+            CopyrightNotices = resultEntry.CopyrightNotices
             IsIgnored = false
         }
     }
@@ -66,31 +67,19 @@ let CollectCoveredFileLicense (baseDirectory: AbsolutePath)
                               (hashCache: FileHashCache)
                               (metadataItems: MetadataItem seq)
                               (sourceEntry: ISourceEntry): Task<ResizeArray<LocalPathPattern * LockFileItem>> = task {
-    let doesSpecCover spec =
+    let specCoverage spec =
         match spec with
-        | MsBuildCoverage project ->
+        | MsBuildCoverage(project, runtime) ->
             task {
-                let! projectOutputs = coverageCache.Read(baseDirectory / project)
-
-                let matcher = Matcher()
-                matcher.AddIncludePatterns(projectOutputs.FilePatterns |> Seq.map _.Value)
-                if matcher.Match(sourceEntry.SourceRelativePath).HasMatches then
-                    return true
-                else
-
-                let! fileHash = sourceEntry.CalculateHash()
-                let! hashes =
-                    projectOutputs.FilesWithContent
-                    |> Seq.filter (fun p -> File.Exists(p.Value))
-                    |> Seq.map hashCache.CalculateFileHash
-                    |> Task.WhenAll
-                return hashes |> Seq.exists _.Equals(fileHash, StringComparison.OrdinalIgnoreCase)
+                let! projectOutputs = coverageCache.Read(baseDirectory / project, runtime)
+                return! CalculateCoverage hashCache sourceEntry projectOutputs
             }
         | NuGetCoverage ->
-            Task.FromResult(
+            let hasMatch =
                 NuGetCoverageGlob.Values
                 |> Seq.exists _.Match(sourceEntry.SourceRelativePath).HasMatches
-            )
+            let additionalLicenses = Seq.empty<ILicense>
+            Task.FromResult(hasMatch, additionalLicenses)
 
     let getLockFileItem source spec =
         match spec with
@@ -123,10 +112,27 @@ let CollectCoveredFileLicense (baseDirectory: AbsolutePath)
     let result = ResizeArray()
     for source, specs in patterns do
         for spec in specs do
-            let! isCoveredBySpec = doesSpecCover spec
+            let! isCoveredBySpec, additionalLicenses = specCoverage spec
+            let additionalLicenses = Seq.toArray additionalLicenses
+
             if isCoveredBySpec then
-                let! lockEntry = getLockFileItem source spec
-                result.Add lockEntry
+                let! pattern, entry = getLockFileItem source spec
+                let resultSpdx =
+                    seq {
+                        yield! Option.toArray entry.SpdxExpression
+                        yield! additionalLicenses |> Seq.map(_.SpdxExpression)
+                    } |> String.concat " AND "
+                let resultCopyright =
+                    entry.CopyrightNotices
+                    |> Seq.append(additionalLicenses |> Seq.collect _.CopyrightNotices)
+                    |> Seq.distinct
+                    |> Seq.toArray
+                let resultingEntry = {
+                    entry with
+                        SpdxExpression = if resultSpdx = "" then None else Some resultSpdx
+                        CopyrightNotices = ImmutableArray.ToImmutableArray resultCopyright
+                }
+                result.Add(pattern, resultingEntry)
 
     return result
 }

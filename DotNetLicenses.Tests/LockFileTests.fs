@@ -5,6 +5,7 @@
 module DotNetLicenses.Tests.LockFileTests
 
 open System.Collections.Generic
+open System.Collections.Immutable
 open System.IO
 open System.Threading.Tasks
 open DotNetLicenses.LockFile
@@ -17,8 +18,8 @@ let ``LockFile should be have expected format``(): Task =
     let item id = {
         LockFileItem.SourceId = Some id
         SourceVersion = Some "1.0.0"
-        Spdx = [|"MIT"|]
-        Copyright = [|"none"|]
+        SpdxExpression = Some "MIT"
+        CopyrightNotices = ImmutableArray.Create "none"
         IsIgnored = false
     }
     let data = [|
@@ -29,9 +30,9 @@ let ``LockFile should be have expected format``(): Task =
     |]
 
     let expectedContent = """# REUSE-IgnoreStart
-"a.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
-"x.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}, {source_id = "b", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
-"y.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
+"a.txt" = [{source_id = "a", source_version = "1.0.0", spdx = "MIT", copyright = ["none"]}]
+"x.txt" = [{source_id = "a", source_version = "1.0.0", spdx = "MIT", copyright = ["none"]}, {source_id = "b", source_version = "1.0.0", spdx = "MIT", copyright = ["none"]}]
+"y.txt" = [{source_id = "a", source_version = "1.0.0", spdx = "MIT", copyright = ["none"]}]
 # REUSE-IgnoreEnd
 """
     task {
@@ -45,9 +46,9 @@ let ``LockFile should be have expected format``(): Task =
 let ``LockFile is read correctly``(): Task = task {
     use dir = DisposableDirectory.Create()
     let content = """# REUSE-IgnoreStart
-"a.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
-"x.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}, {source_id = "b", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
-"y.txt" = [{source_id = "a", source_version = "1.0.0", spdx = ["MIT"], copyright = ["none"]}]
+"a.txt" = [{source_id = "a", source_version = "1.0.0", spdx = "MIT", copyright = ["none"]}]
+"x.txt" = [{source_id = "a", source_version = "1.0.0", spdx = "MIT", copyright = ["none"]}, {source_id = "b", source_version = "1.0.0", spdx = "MIT", copyright = ["none"]}]
+"y.txt" = [{source_id = "a", source_version = "1.0.0", spdx = "MIT", copyright = ["none"]}]
 # REUSE-IgnoreEnd
 """
     let filePath = dir.Path / "lock.toml"
@@ -59,8 +60,8 @@ let ``LockFile is read correctly``(): Task = task {
         [|{
             LockFileItem.SourceId = Some "a"
             SourceVersion = Some "1.0.0"
-            Spdx = [|"MIT"|]
-            Copyright = [|"none"|]
+            SpdxExpression = Some "MIT"
+            CopyrightNotices = ImmutableArray.Create "none"
             IsIgnored = false
         }|]
     )
@@ -70,15 +71,15 @@ let ``LockFile is read correctly``(): Task = task {
             {
                 LockFileItem.SourceId = Some "a"
                 SourceVersion = Some "1.0.0"
-                Spdx = [|"MIT"|]
-                Copyright = [|"none"|]
+                SpdxExpression = Some "MIT"
+                CopyrightNotices = ImmutableArray.Create "none"
                 IsIgnored = false
             };
             {
                 LockFileItem.SourceId = Some "b"
                 SourceVersion = Some "1.0.0"
-                Spdx = [|"MIT"|]
-                Copyright = [|"none"|]
+                SpdxExpression = Some "MIT"
+                CopyrightNotices = ImmutableArray.Create "none"
                 IsIgnored = false
             }
         |]
@@ -88,8 +89,8 @@ let ``LockFile is read correctly``(): Task = task {
         [|{
             LockFileItem.SourceId = Some "a"
             SourceVersion = Some "1.0.0"
-            Spdx = [|"MIT"|]
-            Copyright = [|"none"|]
+            SpdxExpression = Some "MIT"
+            CopyrightNotices = ImmutableArray.Create "none"
             IsIgnored = false
         }|]
     )
