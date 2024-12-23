@@ -61,7 +61,7 @@ SPDX-License-Identifier: MIT
       <PackageReference Include="MedallionShell" Version="1.6.2" />
       <PackageReference Include="Microsoft.Build" Version="17.11.4" />
       <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="9.0.0" />
-      <PackageReference Include="Tomlyn" Version="0.17.0" />
+      <PackageReference Include="Tomlyn" Version="0.18.0" />
     </ItemGroup>
 
     <ItemGroup>
