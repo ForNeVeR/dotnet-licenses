@@ -26,7 +26,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{EE85
 		scripts\github-actions.fsx = scripts\github-actions.fsx
 		scripts\Get-Version.ps1 = scripts\Get-Version.ps1
 		scripts\Test-Encoding.ps1 = scripts\Test-Encoding.ps1
-		scripts\Test-LicenseHeaders.ps1 = scripts\Test-LicenseHeaders.ps1
 		scripts\Update-Version.ps1 = scripts\Update-Version.ps1
 		scripts\Test-NuGetMetadata.ps1 = scripts\Test-NuGetMetadata.ps1
 	EndProjectSection

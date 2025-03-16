@@ -50,9 +50,6 @@ jobs:
     - name: Check REUSE compliance
       shell: pwsh
       run: reuse lint
-    - name: Check copyright years
-      shell: pwsh
-      run: scripts/Test-LicenseHeaders.ps1
   encoding:
     runs-on: ubuntu-24.04
     steps:

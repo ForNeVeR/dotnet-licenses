@@ -43,7 +43,6 @@ let workflows = [
             checkout
             pwsh("Install REUSE", "pipx install reuse")
             pwsh("Check REUSE compliance", "reuse lint")
-            pwsh("Check copyright years", "scripts/Test-LicenseHeaders.ps1")
         ]
 
         job "encoding" [

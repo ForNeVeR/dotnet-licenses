@@ -1,5 +1,5 @@
 <!--
-SPDX-FileCopyrightText: 2024 Friedrich von Never <friedrich@fornever.me>
+SPDX-FileCopyrightText: 2024-2025 Friedrich von Never <friedrich@fornever.me>
 
 SPDX-License-Identifier: MIT
 
@@ -80,13 +80,6 @@ $ pwsh -File scripts/Test-Encoding.ps1 -AutoFix
 ```
 
 The `-AutoFix` switch will automatically fix the encoding issues, and you'll only need to commit and push the changes.
-
-Copyright Year Updates
-----------------------
-If the automation asks you to update the copyright years in certain files, either fix it manually, or install [REUSE][reuse] and then try the following shell command:
-```console
-$ pwsh -File scripts/Test-LicenseHeaders.ps1 -AutoFix
-```
 
 <!-- REUSE-IgnoreEnd -->
 
