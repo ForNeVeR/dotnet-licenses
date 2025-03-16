@@ -10,8 +10,8 @@ namespace ReuseSpec;
 
 public record ReuseFileEntry(
     AbsolutePath Path,
-    ImmutableArray<string> LicenseIdentifiers,
-    ImmutableArray<string> CopyrightStatements)
+    ImmutableArray<string> SpdxLicenseIdentifiers,
+    ImmutableArray<string> CopyrightNotices)
 {
     /// <summary>Reads the REUSE information exclusively from the provided file.</summary>
     /// <remarks>Note it doesn't look into DEP5 or <c>.license</c> file.</remarks>
@@ -104,8 +104,8 @@ public record ReuseFileEntry(
         var copyrightHash = new HashSet<string>();
         foreach (var entry in entries.OrderBy(x => ((LocalPath)x.Path).RelativeTo(baseDirectory).Value))
         {
-            licenses.AddRange(entry.LicenseIdentifiers.Where(license => licenseHash.Add(license)));
-            copyrights.AddRange(entry.CopyrightStatements.Where(statement => copyrightHash.Add(statement)));
+            licenses.AddRange(entry.SpdxLicenseIdentifiers.Where(license => licenseHash.Add(license)));
+            copyrights.AddRange(entry.CopyrightNotices.Where(statement => copyrightHash.Add(statement)));
         }
 
         return new ReuseCombinedEntry([..licenses], [..copyrights]);
@@ -115,6 +115,6 @@ public record ReuseFileEntry(
 }
 
 public record ReuseCombinedEntry(
-    ImmutableArray<string> LicenseIdentifiers,
-    ImmutableArray<string> CopyrightStatements
+    ImmutableArray<string> SpdxLicenseIdentifiers,
+    ImmutableArray<string> CopyrightNotices
 );
