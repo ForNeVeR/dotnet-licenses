@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Friedrich von Never <friedrich@fornever.me>
+// SPDX-FileCopyrightText: 2024-2025 Friedrich von Never <friedrich@fornever.me>
 //
 // SPDX-License-Identifier: MIT
 
@@ -13,9 +13,9 @@ open type Generaptor.Library.Actions
 open type Generaptor.Library.Patterns
 
 let mainBranch = "main"
-let linuxImage = "ubuntu-22.04"
+let linuxImage = "ubuntu-24.04"
 let images = [
-    "macos-12"
+    "macos-14"
     linuxImage
     "windows-2022"
 ]
@@ -73,7 +73,13 @@ let workflows = [
             pwsh("Verify package metadata", "scripts/Test-NuGetMetadata.ps1")
 
             let releaseNotes = "./release-notes.md"
-            prepareChangelog(releaseNotes)
+            step(
+                name = "Read changelog",
+                uses = "ForNeVeR/ChangelogAutomation.action@v2",
+                options = Map.ofList [
+                    "output", releaseNotes
+                ]
+            )
 
             let projectName = "DotNetLicenses"
             let packageId = "FVNever.DotNetLicenses"
