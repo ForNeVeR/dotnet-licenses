@@ -13,45 +13,6 @@ open System.Xml
 open System.Xml.Serialization
 open TruePath
 
-let mutable internal PackagesFolderPath: AbsolutePath =
-    Environment.GetEnvironmentVariable "NUGET_PACKAGES"
-    |> Option.ofObj
-    |> Option.map AbsolutePath
-    |> Option.defaultWith(fun() ->
-        AbsolutePath(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)) / ".nuget" / "packages"
-    )
-
-let internal UnpackedPackagePath(packageReference: PackageReference): AbsolutePath =
-    PackagesFolderPath / packageReference.PackageId.ToLowerInvariant() / packageReference.Version.ToLowerInvariant()
-
-let internal GetNuSpecFilePath(packageReference: PackageReference): AbsolutePath =
-    UnpackedPackagePath packageReference / $"{packageReference.PackageId.ToLowerInvariant()}.nuspec"
-
-let private GetPackageFiles package =
-    Directory.EnumerateFileSystemEntries(
-        (UnpackedPackagePath package).Value,
-        "*",
-        EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
-    )
-    |> Seq.map AbsolutePath
-
-let internal ContainsFile (fileHashCache: FileHashCache)
-                          (package: PackageReference, entry: ISourceEntry): Task<bool> = task {
-    let files = GetPackageFiles package
-    let fileName = Path.GetFileName entry.SourceRelativePath
-    let possibleFiles = files |> Seq.filter(fun f -> f.FileName = fileName)
-    let! possibleFileCheckResults =
-        possibleFiles
-        |> Seq.map(fun f -> task {
-            let! needleHash = entry.CalculateHash()
-            let! packageFileHash = fileHashCache.CalculateFileHash f
-            return needleHash.Equals(packageFileHash, StringComparison.OrdinalIgnoreCase)
-        })
-        |> Task.WhenAll
-    return Seq.exists id possibleFileCheckResults
-}
-
-
 [<CLIMutable>]
 type NuSpecLicense = {
     [<XmlAttribute("type")>] Type: string
@@ -76,6 +37,77 @@ type NuSpec = {
     [<XmlElement("metadata")>] Metadata: NuSpecMetadata
 }
 
+type INuGetReader =
+    abstract ReadNuSpec: input: AbsolutePath -> PackageCoordinates -> Task<NuSpec option>
+    abstract ReadPackageReferences: AbsolutePath -> Task<PackageReference[]>
+    abstract ContainsFileName: AbsolutePath -> PackageReference -> string -> Task<bool>
+    abstract FindFile: FileHashCache -> PackageReference seq -> ISourceEntry -> Task<PackageReference[]>
+
+let internal UnpackedPackagePath (packagesRoot: AbsolutePath) (coords: PackageCoordinates): AbsolutePath =
+    packagesRoot / coords.PackageId.ToLowerInvariant() / coords.Version.ToLowerInvariant()
+
+let private ExistingUnpackedPackagePath sourceRoots coords = task {
+    do! Task.Yield()
+
+    let packagePaths =
+        sourceRoots
+        |> Seq.map(fun root -> UnpackedPackagePath root coords)
+        |> Seq.toArray
+
+    return packagePaths |> Seq.filter(fun p -> Directory.Exists p.Value) |> Seq.tryHead
+}
+
+
+[<RequireQualifiedAccess>]
+type RootResolveBehavior = Existing | Any
+
+let internal GetNuSpecFilePath (sourceRoots: AbsolutePath seq)
+                               (package: PackageCoordinates)
+                               (resolveBehavior: RootResolveBehavior): Task<AbsolutePath option> = task {
+    let! directory =
+        match resolveBehavior with
+        | RootResolveBehavior.Any ->
+            let root = Seq.head sourceRoots
+            Some(UnpackedPackagePath root package)
+            |> Task.FromResult
+        | RootResolveBehavior.Existing -> ExistingUnpackedPackagePath sourceRoots package
+    return directory |> Option.map (fun d -> d / $"{package.PackageId.ToLowerInvariant()}.nuspec")
+}
+
+let private GetPackageFiles sourceRoots (package: PackageCoordinates) = task {
+    let! folder = ExistingUnpackedPackagePath sourceRoots package
+    return (
+        folder
+        |> Option.toArray
+        |> Seq.collect(fun folder ->
+            Directory.EnumerateFileSystemEntries(
+                folder.Value,
+                "*",
+                EnumerationOptions(RecurseSubdirectories = true, IgnoreInaccessible = false)
+            )
+        )
+        |> Seq.map AbsolutePath
+    )
+}
+
+let internal ContainsFile (fileHashCache: FileHashCache)
+                          (sourceRoots: AbsolutePath seq)
+                          (package: PackageReference, entry: ISourceEntry): Task<bool> = task {
+    let coords = package.Coordinates
+    let! files = GetPackageFiles sourceRoots coords
+    let fileName = Path.GetFileName entry.SourceRelativePath
+    let possibleFiles = files |> Seq.filter(fun f -> f.FileName = fileName)
+    let! possibleFileCheckResults =
+        possibleFiles
+        |> Seq.map(fun f -> task {
+            let! needleHash = entry.CalculateHash()
+            let! packageFileHash = fileHashCache.CalculateFileHash f
+            return needleHash.Equals(packageFileHash, StringComparison.OrdinalIgnoreCase)
+        })
+        |> Task.WhenAll
+    return Seq.exists id possibleFileCheckResults
+}
+
 type NoNamespaceXmlReader(input: Stream) =
     inherit XmlTextReader(input)
     override this.NamespaceURI = ""
@@ -87,43 +119,25 @@ let internal ReadNuSpec(filePath: AbsolutePath): Task<NuSpec> = Task.Run(fun() -
     serializer.Deserialize(reader) :?> NuSpec
 )
 
-type INuGetReader =
-    abstract ReadNuSpec: PackageReference -> Task<NuSpec>
-    abstract ContainsFileName: PackageReference -> string -> Task<bool>
-    abstract FindFile: FileHashCache -> PackageReference seq -> ISourceEntry -> Task<PackageReference[]>
-
-type NuGetReader() =
-    interface INuGetReader with
-        member _.ReadNuSpec(reference: PackageReference): Task<NuSpec> =
-            GetNuSpecFilePath reference |> ReadNuSpec
-
-        member _.ContainsFileName (package: PackageReference) (fileName: string): Task<bool> =
-            task {
-                do! Task.Yield()
-                let files = GetPackageFiles package
-                return files |> Seq.exists(fun f -> Path.GetFileName f.Value = fileName)
-            }
-
-        member _.FindFile (cache: FileHashCache)
-                          (packages: PackageReference seq)
-                          (entry: ISourceEntry): Task<PackageReference[]> = task {
-            let! checkResults =
-                packages
-                |> Seq.map(fun p -> task {
-                    let! checkResult = ContainsFile cache (p, entry)
-                    return checkResult, p
-                })
-                |> Task.WhenAll
-            return checkResults |> Seq.filter fst |> Seq.map snd |> Seq.toArray
-        }
-
 [<CLIMutable>]
 type ProjectAssetsJson = {
     Version: int
     Libraries: Dictionary<string, LibraryAsset>
+    Project: ProjectAssetsProject
 }
 and [<CLIMutable>] LibraryAsset = {
     Type: string
+}
+and [<CLIMutable>] ProjectAssetsProject = {
+    Frameworks: Dictionary<string, ProjectAssetsFramework>
+}
+and [<CLIMutable>] ProjectAssetsFramework = {
+    FrameworkReferences: Dictionary<string, Dictionary<string, string>>
+}
+
+[<CLIMutable>]
+type DepsJson = {
+    Targets: Dictionary<string, Dictionary<string, obj>>
 }
 
 let private SerializerOptions = JsonSerializerOptions(JsonSerializerDefaults.Web)
@@ -133,38 +147,138 @@ let private ReadProjectAssetsJson(file: AbsolutePath): Task<ProjectAssetsJson> =
     return! JsonSerializer.DeserializeAsync<ProjectAssetsJson>(stream, SerializerOptions)
 }
 
-let private ReadProjectReferences(project: AbsolutePath): Task<PackageReference[]> = task {
-    let! properties = MsBuild.GetProperties(project, MsBuild.DefaultConfiguration, [| "BaseIntermediateOutputPath" |])
-    let objDir = LocalPath(properties["BaseIntermediateOutputPath"].Replace('\\', Path.DirectorySeparatorChar))
-    let projectAssetsJson = project.Parent.Value / objDir / "project.assets.json"
-    if File.Exists projectAssetsJson.Value then
-        let! assets = ReadProjectAssetsJson projectAssetsJson
-        let references =
-            assets.Libraries
-            |> Seq.filter(fun e -> e.Value.Type = "package")
-            |> Seq.map(fun e ->
-                let entryName = e.Key
-                match entryName.Split('/') with
-                | [| packageId; version |] ->
-                    { PackageId = packageId; Version = version }
-                | _ -> failwithf $"Cannot read package reference in file \"{project}\": \"{entryName}\"."
-            )
-            |> Seq.toArray
-        return references
-    else
-        return! MsBuild.GetDirectPackageReferences project
+let private ReadDepsJson(file: AbsolutePath): Task<DepsJson> = task {
+    use stream = File.OpenRead file.Value
+    return! JsonSerializer.DeserializeAsync<DepsJson>(stream, SerializerOptions)
 }
 
-let ReadTransitiveProjectReferences(projectOrSolution: AbsolutePath): Task<PackageReference[]> = task {
+let private ReadNuGetReferencesForFramework project coordinates = task {
+    let! directory = DotNetSdk.SharedFrameworkLocation coordinates
+    let depsJsonFile = directory / $"{coordinates.PackageId}.deps.json"
+    if File.Exists depsJsonFile.Value then
+        let! depsJson = ReadDepsJson depsJsonFile
+        let packages = depsJson.Targets.Values |> Seq.collect _.Keys
+        return packages |> Seq.map(fun packageSpec ->
+            let nameAndVersion = packageSpec.Split('/', 2)
+            match nameAndVersion with
+            | [| name; version |] ->
+                {
+                    ReferencingProject = project
+                    Coordinates = { PackageId = name; Version = version }
+                }
+            | _ -> failwithf $"Invalid name/version spec in \"{depsJsonFile}\": \"{packageSpec}\"."
+        )
+
+    else
+        return [||]
+}
+
+[<Flags>]
+type ReferenceType =
+    /// <summary><c>&lt;PackageReference&gt;</c> elements from project.</summary>
+    | PackageReference = 0b1
+    /// Assets from <c>project.assets.json</c> — transitive.
+    | ProjectAssets = 0b10
+    /// Runtime pack references, used for publish.
+    | RuntimePackReferences = 0b100
+    | All = 0b111
+
+let private ReadPackageReferencesFromProject (referenceType: ReferenceType)
+                                             (project: AbsolutePath): Task<ResizeArray<PackageReference>> = task {
+    let result = ResizeArray()
+
+    if referenceType.HasFlag ReferenceType.PackageReference then
+        let! packageReferences = MsBuild.GetDirectPackageReferences project
+        result.AddRange packageReferences
+
+    let properties = lazy MsBuild.GetProperties(
+        project,
+        MsBuild.DefaultConfiguration,
+        None,
+        [| "BaseIntermediateOutputPath" |]
+    )
+    let objDir = lazy task {
+        let! properties = properties.Value
+        return LocalPath(properties["BaseIntermediateOutputPath"].Replace('\\', Path.DirectorySeparatorChar))
+    }
+
+    if referenceType.HasFlag ReferenceType.ProjectAssets then
+        let! objDir = objDir.Value
+        let projectAssetsJson = project.Parent.Value / objDir / "project.assets.json"
+        if File.Exists projectAssetsJson.Value then
+            let! assets = ReadProjectAssetsJson projectAssetsJson
+            let nuGetReferences =
+                assets.Libraries
+                |> Seq.filter(fun e -> e.Value.Type = "package")
+                |> Seq.map(fun e ->
+                    let entryName = e.Key
+                    match entryName.Split('/') with
+                    | [| packageId; version |] ->
+                        {
+                            ReferencingProject = project
+                            Coordinates =  { PackageId = packageId; Version = version }
+                        }
+                    | _ -> failwithf $"Cannot read package reference in file \"{project}\": \"{entryName}\"."
+                )
+            result.AddRange nuGetReferences
+
+    if referenceType.HasFlag ReferenceType.RuntimePackReferences then
+        let! runtimePackReferences = MsBuild.GetRuntimePackReferences project
+        result.AddRange runtimePackReferences
+
+    return result
+}
+
+let ReadPackageReferences(
+    projectOrSolution: AbsolutePath,
+    referenceType: ReferenceType
+): Task<PackageReference[]> = task {
     let! projects = MsBuild.GetProjects projectOrSolution
-    let! assetReferences =
+    let! projectReferences =
         projects
-        |> Seq.map ReadProjectReferences
+        |> Seq.map(ReadPackageReferencesFromProject referenceType)
         |> Task.WhenAll
     let allReferences =
-        Seq.concat assetReferences
+        Seq.concat projectReferences
         |> Seq.distinct
-        |> Seq.sortBy(fun r -> r.PackageId, r.Version)
-        |> Seq.toArray
-    return allReferences
+        |> Seq.sortBy(fun x -> x.Coordinates.PackageId, x.Coordinates.Version)
+    return allReferences |> Seq.distinct |> Seq.toArray
 }
+
+type NuGetReader() =
+    let itemCache = MsBuildItemCache()
+
+    interface INuGetReader with
+        member _.ReadNuSpec (input: AbsolutePath) (coordinates: PackageCoordinates): Task<NuSpec option> = task {
+            let! sourceRoots = MsBuild.GetSourceRoots itemCache input
+            let! nuSpec = GetNuSpecFilePath sourceRoots coordinates RootResolveBehavior.Existing
+            match nuSpec with
+            | Some n ->
+                let! result = ReadNuSpec n
+                return Some result
+            | None -> return None
+        }
+
+        member _.ReadPackageReferences input = ReadPackageReferences(input, ReferenceType.All)
+
+        member _.ContainsFileName (input: AbsolutePath) (package: PackageReference) (fileName: string): Task<bool> =
+            task {
+
+                let! sourceRoots = MsBuild.GetSourceRoots itemCache input
+                let! files = GetPackageFiles sourceRoots package.Coordinates
+                return files |> Seq.exists(fun f -> Path.GetFileName f.Value = fileName)
+            }
+
+        member _.FindFile (cache: FileHashCache)
+                          (packages: PackageReference seq)
+                          (entry: ISourceEntry): Task<PackageReference[]> = task {
+            let! checkResults =
+                packages
+                |> Seq.map(fun p -> task {
+                    let! sourceRoots = MsBuild.GetSourceRoots itemCache p.ReferencingProject
+                    let! checkResult = ContainsFile cache sourceRoots (p, entry)
+                    return checkResult, p
+                })
+                |> Task.WhenAll
+            return checkResults |> Seq.filter fst |> Seq.map snd |> Seq.toArray
+        }

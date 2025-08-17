@@ -8,6 +8,7 @@ open System.Collections.Generic
 open System.IO
 open System.Text.Json
 open System.Threading.Tasks
+open DotNetLicenses.GeneratedArtifacts
 open Microsoft.Build.Construction
 open TruePath
 open Medallion.Shell
@@ -20,8 +21,12 @@ and [<CLIMutable>] MsBuildItem = {
     Identity: string
 }
 and [<CLIMutable>] MsBuildItems = {
-    PackageReference: MsBuildPackageReference[]
     DebugSymbolsProjectOutputGroupOutput: MsBuildItem[]
+    KnownFrameworkReference: KnownFrameworkReference[]
+    PackageReference: MsBuildPackageReference[]
+    ResolvedFrameworkReference: ResolvedFrameworkReference[]
+    ResolvedTargetingPack: ResolvedTargetingPack[]
+    SourceRoot: MsBuildItem[]
 }
 and [<CLIMutable>] MsBuildPackageReference =
     {
@@ -34,6 +39,23 @@ and [<CLIMutable>] MsBuildPackageReference =
             PackageId = this.Identity
             Version = this.Version
         }
+
+and [<CLIMutable>] KnownFrameworkReference = {
+    TargetFramework: string
+    Identity: string
+    LatestRuntimeFrameworkVersion: string
+}
+
+and [<CLIMutable>] ResolvedFrameworkReference = {
+    Identity: string
+    NuGetPackageVersion: string
+}
+and [<CLIMutable>] ResolvedTargetingPack = {
+    Identity: string
+    NuGetPackageVersion: string
+    RuntimeFrameworkName: string
+    RuntimePackRuntimeIdentifiers: string
+}
 
 [<CLIMutable>]
 type MultiPropertyMsBuildOutput = {
@@ -62,10 +84,14 @@ let private ExecuteDotNetBuild(args: string seq): Task<string> =
 
 let internal GetProperties(input: AbsolutePath,
                           configuration: string,
+                          runtime: string option,
                           properties: string[]): Task<Dictionary<string, string>> = task {
     let! result = ExecuteDotNetBuild [|
         "--configuration"; configuration
         "-getProperty:" + String.concat "," properties
+        match runtime with
+        | Some r -> "--runtime"; r
+        | None -> ()
         input.Value
     |]
 
@@ -80,11 +106,16 @@ let internal GetProperties(input: AbsolutePath,
 
 let private GetItems (input: AbsolutePath)
                      (configuration: string option)
+                     (taskName: string option)
                      (itemGroups: string seq)
                      (transformer: MsBuildItems -> 'a): Task<'a> = task {
     let! result = ExecuteDotNetBuild [|
         match configuration with
         | Some c -> "--configuration"; c
+        | None -> ()
+
+        match taskName with
+        | Some t -> "-target:" + t
         | None -> ()
 
         "-getItem:" + String.concat "," itemGroups
@@ -115,28 +146,32 @@ let internal GetDirectPackageReferences(input: AbsolutePath): Task<PackageRefere
     let! references =
         projects
         |> Seq.map(fun project -> task {
-            let! references = GetItems project None [| "PackageReference" |] _.PackageReference
-            return references |> Array.map _.FromMsBuild()
+            let! references = GetItems project None None [| "PackageReference" |] _.PackageReference
+            return references |> Seq.map _.FromMsBuild() |> Seq.map(fun ref -> project, ref) |> Seq.toArray
         })
         |> Task.WhenAll
-    return references |> Seq.collect id |> Seq.distinct |> Seq.sortBy (fun x -> x.PackageId, x.Version) |> Seq.toArray
+    return references
+           |> Seq.collect id
+           |> Seq.distinct
+           |> Seq.sortBy(fun (p, x) -> p.Value, x.PackageId, x.Version)
+           |> Seq.map(fun(project, coords) -> {
+               ReferencingProject = project
+               Coordinates = coords
+           })
+           |> Seq.toArray
 }
 
-type ProjectGeneratedArtifacts =
-    {
-        FilesWithContent: AbsolutePath[]
-        FilePatterns: LocalPathPattern[]
-    }
-    static member Merge(items: ProjectGeneratedArtifacts[]): ProjectGeneratedArtifacts = {
-        FilesWithContent = items |> Seq.collect _.FilesWithContent |> Seq.distinct |> Seq.sortBy _.Value |> Array.ofSeq
-        FilePatterns = items |> Seq.collect _.FilePatterns |> Seq.distinct |> Seq.sortBy _.Value |> Array.ofSeq
-    }
+let internal GetKnownFrameworkReferences(project: AbsolutePath): Task<KnownFrameworkReference[]> = task {
+    return! GetItems project (Some DefaultConfiguration) None [| "KnownFrameworkReference" |] _.KnownFrameworkReference
+}
 
-let private GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
-    let! properties = GetProperties(input, DefaultConfiguration, [|
+let private GetProjectGeneratedArtifacts (runtime: string option)
+                                         (input: AbsolutePath): Task<GeneratedArtifactEntry[]> = task {
+    let! properties = GetProperties(input, DefaultConfiguration, runtime, [|
         "BaseIntermediateOutputPath"
         "TargetName"
         "TargetDir"; "TargetFileName"
+        "UseAppHost"
     |])
     let properties =
         properties
@@ -151,27 +186,77 @@ let private GetProjectGeneratedArtifacts(input: AbsolutePath): Task<ProjectGener
     let target = basePath / targetDir / targetFileName
     let objDir = basePath / properties["BaseIntermediateOutputPath"]
     let targetName = properties["TargetName"]
+    let useAppHost = properties["UseAppHost"] = "true"
     let artifacts = [|
         target
         basePath / targetDir / $"{targetName}.runtimeconfig.json"
         // dotnet tools:
         objDir / "DotNetToolSettings.xml"
     |]
+    let isDllProject = Path.GetExtension targetFileName = ".dll"
     let patterns = [|
-        LocalPathPattern $"**/{targetName}.pdb"
-        LocalPathPattern $"**/{targetName}.deps.json"
+        LocalPathPattern $"**/{targetName}.pdb", None
+        LocalPathPattern $"**/{targetName}.deps.json", None
+        if useAppHost && isDllProject then
+            LocalPathPattern $"**/{targetName}.exe", Some(DotNetSdkLicense :> ILicense)
     |]
-    return {
-        FilesWithContent = artifacts
-        FilePatterns = patterns
-    }
+    return [|
+        yield! artifacts |> Seq.map (fun a -> { Artifact = GeneratedArtifact.File a; AdditionalLicense = None })
+        yield! patterns |> Seq.map (fun(p, l) -> { Artifact = GeneratedArtifact.Pattern p; AdditionalLicense = l })
+    |]
 }
 
-let GetGeneratedArtifacts(input: AbsolutePath): Task<ProjectGeneratedArtifacts> = task {
+let internal GetRuntimePackReferences(project: AbsolutePath): Task<PackageReference[]> = task {
+    let! frameworkReferences, targetingPacks =
+        GetItems
+            project
+            (Some DefaultConfiguration)
+            (Some "ResolveFrameworkReferences")
+            [| "ResolvedFrameworkReference"; "ResolvedTargetingPack" |]
+            (fun out -> out.ResolvedFrameworkReference, out.ResolvedTargetingPack)
+    let targetingPacks =
+        targetingPacks
+        |> Seq.map(fun pack -> pack.Identity, pack)
+        |> Map.ofSeq
+    let runtimePackReferences =
+        frameworkReferences
+        |> Seq.map(fun framework -> targetingPacks[framework.Identity])
+        |> Seq.collect(fun targetingPack ->
+            let baseRuntimePackName = $"{targetingPack.RuntimeFrameworkName}.runtime"
+            targetingPack.RuntimePackRuntimeIdentifiers.Split(';')
+            |> Seq.map(fun id -> $"{baseRuntimePackName}.{id}")
+            |> Seq.map(fun package -> {
+                ReferencingProject = project
+                Coordinates = {
+                    PackageId = package
+                    Version = targetingPack.NuGetPackageVersion
+                }
+            })
+        )
+        |> Seq.toArray
+    return runtimePackReferences
+}
+
+let GetGeneratedArtifacts(input: AbsolutePath, runtime: string option): Task<GeneratedArtifactEntry[]> = task {
     let! projects = GetProjects input
     let! artifacts =
         projects
-        |> Seq.map GetProjectGeneratedArtifacts
+        |> Seq.map (GetProjectGeneratedArtifacts runtime)
         |> Task.WhenAll
-    return artifacts |> ProjectGeneratedArtifacts.Merge
+    return artifacts |> Seq.collect id |> Merge |> Seq.toArray
+}
+
+let private LoadSourceRoots(input: AbsolutePath): Task<MsBuildItem[]> = task {
+    let! projects = GetProjects input
+    let! items =
+        projects
+        |> Seq.map(fun p -> GetItems p None (Some "Restore") [| "SourceRoot" |] _.SourceRoot)
+        |> Task.WhenAll
+    return items |> Array.collect id
+}
+
+
+let GetSourceRoots (cache: MsBuildItemCache<MsBuildItem>) (input: AbsolutePath): Task<AbsolutePath[]> = task {
+    let! items = cache.Get input LoadSourceRoots
+    return items |> Array.map (fun item -> AbsolutePath item.Identity)
 }

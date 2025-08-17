@@ -4,6 +4,7 @@
 
 module DotNetLicenses.Processor
 
+open System
 open System.Collections.Generic
 open System.Collections.Immutable
 open System.IO
@@ -43,7 +44,10 @@ let private ProcessWarnings(wp: WarningProcessor) =
         else Seq.max wp.Codes
     int exitCode
 
-let private GetMetadata (projectMetadataReader: MetadataReader) (baseFolderPath: AbsolutePath) overrides = function
+let private GetMetadata (projectMetadataReader: MetadataReader)
+                        (baseFolderPath: AbsolutePath)
+                        (overrides: IReadOnlyDictionary<PackageCoordinates, MetadataOverride>)
+                        : MetadataSource -> Task<MetadataReadResult> = function
     | MetadataSource.NuGet source ->
         let projectPath = baseFolderPath / source.Include
         projectMetadataReader.ReadFromProject(projectPath, overrides)
@@ -84,12 +88,13 @@ let internal PrintMetadata(
     for item in metadata do
         match item with
         | Package package ->
-            let spdx = package.Spdx |> String.concat ", "
-            let copyrights = package.Copyrights |> String.concat "\n  "
-            printfn $"- Package {package.Source.PackageId} {package.Source.Version}: {spdx}\n  {copyrights}"
+            let spdx = package.License.SpdxExpression
+            let copyrights = package.License.CopyrightNotices |> String.concat "\n  "
+            let coords = package.Source.Coordinates
+            printfn $"- Package {coords.PackageId} {coords.Version}: {spdx}\n  {copyrights}"
 
         | License license ->
-            printfn $"- Manually defined license: {license.Spdx}\n  {license.Copyright}"
+            printfn $"- Manually defined license: {license.SpdxExpression}\n  {license.CopyrightNotice}"
             for pattern in license.FilesCovered do
                 printfn $"  - {pattern}"
         | Reuse reuse ->
@@ -102,8 +107,8 @@ let internal PrintMetadata(
             let excludes = reuse.Exclude |> Seq.map (fun e -> baseFolderPath / e)
             let! entries = ReadReuseDirectory(root, excludes)
             for entry in entries do
-                let licenses = entry.LicenseIdentifiers |> String.concat ", "
-                let copyrights = entry.CopyrightStatements |> String.concat "\n    "
+                let licenses = entry.SpdxLicenseIdentifiers |> String.concat ", "
+                let copyrights = entry.CopyrightNotices |> String.concat "\n    "
                 printfn $"  - {entry.Path}: {licenses}\n    {copyrights}"
 }
 
@@ -152,10 +157,10 @@ let internal GenerateLockFile(
         metadata
         |> Seq.collect(fun m ->
             match m with
-            | Package p -> [| p.Source, m |]
+            | Package p -> [| KeyValuePair(p.Source, m) |]
             | _ -> Array.empty
         )
-        |> Map.ofSeq
+        |> Dictionary
     let reuseMetadata =
         metadata
         |> Seq.collect(fun m ->
@@ -212,7 +217,7 @@ let internal GenerateLockFile(
         let! possiblePackageEntries =
             packages
             |> Seq.map(fun p ->
-                nuGet.ContainsFileName p <| Path.GetFileName(entry.SourceRelativePath)
+                nuGet.ContainsFileName p.ReferencingProject p <| Path.GetFileName(entry.SourceRelativePath)
             )
             |> Task.WhenAll
         let fileContainingPackagesCount = possiblePackageEntries |> Seq.filter id |> Seq.length
@@ -223,12 +228,13 @@ let internal GenerateLockFile(
                 let metadata = packageMetadata[package]
                 match metadata with
                 | Package p ->
-                    let sourceVersion = if fileContainingPackagesCount <= 1 then None else Some package.Version
+                    let coords = package.Coordinates
+                    let sourceVersion = if fileContainingPackagesCount <= 1 then None else Some coords.Version
                     LocalPathPattern entry.SourceRelativePath, {
-                        LockFileItem.SourceId = Some package.PackageId
+                        LockFileItem.SourceId = Some coords.PackageId
                         SourceVersion = sourceVersion
-                        Spdx = p.Spdx
-                        Copyright = p.Copyrights
+                        SpdxExpression = Some p.License.SpdxExpression
+                        CopyrightNotices = p.License.CopyrightNotices
                         IsIgnored = false
                     }
                 | _ -> failwithf $"Unexpected metadata type in object {metadata}."
@@ -238,27 +244,27 @@ let internal GenerateLockFile(
             |> Seq.map (fun license -> LocalPathPattern entry.SourceRelativePath, {
                 LockFileItem.SourceId = None
                 SourceVersion = None
-                Spdx = [|license.Spdx|]
-                Copyright = [|license.Copyright|]
+                SpdxExpression = Some license.SpdxExpression
+                CopyrightNotices = ImmutableArray.Create license.CopyrightNotice
                 IsIgnored = false
             })
         let! reuseEntries = findReuseLicenses entry
         let reuseSearchResults =
             reuseEntries
-            |> Seq.map (fun license -> LocalPathPattern entry.SourceRelativePath, {
+            |> Seq.map (fun reuseEntry -> LocalPathPattern entry.SourceRelativePath, {
                 LockFileItem.SourceId = None
                 SourceVersion = None
-                Spdx = Seq.toArray license.SpdxExpressions
-                Copyright = Seq.toArray license.CopyrightStatements
+                SpdxExpression = Some reuseEntry.SpdxExpression
+                CopyrightNotices = reuseEntry.CopyrightStatements
                 IsIgnored = false
             })
         let reuseCombinedSearchResults =
             findReuseCombinedLicenses entry
-            |> Seq.map(fun fe -> LocalPathPattern entry.SourceRelativePath, {
+            |> Seq.map(fun combinedEntry -> LocalPathPattern entry.SourceRelativePath, {
                 LockFileItem.SourceId = None
                 SourceVersion = None
-                Spdx = Seq.toArray fe.LicenseIdentifiers
-                Copyright = Seq.toArray fe.CopyrightStatements
+                SpdxExpression = Some <| String.Join(" AND ", combinedEntry.SpdxLicenseIdentifiers)
+                CopyrightNotices = combinedEntry.CopyrightNotices
                 IsIgnored = false
             })
         let! coveragePatternSearchResults =
@@ -285,16 +291,16 @@ let internal GenerateLockFile(
         | _ ->
             let expressions =
                 resultEntries
-                |> Seq.distinctBy(fun(_, x) -> x.Spdx)
+                |> Seq.distinctBy(fun(_, x) -> x.SpdxExpression)
                 |> Seq.toArray
             if expressions.Length > 1 then
                 let differentExpressions =
                     expressions
                     |> Seq.map(fun (_, entry: LockFileItem) ->
                         String.concat "" [|
-                            "["
-                            entry.Spdx |> String.concat ", "
-                            "]"
+                            match entry.SpdxExpression with
+                            | None -> ()
+                            | Some expr -> $"[{expr}]"
                             match entry.SourceId, entry.SourceVersion with
                             | sourceId, Some version ->
                                 let id = sourceId |> Option.defaultValue "unknown source"
@@ -316,8 +322,8 @@ let internal GenerateLockFile(
             {
                 LockFileItem.SourceId = None
                 SourceVersion = None
-                Spdx = Array.empty
-                Copyright = Array.empty
+                SpdxExpression = None
+                CopyrightNotices = ImmutableArray.Create()
                 IsIgnored = true
             }
         )
@@ -335,12 +341,12 @@ let Verify(config: Configuration, baseFolder: AbsolutePath, wp: WarningProcessor
         let pattern = entry.Key
         let items = entry.Value
         for item in items do
-            if item.IsIgnored && (item.Spdx.Length > 0 || item.Copyright.Length > 0) then
+            if item.IsIgnored && (Option.isSome item.SpdxExpression || item.CopyrightNotices.Length > 0) then
                 wp.ProduceWarning(
                     ExitCode.NonEmptyIgnoredLockFileEntry,
                     $"Ignored entry with license or copyright set for path \"{pattern}\"."
                 )
-            else if not item.IsIgnored && item.Spdx.Length = 0 then
+            else if not item.IsIgnored && Option.isNone item.SpdxExpression then
                 wp.ProduceWarning(ExitCode.LicenseSetEmpty, $"Entry with empty license set for path \"{pattern}\".")
 
     use ld = new LifetimeDefinition()
@@ -375,21 +381,22 @@ let private DownloadLicenses(config: Configuration, baseFolder: AbsolutePath) = 
     let! lockFileEntries = ReadLockFile(baseFolder / lockFile)
     let licenses =
         lockFileEntries.Values
-        |> Seq.collect(fun entries -> entries |> Seq.collect _.Spdx)
+        |> Seq.collect(fun entries -> entries |> Seq.collect(fun x -> Option.toArray x.SpdxExpression))
         |> Seq.distinct
         |> Seq.toArray
     use client = new HttpClient()
     for license in licenses do
-        let url = $"https://spdx.org/licenses/{license}.txt"
-        try
-            let! content = client.GetStringAsync(url)
-            let licensePath = baseFolder / licenseStorage / $"{license}.txt"
-            ignore <| Directory.CreateDirectory(licensePath.Parent.Value.Value)
-            do! File.WriteAllTextAsync(licensePath.Value, content)
-        with
-        | e ->
-            eprintfn $"Error while downloading license for SPDX {license}: {e.Message}"
-            raise e
+        if not(license.StartsWith "Ref-") then
+            let url = $"https://spdx.org/licenses/{license}.txt"
+            try
+                let! content = client.GetStringAsync(url)
+                let licensePath = baseFolder / licenseStorage / $"{license}.txt"
+                ignore <| Directory.CreateDirectory(licensePath.Parent.Value.Value)
+                do! File.WriteAllTextAsync(licensePath.Value, content)
+            with
+            | e ->
+                eprintfn $"Error while downloading license for SPDX {license}: {e.Message}"
+                raise e
     printf $"{licenses.Length} license files successfully downloaded to \"{baseFolder / licenseStorage}\"."
 }
 

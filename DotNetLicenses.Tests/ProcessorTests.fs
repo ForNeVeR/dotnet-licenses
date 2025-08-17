@@ -8,7 +8,9 @@ open System.IO
 open System.Threading.Tasks
 open DotNetLicenses
 open DotNetLicenses.CommandLine
+open DotNetLicenses.NuGet
 open DotNetLicenses.TestFramework
+open Medallion.Shell
 open TruePath
 open Xunit
 
@@ -73,8 +75,8 @@ let ``Printer generates warnings if there are stale overrides``(): Task =
                 MetadataOverrides = [|{
                     Id = "NonExistent"
                     Version = ""
-                    Spdx = [|""|]
-                    Copyright = [|""|]
+                    SpdxExpression = ""
+                    CopyrightNotices = [|""|]
                 }|]
                 LockFile = Some <| LocalPath "lock.toml"
         }
@@ -106,7 +108,7 @@ let ``Processor generates a lock file``(): Task = DataFiles.Deploy "Test.csproj"
     do! File.WriteAllTextAsync((directory.Path / "test.txt").Value, "Hello!")
 
     let expectedLock = """# REUSE-IgnoreStart
-"test.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"test.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = "License FVNever.DotNetLicenses", copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
     let config = {
@@ -132,7 +134,7 @@ let ``Processor generates a lock file for a file tree``(): Task = task {
     let packagedFile = directory.Path / "my-file.txt"
     do! File.WriteAllTextAsync(packagedFile.Value, "Hello World!")
     let expectedLock = """# REUSE-IgnoreStart
-"my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = "License FVNever.DotNetLicenses", copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -162,7 +164,7 @@ let ``Processor generates a lock file for a ZIP archive``(): Task = task {
     let archivePath = directory.Path / "file.zip"
     ZipFiles.SingleFileArchive(archivePath, "content/my-file.txt", "Hello World"B)
     let expectedLock = """# REUSE-IgnoreStart
-"content/my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"content/my-file.txt" = [{source_id = "FVNever.DotNetLicenses", spdx = "License FVNever.DotNetLicenses", copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
     do! DataFiles.Deploy "Test.csproj" (fun project -> task {
@@ -235,7 +237,7 @@ let ``License metadata gets saved to the lock file``(): Task = task {
     do! File.WriteAllTextAsync(packagedFile.Value, "")
 
     let expectedLock = """# REUSE-IgnoreStart
-"my-file.txt" = [{spdx = ["MIT"], copyright = ["Me"]}]
+"my-file.txt" = [{spdx = "MIT", copyright = ["Me"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -244,8 +246,8 @@ let ``License metadata gets saved to the lock file``(): Task = task {
         Configuration.Empty with
             MetadataSources = [|
                 License {
-                    Spdx = "MIT"
-                    Copyright = "Me"
+                    SpdxExpression = "MIT"
+                    CopyrightNotice = "Me"
                     FilesCovered = [| LocalPathPattern "*.txt" |]
                     PatternsCovered = Array.empty
                 }
@@ -280,7 +282,7 @@ text
     do! File.WriteAllTextAsync(sourceFile.Value, fileContent)
 
     let expectedLock = """# REUSE-IgnoreStart
-"my-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
+"my-file.txt" = [{spdx = "MIT", copyright = ["2024 Me"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -326,7 +328,7 @@ License: MIT
     """)
 
     let expectedLock = """# REUSE-IgnoreStart
-"my-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
+"my-file.txt" = [{spdx = "MIT", copyright = ["2024 Me"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -395,8 +397,8 @@ text
     // REUSE-IgnoreEnd
 
     let expectedLock = """# REUSE-IgnoreStart
-"my-combined-file.txt" = [{spdx = ["CC-BY-1.0", "CC-BY-4.0", "CC-0", "MIT"], copyright = ["2024 Me"]}]
-"my-mit-file.txt" = [{spdx = ["MIT"], copyright = ["2024 Me"]}]
+"my-combined-file.txt" = [{spdx = "CC-BY-1.0 AND CC-BY-4.0 AND CC-0 AND MIT", copyright = ["2024 Me"]}]
+"my-mit-file.txt" = [{spdx = "MIT", copyright = ["2024 Me"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -427,21 +429,22 @@ text
 let ``Package cover spec works``(): Task =
     DataFiles.Deploy "Test.csproj" (fun project -> task {
         let baseDir = project.Parent.Value
-        let! projectOutput = MsBuild.GetGeneratedArtifacts project
-        projectOutput.FilesWithContent
-        |> Array.iter (fun p -> Directory.CreateDirectory p.Parent.Value.Value |> ignore)
+        let! projectOutput = MsBuild.GetGeneratedArtifacts(project, None)
+        let files, _ = GeneratedArtifacts.Split projectOutput
+        files
+        |> Seq.iter (fun p -> Directory.CreateDirectory p.Parent.Value.Value |> ignore)
 
-        let targetAssembly = projectOutput.FilesWithContent |> Array.head
+        let targetAssembly = files |> Seq.head
         let outDir = targetAssembly.Parent.Value
         let config = {
             Configuration.Empty with
                 MetadataSources = [|
                     License {
-                        Spdx = "MIT"
-                        Copyright = "Package cover spec works"
+                        SpdxExpression = "MIT"
+                        CopyrightNotice = "Package cover spec works"
                         FilesCovered = Array.empty
                         PatternsCovered = [|
-                            MsBuildCoverage(LocalPath project)
+                            MsBuildCoverage(LocalPath project, None)
                         |]
                     }
                 |]
@@ -453,7 +456,7 @@ let ``Package cover spec works``(): Task =
 
         do! File.WriteAllTextAsync(targetAssembly.Value, "Test file")
         let expectedLock = """# REUSE-IgnoreStart
-"Test.dll" = [{spdx = ["MIT"], copyright = ["Package cover spec works"]}]
+"Test.dll" = [{spdx = "MIT", copyright = ["Package cover spec works"]}]
 # REUSE-IgnoreEnd
 """
 
@@ -474,7 +477,7 @@ let ``Verify works correctly on a happy path``(): Task = task {
     let file = subDir / "file.txt"
     do! File.WriteAllTextAsync(file.Value, "Hello, world!")
     let lockFileContent = """# REUSE-IgnoreStart
-"file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = "License FVNever.DotNetLicenses", copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
     let lockFile = dir.Path / "lock.toml"
@@ -503,7 +506,7 @@ let ``Verify works correctly on an unhappy path``(): Task = task {
     let file = subDir / "file1.txt"
     do! File.WriteAllTextAsync(file.Value, "Hello, world!")
     let lockFileContent = """# REUSE-IgnoreStart
-"file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = ["License FVNever.DotNetLicenses"], copyright = ["Copyright FVNever.DotNetLicenses"]}]
+"file.txt" = [{source_id = "FVNever.DotNetLicenses", source_version = "1.0.0", spdx = "License FVNever.DotNetLicenses", copyright = ["Copyright FVNever.DotNetLicenses"]}]
 # REUSE-IgnoreEnd
 """
     let lockFile = dir.Path / "lock.toml"
@@ -524,6 +527,76 @@ let ``Verify works correctly on an unhappy path``(): Task = task {
         [|"File \"file1.txt\" is not covered by the lock file."; "Lock file entry \"file.txt\" is not used."|],
         wp.Messages
     )
+}
+
+let private PublishProject (project: AbsolutePath) (publishDir: AbsolutePath) = task {
+    let! executionResult =
+        Command.Run(
+            "dotnet",
+            "publish",
+            "--output", publishDir.Value,
+            "--self-contained",
+            project.Value
+        ).Task
+    if not executionResult.Success then
+        let message = String.concat "\n" [|
+            $"Exit code of dotnet publish: {executionResult.ExitCode}"
+            if executionResult.StandardOutput.Length > 0 then
+                $"Standard output: {executionResult.StandardOutput}"
+            if executionResult.StandardError.Length > 0 then
+                $"Standard error: {executionResult.StandardError}"
+        |]
+        Assert.Fail message
+}
+
+[<Fact>]
+let ``Metadata for a self-contained application``(): Task = task {
+    use dir = DisposableDirectory.Create()
+    let sourceDir = dir.Path / "src"
+    dir.MakeSubDirs [| LocalPath sourceDir |]
+
+    let projectInTextFolder = DataFiles.Get "TestExe.csproj"
+    let project = sourceDir / "TestExe.csproj"
+    File.Copy(projectInTextFolder.Value, project.Value)
+    File.Copy((DataFiles.Get "Program.cs").Value, (sourceDir / "Program.cs").Value)
+
+    let publishDir = dir.Path / "publish"
+    do! PublishProject project publishDir
+
+    let lockFile = dir.Path / "lock.toml"
+
+    let config = {
+        Configuration.Empty with
+            MetadataSources = [|
+                NuGet {
+                    Include = LocalPath project
+                }
+                License {
+                    SpdxExpression = "MIT"
+                    CopyrightNotice = "me"
+                    FilesCovered = Array.empty
+                    PatternsCovered = [|
+                        MsBuildCoverage(LocalPath project, Some "win-x64") // TODO: Portable test on macOS/Linux
+                    |]
+                }
+            |]
+            LockFile = Some(LocalPath lockFile)
+            PackagedFiles = [|
+                {
+                    Source = Directory(LocalPath publishDir)
+                    Ignores = Array.empty
+                }
+            |]
+        }
+
+    let wp = WarningProcessor()
+    do! Processor.GenerateLockFile(config, dir.Path, NuGetReader(), wp)
+    Assert.Empty wp.Messages
+    Assert.Empty wp.Codes
+
+    let! lockFileItems = LockFile.ReadLockFile lockFile
+    let exeFileLicense = lockFileItems[LocalPathPattern "TestExe.exe"] |> Assert.Single
+    Assert.Equal(Some "MIT AND LicenseRef-DotNetSdk", exeFileLicense.SpdxExpression)
 }
 
 [<Fact>]
@@ -561,7 +634,7 @@ let ``Multiple similar licenses for same artifact don't give a warning``(): Task
         Assert.Empty wp.Messages
 
         let expectedLock = """# REUSE-IgnoreStart
-"my-file.txt" = [{source_id = "FVNever.Package1", source_version = "0.0.0", spdx = ["MIT"], copyright = ["Copyright FVNever.Package1"]}, {source_id = "FVNever.Package3", source_version = "0.0.0", spdx = ["MIT"], copyright = ["Copyright FVNever.Package3"]}]
+"my-file.txt" = [{source_id = "FVNever.Package1", source_version = "0.0.0", spdx = "MIT", copyright = ["Copyright FVNever.Package1"]}, {source_id = "FVNever.Package3", source_version = "0.0.0", spdx = "MIT", copyright = ["Copyright FVNever.Package3"]}]
 # REUSE-IgnoreEnd
 """
         let! actualLock = File.ReadAllTextAsync lockFile.Value
@@ -599,7 +672,7 @@ let ``Multiple different licenses for same artifact generate a warning``(): Task
         , Assert.Single result.Messages)
 
         let expectedLock = """# REUSE-IgnoreStart
-"my-file.txt" = [{source_id = "FVNever.Package1", source_version = "0.0.0", spdx = ["License FVNever.Package1"], copyright = ["Copyright FVNever.Package1"]}, {source_id = "FVNever.Package3", source_version = "0.0.0", spdx = ["License FVNever.Package3"], copyright = ["Copyright FVNever.Package3"]}]
+"my-file.txt" = [{source_id = "FVNever.Package1", source_version = "0.0.0", spdx = "License FVNever.Package1", copyright = ["Copyright FVNever.Package1"]}, {source_id = "FVNever.Package3", source_version = "0.0.0", spdx = "License FVNever.Package3", copyright = ["Copyright FVNever.Package3"]}]
 # REUSE-IgnoreEnd
 """
         let! actualLock = File.ReadAllTextAsync lockFile.Value

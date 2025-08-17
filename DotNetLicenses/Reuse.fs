@@ -12,7 +12,7 @@ open ReuseSpec
 open TruePath
 
 type ReuseLicenseEntry = {
-    SpdxExpressions: ImmutableArray<string>
+    SpdxExpression: string
     CopyrightStatements: ImmutableArray<string>
 }
 
@@ -37,8 +37,8 @@ let CollectLicenses (cache: FileHashCache)
         let! reuseHash = cache.CalculateFileHash reuseEntry.Path
         if fileHash.Equals(reuseHash, StringComparison.OrdinalIgnoreCase) then
             result.Add {
-                SpdxExpressions = reuseEntry.LicenseIdentifiers
-                CopyrightStatements = reuseEntry.CopyrightStatements
+                SpdxExpression = String.Join(" AND ", reuseEntry.SpdxLicenseIdentifiers)
+                CopyrightStatements = reuseEntry.CopyrightNotices
             }
 
     return result
