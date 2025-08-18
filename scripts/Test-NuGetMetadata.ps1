@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2024 Friedrich von Never <friedrich@fornever.me>
+# SPDX-FileCopyrightText: 2024-2025 Friedrich von Never <friedrich@fornever.me>
 #
 # SPDX-License-Identifier: MIT
 
@@ -38,7 +38,7 @@ function normalizeCopyrights($copyrights) {
 }
 
 function readLockFile($path) {
-    Add-Type -LiteralPath "$SourceRoot/DotNetLicenses/bin/Release/net8.0/Tomlyn.dll"
+    Add-Type -LiteralPath "$SourceRoot/DotNetLicenses/bin/Release/net9.0/Tomlyn.dll"
     $content = Get-Content -Raw -LiteralPath $path
     $toml = [Tomlyn.Toml]::ToModel($content)
 
