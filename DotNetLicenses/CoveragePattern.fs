@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Friedrich von Never <friedrich@fornever.me>
+// SPDX-FileCopyrightText: 2024-2025 Friedrich von Never <friedrich@fornever.me>
 //
 // SPDX-License-Identifier: MIT
 
@@ -11,8 +11,8 @@ open System.Threading.Tasks
 open DotNetLicenses.LockFile
 open DotNetLicenses.Metadata
 open DotNetLicenses.MsBuild
+open FVNever.Reuse
 open Microsoft.Extensions.FileSystemGlobbing
-open ReuseSpec
 open TruePath
 
 type CoverageCache =

@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Friedrich von Never <friedrich@fornever.me>
+// SPDX-FileCopyrightText: 2024-2025 Friedrich von Never <friedrich@fornever.me>
 //
 // SPDX-License-Identifier: MIT
 
@@ -8,7 +8,7 @@ open System
 open System.Collections.Immutable
 open System.IO
 open System.Threading.Tasks
-open ReuseSpec
+open FVNever.Reuse
 open TruePath
 
 type ReuseLicenseEntry = {

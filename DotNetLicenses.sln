@@ -19,6 +19,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.dotnet-licenses.lock.toml = .dotnet-licenses.lock.toml
 		.dotnet-licenses.lock.toml.license = .dotnet-licenses.lock.toml.license
 		LICENSE.txt = LICENSE.txt
+		global.json = global.json
+		global.json.license = global.json.license
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scripts", "scripts", "{EE856C4C-E5E8-48AF-97EA-586848FD9F2A}"
@@ -63,10 +65,6 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DotNetLicenses.Tests", "Dot
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "DotNetLicenses.TestFramework", "DotNetLicenses.TestFramework\DotNetLicenses.TestFramework.fsproj", "{3272F71B-9EDF-4553-826D-3201B46B02ED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ReuseSpec", "ReuseSpec\ReuseSpec.csproj", "{3AC685FD-71A1-456C-B33B-0224C3313429}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DebianControlFileSpec", "DebianControlFileSpec\DebianControlFileSpec.csproj", "{EA745ABC-75F5-4342-8A95-44EDFBD29CC4}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -88,14 +86,6 @@ Global
 		{3272F71B-9EDF-4553-826D-3201B46B02ED}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3272F71B-9EDF-4553-826D-3201B46B02ED}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3272F71B-9EDF-4553-826D-3201B46B02ED}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3AC685FD-71A1-456C-B33B-0224C3313429}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3AC685FD-71A1-456C-B33B-0224C3313429}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3AC685FD-71A1-456C-B33B-0224C3313429}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3AC685FD-71A1-456C-B33B-0224C3313429}.Release|Any CPU.Build.0 = Release|Any CPU
-		{EA745ABC-75F5-4342-8A95-44EDFBD29CC4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{EA745ABC-75F5-4342-8A95-44EDFBD29CC4}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{EA745ABC-75F5-4342-8A95-44EDFBD29CC4}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{EA745ABC-75F5-4342-8A95-44EDFBD29CC4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3E052F53-740F-4399-99E3-677A722B113E} = {0FE1F889-3A72-4D9B-883F-E6A6A40753F8}

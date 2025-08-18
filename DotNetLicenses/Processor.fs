@@ -1,4 +1,4 @@
-// SPDX-FileCopyrightText: 2024 Friedrich von Never <friedrich@fornever.me>
+// SPDX-FileCopyrightText: 2024-2025 Friedrich von Never <friedrich@fornever.me>
 //
 // SPDX-License-Identifier: MIT
 
@@ -17,10 +17,10 @@ open DotNetLicenses.Metadata
 open DotNetLicenses.NuGet
 open DotNetLicenses.Reuse
 open DotNetLicenses.Sources
+open FVNever.Reuse
 open JetBrains.Lifetimes
 open Microsoft.Extensions.FileSystemGlobbing
 open Microsoft.FSharp.Core
-open ReuseSpec
 open TruePath
 
 let private WarnUnusedOverrides allOverrides usedOverrides (wp: WarningProcessor) =
