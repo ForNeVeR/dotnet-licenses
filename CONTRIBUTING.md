@@ -34,7 +34,7 @@ Pack
 To prepare a NuGet package with the tool, use the following shell commands:
 
 ```console
-$ dotnet run --project src/DotNetLicenses/DotNetLicenses.csproj -- download-licenses .dotnet-licenses.toml
+$ dotnet run --project DotNetLicenses/DotNetLicenses.fsproj -- download-licenses .dotnet-licenses.toml
 $ dotnet pack
 ```
 
@@ -60,7 +60,7 @@ In case CI asks to update the package license (may happen in case of dependency 
 In case CI asks to update the license lock file, use these shell commands:
 ```console
 $ dotnet pack
-$ dotnet run --project src/DotNetLicenses/DotNetLicenses.csproj -- generate-lock .dotnet-licenses.toml
+$ dotnet run --project DotNetLicenses/DotNetLicenses.fsproj -- generate-lock .dotnet-licenses.toml
 ```
 
 GitHub Actions
