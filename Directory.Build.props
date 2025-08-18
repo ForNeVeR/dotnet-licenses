@@ -9,12 +9,14 @@ SPDX-License-Identifier: MIT
         <Version>0.0.0</Version>
         <PackageLicenseExpression>MIT AND Apache-2.0 AND BSD-2-Clause</PackageLicenseExpression>
         <!-- REUSE-IgnoreStart -->
-        <Copyright>2024 Friedrich von Never &lt;friedrich@fornever.me&gt;
+        <Copyright>2024-2025 Friedrich von Never &lt;friedrich@fornever.me>
 © Microsoft Corporation. All rights reserved.
 Copyright 2014 codemix ltd.; Copyright (c) 2021 Guiorgy
-Copyright © JetBrains 2024
+Copyright (c) 2016-2024 JetBrains s.r.o.
+Copyright © JetBrains 2025
 Copyright © 2017 Michael Adelson
-Alexandre Mutel</Copyright>
+Alexandre Mutel
+2024-2025 TruePath contributors &lt;https://github.com/ForNeVeR/TruePath></Copyright>
         <!-- REUSE-IgnoreEnd -->
     </PropertyGroup>
 

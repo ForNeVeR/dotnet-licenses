@@ -28,9 +28,12 @@ $copyrightStatements = $packagingGroup.Copyright
 function normalizeCopyrights($copyrights) {
     $normalized = @()
     foreach ($copyright in $copyrights) {
-        if ($copyright -eq '© 2024 Friedrich von Never') {
-            $normalized += '2024 Friedrich von Never <friedrich@fornever.me>'
-        } else {
+        if ($copyright -eq '2024 Friedrich von Never <friedrich@fornever.me>' -or
+            $copyright -eq '2025 Friedrich von Never <friedrich@fornever.me>') {
+            $copyright = '2024-2025 Friedrich von Never <friedrich@fornever.me>'
+        }
+
+        if (-not ($normalized -contains $copyright)) {
             $normalized += $copyright
         }
     }
