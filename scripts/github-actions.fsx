@@ -30,13 +30,8 @@ let workflows = [
 
     let pwsh(name, run) = step(name = name, shell = "pwsh", run = run)
 
-    workflow "main" [
-        name "Main"
-        yield! mainTriggers
-
-        job "verify-workflows" [
-            runsOn "ubuntu-24.04"
-
+    let dotNetJob id steps =
+        job id [
             setEnv "DOTNET_CLI_TELEMETRY_OPTOUT" "1"
             setEnv "DOTNET_NOLOGO" "1"
             setEnv "NUGET_PACKAGES" "${{ github.workspace }}/.github/nuget-packages"
@@ -58,13 +53,40 @@ let workflows = [
                 ]
             )
 
+            yield! steps
+        ]
+
+    workflow "main" [
+        name "Main"
+        yield! mainTriggers
+
+        dotNetJob "verify-workflows" [
+            runsOn "ubuntu-24.04"
             step(run = "dotnet fsi ./scripts/github-actions.fsx verify")
         ]
 
-        job "test" [
-            checkout
-            yield! dotNetBuildAndTest()
-        ] |> addMatrix images
+        dotNetJob "test" [
+            strategy(failFast = false, matrix = [
+                "image", [
+                    "macos-14"
+                    "ubuntu-24.04"
+                    "ubuntu-24.04-arm"
+                    "windows-11-arm"
+                    "windows-2025"
+                ]
+            ])
+            runsOn "${{ matrix.image }}"
+
+            step(
+                name = "Build",
+                run = "dotnet build"
+            )
+            step(
+                name = "Test",
+                run = "dotnet test",
+                timeoutMin = 10
+            )
+        ]
 
         job "licenses" [
             runsOn linuxImage
@@ -83,10 +105,10 @@ let workflows = [
         name "Release"
         yield! mainTriggers
         onPushTags "v*"
-        job "nuget" [
+        dotNetJob "nuget" [
             runsOn linuxImage
             checkout
-            writeContentPermissions
+            jobPermission(PermissionKind.Contents, AccessKind.Write)
 
             let configuration = "Release"
 
