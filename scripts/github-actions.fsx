@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-#r "nuget: Generaptor.Library, 1.2.0"
+#r "nuget: Generaptor.Library, 1.8.0"
 
 open System
 
@@ -33,6 +33,34 @@ let workflows = [
     workflow "main" [
         name "Main"
         yield! mainTriggers
+
+        job "verify-workflows" [
+            runsOn "ubuntu-24.04"
+
+            setEnv "DOTNET_CLI_TELEMETRY_OPTOUT" "1"
+            setEnv "DOTNET_NOLOGO" "1"
+            setEnv "NUGET_PACKAGES" "${{ github.workspace }}/.github/nuget-packages"
+
+            step(
+                name = "Check out the sources",
+                usesSpec = Auto "actions/checkout"
+            )
+            step(
+                name = "Set up .NET SDK",
+                usesSpec = Auto "actions/setup-dotnet"
+            )
+            step(
+                name = "Cache NuGet packages",
+                usesSpec = Auto "actions/cache",
+                options = Map.ofList [
+                    "key", "${{ runner.os }}.nuget.${{ hashFiles('**/*.*proj', '**/*.props') }}"
+                    "path", "${{ env.NUGET_PACKAGES }}"
+                ]
+            )
+
+            step(run = "dotnet fsi ./scripts/github-actions.fsx verify")
+        ]
+
         job "test" [
             checkout
             yield! dotNetBuildAndTest()
@@ -107,4 +135,4 @@ let workflows = [
     ]
 ]
 
-EntryPoint.Process fsi.CommandLineArgs workflows
+exit <| EntryPoint.Process fsi.CommandLineArgs workflows
