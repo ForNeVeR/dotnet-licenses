@@ -134,6 +134,7 @@ metadata_sources = [
 [<Fact>]
 let ``Ignore presets read correctly``(): Task =
     let content = """
+metadata_sources = []
 packaged_files = [
     { type = "zip", path = "files2/*.zip", ignore = [
         { type = "preset", name = "licenses" }
