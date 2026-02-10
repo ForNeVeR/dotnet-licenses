@@ -43,7 +43,7 @@ SPDX-License-Identifier: MIT
         <Compile Include="Reuse.fs" />
         <Compile Include="CoveragePattern.fs" />
         <Compile Include="Processor.fs" />
-        <Compile Include="Program.fs"/>
+        <Compile Include="Program.fs" />
     </ItemGroup>
 
     <ItemGroup Label="Packaging">
@@ -59,7 +59,7 @@ SPDX-License-Identifier: MIT
       <PackageReference Include="JetBrains.Annotations" Version="2024.3.0" />
       <PackageReference Include="JetBrains.Lifetimes" Version="2025.1.1" />
       <PackageReference Include="MedallionShell" Version="1.6.2" />
-      <PackageReference Include="Microsoft.Build" Version="17.11.4" />
+      <PackageReference Include="Microsoft.Build" Version="17.11.48" />
       <PackageReference Include="Microsoft.Extensions.FileSystemGlobbing" Version="9.0.8" />
       <PackageReference Include="Tomlyn" Version="0.17.0" />
       <PackageReference Include="TruePath" Version="1.10.0" />
