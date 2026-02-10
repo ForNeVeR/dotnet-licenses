@@ -132,7 +132,7 @@ metadata_sources = [
     }
 
 [<Fact>]
-let ``Ignore presets read correctly``: Task =
+let ``Ignore presets read correctly``(): Task =
     let content = """
 packaged_files = [
     { type = "zip", path = "files2/*.zip", ignore = [
